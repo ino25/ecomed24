@@ -1,0 +1,2 @@
+ALTER TABLE `patient` ADD `matricule` VARCHAR(100) NULL AFTER `status`, ADD `grade` VARCHAR(100) NULL AFTER `matricule`, ADD `birth_position` VARCHAR(100) NULL AFTER `grade`, ADD `nom_contact` VARCHAR(100) NULL AFTER `birth_position`, ADD `phone_contact` VARCHAR(100) NULL AFTER `nom_contact`, ADD `religion` VARCHAR(100) NULL AFTER `phone_contact`;
+ALTER TABLE `patient` ADD `region` VARCHAR(100) NULL AFTER `religion`;

@@ -1,0 +1,48 @@
+I - Header 
+	1- Modification profil patient avec affichage (age , numéro de téléphone , numéro de téléphone à contacter , visibilité de la photo du patient lors de la modification ) => OK
+   
+    2- Remplacer date de naissance par age => OK
+
+	3- Ne pas remettre les valeurs null lors de l'affichage d'un modale => OK
+	
+
+II- Fiche Patient 
+	
+	1- Corrigié les bugs sur Pré-conditions connues => OK
+	
+	2- Corrigé les bugs sur Traitement(s) en cours => OK
+	
+	3- Revoir le cas d'utilisation des signes vitaux 
+	
+	4- Revoir les droits => OK
+	
+	5- Correction sur l'insertion des donnes "Pré-conditions connues et Traitement(s) en cours" pour qu'il accepte tous les formes de caractères => OK
+	
+	
+III- Historique Médical 
+
+	1- Revoir le modal avec changement du titre "Ajouter" => "Ajouter un rendez" => OK
+
+	2- Revoir les dimensions du Datatable 
+	
+	3- Analyse Labo afficher uniquement les analyses effectués au sein de la structure => OK
+	
+	4- Revoir les doublons lors de l'affichage d'un résultat d'analyse  => OK
+	
+	5- Adapter consultation médicale avec celui déjà créer => OK
+	
+	
+IV- Administration
+
+	1- Revoir le doublon sur l'alerte "le patient est déjà enregistrer"
+	
+	2- Paiement afficher uniquement les dossiers paiement et non les bulletins d'analyse
+	
+	3- Personne prise en charge gérer le formulaire
+	
+	
+V- Divers
+
+	Masquer les éléments d'en bas avec les onglets => OK
+	
+	

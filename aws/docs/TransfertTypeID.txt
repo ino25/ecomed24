@@ -1,0 +1,58 @@
+Achat de Crédit 
+OK		TEST : transferTypeId="326"
+OK		PROD : transferTypeId="370"
+
+-------------------------------------------------------------------------------
+Paiement Woyofal
+OK		TEST : transferTypeId="307"
+OK		PROD : transferTypeId="368"
+
+-------------------------------------------------------------------------------
+Paiement Facture Sen Eau
+OK		TEST : transferTypeId="324"
+OK		PROD : transferTypeId="334"
+
+-------------------------------------------------------------------------------
+Paiement Facture Senelec
+OK		TEST : transferTypeId="323"
+OK		PROD : transferTypeId="330"
+
+-------------------------------------------------------------------------------
+Dépot Orange Money vers Compte Services
+OK		TEST : transferTypeId="1176"
+OK/New	PROD : transferTypeId="578"
+
+-------------------------------------------------------------------------------
+Paiement Orange Money vers compte Encaissement
+OK		TEST : transferTypeId="1180"
+OK/New	PROD : transferTypeId="579"
+
+-------------------------------------------------------------------------------
+Paiement (Pro/Facture) Orange Money vers compte Encaissement Partenaire
+OK		TEST : transferTypeId="1187"
+OK/New	PROD : transferTypeId="580"
+
+-------------------------------------------------------------------------------
+Transfert Interne (Payroll vers Services)
+OK		TEST : transferTypeId="1156"
+OK		PROD : transferTypeId="526"
+
+-------------------------------------------------------------------------------
+Transfert Externe
+Cherche Beneficiaire
+...		TEST : transferTypeId="1160" (N.A)
+...		PROD : transferTypeId="526"	(N.A)
+
+Validation transfert Externe
+...		TEST : transferTypeId="302" (N.A)
+...		PROD : transferTypeId="388" (N.A)
+
+-------------------------------------------------------------------------------
+Paiement Facture Compte service vers compte Encaissement Partenaire
+OK		TEST : transferTypeId="1186"
+OK/New	PROD : transferTypeId="581"
+
+-------------------------------------------------------------------------------
+Paiement Facture Compte Encaissement vers compte Encaissement Partenaire
+OK		TEST : transferTypeId="1182"
+OK/New	PROD : transferTypeId="582"

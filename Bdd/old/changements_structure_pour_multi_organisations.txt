@@ -1,0 +1,47 @@
+Ajout table:
+OK0	organisation
+Changements structure liés au multi-organisation:
+OK0	users: 
+		id_organisation, region, departement, arrondissement, collectivite, pays
+OK0	groups:
+		label_fr (+ Values)
+		
+OK0	departement:
+		id_organisation
+		
+-	setting_service: 
+		none (lié à département - donc jointure)
+	
+-	payment_category: 
+		none (lié à service - donc jointure)
+		
+OK0	users:
+		id_organisation
+		
+	doctor, receptionist, pharmacist, nurse, laboratorist, accountant:
+		none (lié à users - donc jointure)
+		
+	patient:
+		none (voir nouvelle table de jointure)
+		id_organisation_source
+		
+	patient_permissions_organisation:
+		id, id_patient, id_organisation
+		
+	donor:	
+		none (voir nouvelle table de jointure)
+		id_organisation_source
+	
+	donor_permissions_organisation:
+		id, id_donor, id_organisation
+		
+AUTRES:
+	report, notice, diagnostic_report:?
+		id_organisation
+		
+	expense:
+		id_organisation
+		
+	expense_category:
+		none (à moins que les catégories de dépenses soient différentes en fonction de l'organisation de l'utilisateur connecté)
+		id_organisation

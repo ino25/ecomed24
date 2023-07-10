@@ -1,0 +1,1 @@
+ALTER TABLE patient_deposit ADD COLUMN id_transaction_externe VARCHAR(255) DEFAULT NULL AFTER gateway;

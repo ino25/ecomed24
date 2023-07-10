@@ -1,0 +1,16 @@
+=~=~=~=~=~=~=~=~=~=~=~= PuTTY log 2021.02.25 16:16:41 =~=~=~=~=~=~=~=~=~=~=~=
+Using username "ec2-user".
+Authenticating with public key "imported-openssh-key" from agent
+Last login: Thu Feb 25 16:13:51 2021 from 41.82.89.230
+
+       __|  __|_  )
+       _|  (     /   Amazon Linux 2 AMI
+      ___|\___|___|
+
+https://aws.amazon.com/amazon-linux-2/
+19 package(s) needed for security, out of 32 available
+Run "sudo yum update" to apply all updates.
+]0;ec2-user@ip-10-10-1-54:~[?1034h[ec2-user@ip-10-10-1-54 ~]$ exitclearssh ec2-user@10.100.119.52
+Permission denied (publickey,gssapi-keyex,gssapi-with-mic).
+]0;ec2-user@ip-10-10-1-54:~[ec2-user@ip-10-10-1-54 ~]$ exit
+logout

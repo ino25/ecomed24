@@ -1,0 +1,5 @@
+/application/thresholdlogs/*
+/nbproject/private/
+/vendor/
+/application/logs/*
+/uploads/

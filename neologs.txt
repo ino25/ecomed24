@@ -1,0 +1,16 @@
+
+[1] Merchant ID : 202008171000001
+[2] Merchant Key : VbG+of2gqR7c0HqIIYO+bAhMOoGwz3Z/mm49yaXVdOc=
+[3] Collaborator ID : ORAB
+[4] Neo URL  : https://uat-NeO.network.ae/direcpay/secure/PaymentTxnServlet
+[5] Block Existence Indicator   : 1110000
+[6] DataBlock1 : TransactionDataBlock1   : 11111111|ZUULU1609713397|1000|https://zuulumed.zuulu.net/depot/successOrab|https://zuulumed.zuulu.net/depot/successOrab|INTERNET|CC|01|XOF
+[7] DataBlock2 : billingDataBlock   : 1111111101000|Cheikh Alassane|SARR|Villa Khadija|Route du Ngor Diarama|Dakar|Dakar|12700|SN|766459226
+[8] DataBlock3 : shippingDataBlock   : 111111010001|Cheikh Alassane|SARR|Villa Khadija|Route du Ngor Diarama|Dakar|Dakar|SN|766459226
+[9] DataBlock4 : paymentDataBlock   : NULL
+[10] DataBlock5 : merchantDataBlock   : NULL
+[11] DataBlock6 : otherDataBlock   : NULL
+[12] DataBlock7 : DCCDataBlock   : NULL
+[13] beforeEncryptionString : 202008171000001||ORAB||1110000||11111111|ZUULU1609713397|1000|https://zuulumed.zuulu.net/depot/successOrab|https://zuulumed.zuulu.net/depot/successOrab|INTERNET|CC|01|XOF||1111111101000|Cheikh Alassane|SARR|Villa Khadija|Route du Ngor Diarama|Dakar|Dakar|12700|SN|766459226||111111010001|Cheikh Alassane|SARR|Villa Khadija|Route du Ngor Diarama|Dakar|Dakar|SN|766459226
+[14] EncryptedString  : Ntadw0Aw0OXxXo1JsxEUDqHPTO5xs99QIo4OvA4CM1alGZkok3Zxeu44RDycnGye0RMY5Hh2C9NBEQIRSN2yZ4G5dXTP7qVsX1ZoSBWtr68qd+WdR3TgRhvjXRbVFKS1ezDCbA6s8ZKCAtJr9nODOtloQETKsDdFB5s/HzJqnSBdGWgdTsYRRWs2ekcFWin2dl6k1UyAtdc7C4rEZeS1Vs/5NMtEkEnxiVk+4WZj3nBgn2nVUKEfisXaSynkC5PZOQehuBLG6r/TbW9omiCdmWMVpmO+LUEQIywVoxAvqT35NsZHlrIS3oYEpGGqJn51C0S9y2ZL+iqvyXT0J8McPaAUxRWHE38asEdPafoUjiTnruUugczkJW7EmpaGMn2moFCW5wXNFjWF+2mS7IKiqk1yaIzTd1+ZiCz9ZV8BcDee5Jxokl0SPAd0QtkZXYl82VVlEEeLyGPc1A+a2mij9A==
+[15] NeoPostData  : 202008171000001||ORAB||Ntadw0Aw0OXxXo1JsxEUDqHPTO5xs99QIo4OvA4CM1alGZkok3Zxeu44RDycnGye0RMY5Hh2C9NBEQIRSN2yZ4G5dXTP7qVsX1ZoSBWtr68qd+WdR3TgRhvjXRbVFKS1ezDCbA6s8ZKCAtJr9nODOtloQETKsDdFB5s/HzJqnSBdGWgdTsYRRWs2ekcFWin2dl6k1UyAtdc7C4rEZeS1Vs/5NMtEkEnxiVk+4WZj3nBgn2nVUKEfisXaSynkC5PZOQehuBLG6r/TbW9omiCdmWMVpmO+LUEQIywVoxAvqT35NsZHlrIS3oYEpGGqJn51C0S9y2ZL+iqvyXT0J8McPaAUxRWHE38asEdPafoUjiTnruUugczkJW7EmpaGMn2moFCW5wXNFjWF+2mS7IKiqk1yaIzTd1+ZiCz9ZV8BcDee5Jxokl0SPAd0QtkZXYl82VVlEEeLyGPc1A+a2mij9A==

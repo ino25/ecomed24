@@ -1,0 +1,1 @@
+ALTER TABLE generated_otp ADD COLUMN `for_patient_record` int(1) signed DEFAULT 0;

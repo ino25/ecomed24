@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `service` INT NULL AFTER `otp_validated`;

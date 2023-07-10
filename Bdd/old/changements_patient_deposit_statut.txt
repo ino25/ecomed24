@@ -1,0 +1,1 @@
+ALTER TABLE patient_deposit ADD COLUMN statut_deposit   VARCHAR(255) DEFAULT NULL AFTER user;

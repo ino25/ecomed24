@@ -1,0 +1,1 @@
+ALTER TABLE users ADD COLUMN default_img_url varchar(100) DEFAULT NULL;

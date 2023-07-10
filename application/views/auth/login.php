@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <base href="<?php echo base_url(); ?>">
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="">
+        <meta name="author" content="Rizvi">
+        <meta name="keyword" content="Php, Hospital, Clinic, Management, Software, Php, CodeIgniter, Hms, Accounting">
+        <link rel="shortcut icon" href="<?php echo base_url(); ?>uploads/faviconZ.png">
+
+        <title>Login - <?php echo $this->db->get('settings')->row()->system_vendor; ?></title>
+
+        <!-- Bootstrap core CSS -->
+        <link href="<?php echo base_url(); ?>common/css/bootstrap.min.css?<?php echo time(); ?>" rel="stylesheet">
+        <link href="<?php echo base_url(); ?>common/css/bootstrap-reset.css?<?php echo time(); ?>" rel="stylesheet">
+        <!--external css-->
+        <link href="https://netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet" />
+        <!-- Custom styles for this template -->
+        <link href="<?php echo base_url(); ?>common/css/style.css?<?php echo time(); ?>" rel="stylesheet">
+        <link href="<?php echo base_url(); ?>common/css/style-responsive.css" rel="stylesheet" />
+		
+		<link href="<?php echo base_url(); ?>common/assets/fontawesome5pro/css/all.min.css" rel="stylesheet" />
+		
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 tooltipss and media queries -->
+        <!--[if lt IE 9]>
+        <script src="js/html5shiv.js"></script>
+        <script src="js/respond.min.js"></script>
+        <![endif]-->
+    </head>
+
+    <body class="login-body">
+
+        <div class="container">
+			
+            <style>
+
+
+                form{
+
+                    padding: 0px;
+                    border: none;
+
+
+                }
+
+
+            </style>
+    <?php  $environment = $this->config->item('environment', 'ion_auth'); ?>
+<div class="login-box logini_box_new">
+            <form class="form-signin" method="post" action="auth/login">
+				
+                <div class="login-form-head">
+                        <p> 
+                               <br>
+                            <a href="/"  class="login form-signin-heading">
+                                <img src="uploads/logos/logo_ecomed24.png" alt="" width="180" height="30"> 
+                            </a>
+                        </p>
+                     
+                        <!-- <h2>Ouverture de Connexion</h2	> -->
+                        <div class="imgcontainer">
+                            <!-- <img src="/assets/images/author/img_avatar2.png" alt="Avatar" class="avatar"> -->
+                        </div>
+                    </div>
+
+              
+                <div class="login-wrap">
+                    <div class="input-group p-0 shadow-sm">
+                    <div class="input-group-append"><span class="input-group-text px-4"><!--<i class="fa fa-user"></i>--></span></div>
+                     
+                    </div>
+                   <input type="text" class="form-control" name="identity" placeholder="Email" >
+                    <input type="password" class="form-control"  name="password" placeholder="Mot de passe">
+
+
+
+
+                   <!--     
+                          <label class="checkbox">
+                              <input type="checkbox" value="remember-me"> Remember me
+                              <span class="pull-right">
+                                  <a data-toggle="modal" href="#myModal"> Forgot Password?</a>
+              
+                              </span>
+                          </label> 
+                    -->
+                  
+                    <div id="signupForm"> <label class="error"><?php echo $message; ?></label></div>
+                     <div class="submit-btn-area">
+                    <button class="btn btn-lg btn-login btn-block" type="submit">Connexion <i class="fa fa-arrow-right"></i></button>
+                    </div>
+                      <h5  style="text-decoration: none;color:#2c71da !important;"><a href="auth/forgot_password"> <?php echo lang('forgot_password_heading');?>?</a></h5>
+                
+  <style>
+                        table, th, td {
+                            border: 1px solid #f1f2f7;
+                            border-collapse: collapse;
+                        }
+                        th, td {
+                            padding: 2px;
+                            text-align: left;
+                            font-size:12px;
+                        }
+                        td,th,h4{
+                            color:#aaa;
+                            
+                        }
+                    </style>
+           <!-- <?php  if($environment == 'dev' ){ ?> -->
+					<!-- <table style="margin-bottom:5px;    width: 100%;">
+                        <thead>
+                            <tr><th>Role</th>
+                                <th colspan="2">Username/Password</th>
+                            </tr>
+                        </thead>
+                        <tbody >
+
+                            <tr onclick="updateLogin('admin@zuulumed.net','12345')">
+                                <td>Admin</td>
+                                <td>admin@zuulumed.net</td>
+                                <td>12345</td>
+                            </tr>
+                            
+                            <tr onclick="updateLogin('adminmedecin@zuulumed.net','12345')">
+                                <td>Medecin Gerant</td>
+                                <td>adminmedecin@zuulumed.net</td>
+                                <td>12345</td>
+                            </tr>
+                              <tr onclick="updateLogin('docteur@zuulumed.net','12345')">
+                                <td>Docteur</td>
+                                <td style="max-width:30%;">docteur@zuulumed.net</td>
+                                <td>12345</td>
+                            </tr>
+                            <tr onclick="updateLogin('infirmiere@zuulumed.net','12345')">
+                                <td>Infirmiere</td>
+                                <td>infirmiere@zuulumed.net</td>
+                                <td>12345</td>
+                            </tr>
+                           
+                          
+                            <tr onclick="updateLogin('labo@zuulumed.net','12345')">
+                                <td>Laboratoire</td>
+                                <td>labo@zuulumed.net</td>
+                                <td>12345</td>
+                            </tr>
+                            
+                             <tr onclick="updateLogin('comptable@zuulumed.net','12345')">
+                                <td>Comptable</td>
+                                <td>comptable@zuulumed.net</td>
+                                <td>12345</td>
+                            </tr>
+                            
+                             <tr onclick="updateLogin('reception@zuulumed.net','12345')">
+                                <td>Secretaire</td>
+                                <td>reception@zuulumed.net</td>
+                                <td>12345</td>
+                            </tr>
+                            
+                             <tr onclick="updateLogin('patient@zuulumed.net','12345')">
+                                <td>Patient</td>
+                                <td>patient@zuulumed.net</td>
+                                <td>12345</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+					<div class="" style="text-align:center;"><a href="auth/superlogin"><i class="fa icon-unlock"></i>&nbsp;SuperAdmin</a>&nbsp;&nbsp;||&nbsp;&nbsp;<a href="auth/appointmentcenterlogin"><i class="fa fa-calendar-check"></i>&nbsp;Centre de Rendez-vous</a></div>
+	   <?php  } ?>				  -->
+                </div>
+
+
+            </form>
+        </div>
+        </div>
+
+
+
+
+
+
+
+
+
+        <div aria-hidden="true" aria-labelledby="myModalLabel" role="dialog" tabindex="-1" id="myModal" class="modal fade">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="post" action="auth/forgot_password">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                            <h4 class="modal-title"><?php echo lang('forgot_password_heading');?> ?</h4>
+                            
+                        </div>
+
+                        <div class="modal-body">
+                          
+                            <p><?php echo sprintf(lang('forgot_password_subheading'), 'adresse email');?></p>
+                            <input type="text" name="email" placeholder="Email" autocomplete="off" class="form-control placeholder-no-fix">
+
+                        </div>
+                        <div class="modal-footer">
+                           <!-- <button data-dismiss="modal" class="btn btn-default" type="button">Cancel</button>
+                            <input class="btn btn-success" type="submit" name="submit" value="submit">-->
+                            <button type="button" class="btn btn-info btn-secondary pull-left" data-dismiss="modal" aria-hidden="true"> <?php echo lang('close'); ?></button>
+                        <button type="submit" name="submit" class="btn btn-info pull-right"> <?php echo lang('submit'); ?></button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- js placed at the end of the document so the pages load faster -->
+        <script src="<?php echo base_url(); ?>common/js/jquery.js"></script>
+        <script src="<?php echo base_url(); ?>common/js/bootstrap.min.js"></script>
+
+
+    </body>
+</html>
+
+<script>
+  function updateLogin(login,pwd) {
+      $('.form-signin').find('[name="identity"]').val(login).end();
+      $('.form-signin').find('[name="password"]').val(pwd).end();
+  }
+   </script> 
+     <style>
+                            tr{
+                              cursor: pointer;
+                            }
+                        </style>

@@ -1,0 +1,13 @@
+ALTER TABLE organisation ADD COLUMN description_courte_activite VARCHAR(255);
+ALTER TABLE organisation ADD COLUMN description_courte_services VARCHAR(255);
+ALTER TABLE organisation ADD COLUMN slogan VARCHAR(255);
+ALTER TABLE organisation ADD COLUMN horaires_ouverture text;
+
+ALTER TABLE organisation ADD COLUMN fonction_responsable_legal VARCHAR(45) AFTER portable_responsable_legal;
+ALTER TABLE organisation ADD COLUMN description_courte_responsable_legal VARCHAR(255) AFTER fonction_responsable_legal;
+
+ALTER TABLE organisation ADD COLUMN prenom_responsable_legal2 VARCHAR(255) AFTER description_courte_responsable_legal;
+ALTER TABLE organisation ADD COLUMN nom_responsable_legal2 VARCHAR(255) AFTER prenom_responsable_legal2;
+ALTER TABLE organisation ADD COLUMN portable_responsable_legal2 VARCHAR(255) AFTER nom_responsable_legal2;
+ALTER TABLE organisation ADD COLUMN fonction_responsable_legal2 VARCHAR(45) AFTER portable_responsable_legal2;
+ALTER TABLE organisation ADD COLUMN description_courte_responsable_legal2 VARCHAR(45) AFTER fonction_responsable_legal2;

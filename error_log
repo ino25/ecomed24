@@ -1,0 +1,2 @@
+[09-Aug-2022 18:25:16 UTC] PHP Fatal error:  Cannot redeclare Patient_model::getPatientBySearch() in /home/vojersaatsotero/public_html/dev/samba/application/modules/patient/models/Patient_model.php on line 1215
+[09-Aug-2022 18:25:18 UTC] PHP Fatal error:  Cannot redeclare Patient_model::getPatientBySearch() in /home/vojersaatsotero/public_html/dev/samba/application/modules/patient/models/Patient_model.php on line 1215

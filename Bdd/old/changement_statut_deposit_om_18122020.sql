@@ -1,0 +1,1 @@
+ALTER TABLE `statut_deposit_om` ADD `numero_om` VARCHAR(255) DEFAULT NULL;

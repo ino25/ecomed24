@@ -1,0 +1,208 @@
+<?php
+
+if (!defined('BASEPATH'))
+    exit('No direct script access allowed');
+
+class Service_model extends CI_model {
+
+    function __construct() {
+        parent::__construct();
+        $this->load->database();
+    }
+
+    function insertService($data) {
+        $table = 'setting_service';
+        $this->db->insert($table, $data);
+    }
+
+    function getService($id = null) {
+        $setting_service = 'setting_service';
+        $setting_department = 'department';
+        $this->db->select('*');
+        $this->db->from($setting_service);
+        $this->db->join($setting_department, $setting_department . '.id=' . $setting_service . '.id_department', 'left');
+        if ($id) {
+            $this->db->where($setting_service . '.idservice', $id);
+        }
+        $this->db->where($setting_service . '.status_service', 1);
+       
+        $this->db->order_by($setting_service . '.idservice', 'desc');
+        $query = $this->db->get();
+        return $query->result();
+    }
+	
+	function getGenericServicesAndCoverage($id_organisation) {
+	   $query = $this->db->query("select setting_service.idservice, setting_service_specialite.idspe, setting_service.name_service, setting_service_specialite.name_specialite,setting_service.description_service,setting_service.code_service,(CASE WHEN setting_service_specialite_organisation.statut IS NULL THEN '0' ELSE setting_service_specialite_organisation.statut END) as est_couvert from setting_service left join setting_service_specialite on setting_service_specialite.id_service = setting_service.idservice left join setting_service_specialite_organisation on setting_service.idservice = setting_service_specialite_organisation.id_service and setting_service_specialite_organisation.id_specialite = setting_service_specialite.idspe and setting_service_specialite_organisation.id_organisation = ".$id_organisation." where setting_service.id_organisation is NULL and setting_service.status_service = 1 order by  setting_service.idservice desc");
+        return $query->result();
+    }
+	
+	function getPrestationsPanier($id_organisation) {
+		$query = $this->db->query("select setting_service.name_service, setting_service_specialite.name_specialite, payment_category.prestation from payment_category_panier join payment_category on payment_category.id = payment_category_panier.id_prestation join setting_service on setting_service.idservice = payment_category.id_service join setting_service_specialite on setting_service_specialite.id_service = setting_service.idservice where payment_category_panier.id_organisation = ".$id_organisation." group by payment_category.id");
+		return $query->result();
+	}
+	function addRemovePrestationPanier($id_organisation, $id_prestation, $statut) {
+		// 3 88 96 1
+		$existeDeja = $this->db->query("select id from payment_category_panier where id_organisation = ".$id_organisation." and id_prestation=".$id_prestation)->num_rows();
+			
+        if ($statut == 1) { // Si now couverte: on supprime de la table des exceptions
+			if($existeDeja) {
+				// Update
+				$this->db->query("update payment_category_panier set statut = 1 where id_organisation = ".$id_organisation." and id_prestation=".$id_prestation);
+			} else {
+				// Insertion
+				$this->db->query("insert into payment_category_panier (id_prestation, id_organisation, statut) values(".$id_prestation.", ".$id_organisation.", 1)");
+			}
+        } else { // Sinon: on insere
+			if($existeDeja) {
+				// Update
+				$this->db->query("update payment_category_panier set statut = 0 where id_organisation = ".$id_organisation." and id_prestation=".$id_prestation);
+			}
+			// Devrait exister si passage à 0 donc pas de else
+        }
+    }
+	
+	
+	function addRemoveServiceSpecialiteOrganisation($id_organisation, $id_service, $id_specialite, $statut) {
+		// 3 88 96 1
+		$existeDeja = $this->db->query("select id from setting_service_specialite_organisation where id_organisation = ".$id_organisation." and id_service=".$id_service." and id_specialite=".$id_specialite)->num_rows();
+			
+        if ($statut == 1) { // Si now couverte: on supprime de la table des exceptions
+			if($existeDeja) {
+				// Update
+				$this->db->query("update setting_service_specialite_organisation set statut = 1 where id_organisation = ".$id_organisation." and id_service=".$id_service." and id_specialite=".$id_specialite);
+			} else {
+				// Insertion
+				$this->db->query("insert into setting_service_specialite_organisation (id_service, id_specialite, id_organisation, statut) values(".$id_service.", ".$id_specialite.", ".$id_organisation.", 1)");
+			}
+        } else { // Sinon: on insere
+			if($existeDeja) {
+				// Update
+				$this->db->query("update setting_service_specialite_organisation set statut = 0 where id_organisation = ".$id_organisation." and id_service=".$id_service." and id_specialite=".$id_specialite);
+			}
+			// Devrait exister si passage à 0 donc pas de else
+        }
+    }
+	
+	function getGenericServices() {
+	   $query = $this->db->query("select * from setting_service left join setting_service_specialite on setting_service_specialite.id_service = setting_service.idservice where setting_service.id_organisation is NULL and setting_service.status_service = 1 order by setting_service.idservice desc");
+        return $query->result();
+    }
+	
+	function getGenericServicesLabo() {
+	   $query = $this->db->query("select * from setting_service left join setting_service_specialite on setting_service_specialite.id_service = setting_service.idservice where setting_service.id_organisation is NULL and setting_service.status_service = 1 and code_service = 'labo' order by setting_service.idservice desc");
+        return $query->result();
+    }
+	
+	function getGenericServicesAutres() {
+	   $query = $this->db->query("select * from setting_service left join setting_service_specialite on setting_service_specialite.id_service = setting_service.idservice where setting_service.id_organisation is NULL and setting_service.status_service = 1 and code_service != 'labo' order by setting_service.idservice desc");
+        return $query->result();
+    }
+	
+	function getGenericPrestations() {
+	   $query = $this->db->query("select payment_category.id, payment_category.prestation, setting_service.name_service, setting_service.idservice, setting_service.code_service, setting_service_specialite.name_specialite from payment_category join setting_service on setting_service.idservice = payment_category.id_service and setting_service.id_organisation is NULL and setting_service.status_service = 1 join setting_service_specialite on setting_service_specialite.idspe = payment_category.id_spe order by payment_category.id desc");
+        return $query->result();
+    }
+	
+	function getPrestationsOrganisationEncoreDispo($id_organisation) {
+	   $query = $this->db->query("select payment_category.id, payment_category.prestation, setting_service.name_service, setting_service.idservice, setting_service.code_service, setting_service_specialite.name_specialite,(CASE WHEN payment_category_panier.statut IS NULL THEN '0' ELSE payment_category_panier.statut END) as est_dans_panier from payment_category left join payment_category_organisation on payment_category_organisation.id_presta = payment_category.id and payment_category_organisation.id_organisation = ".$id_organisation." join setting_service_specialite_organisation on setting_service_specialite_organisation.id_service = payment_category.id_service and setting_service_specialite_organisation.id_organisation = ".$id_organisation." join setting_service on setting_service.idservice = setting_service_specialite_organisation.id_service and setting_service.status_service = 1 join setting_service_specialite on setting_service_specialite.idspe = payment_category.id_spe left join payment_category_panier on payment_category_panier.id_prestation = payment_category.id and payment_category_panier.id_organisation = ".$id_organisation." where payment_category_organisation.idpco IS NULL group by payment_category.id order by payment_category.id desc");
+        return $query->result();
+    }
+	
+	function getPrestationsOrganisation($id_organisation) {
+	   $query = $this->db->query("select payment_category.id, payment_category.prestation, setting_service.name_service, setting_service.idservice, setting_service.code_service, setting_service_specialite.name_specialite,payment_category_organisation.idpco, payment_category_organisation.id_presta, payment_category_organisation.tarif_public, payment_category_organisation.tarif_professionnel, payment_category_organisation.tarif_assurance, payment_category_organisation.tarif_ipm from payment_category_organisation join payment_category on payment_category_organisation.id_presta = payment_category.id and payment_category_organisation.id_organisation = ".$id_organisation." join setting_service_specialite_organisation on payment_category.id_service = setting_service_specialite_organisation.id_service and setting_service_specialite_organisation.id_organisation = ".$id_organisation." join setting_service on setting_service.idservice = setting_service_specialite_organisation.id_service and setting_service.status_service = 1 join setting_service_specialite on setting_service_specialite.idspe = payment_category.id_spe group by payment_category_organisation.id_presta order by payment_category.id desc");
+        return $query->result();
+    }
+	function getSuperPrestationParams($id_prestation) {
+		$query = $this->db->query("select nom_parametre, unite, valeurs from payment_category_parametre where payment_category_parametre.id_prestation = ".$id_prestation);
+		return $query->result();
+		
+	}
+	function getSuperPrestationDescription($id_prestation) {
+		$query = $this->db->query("select description from payment_category where id=".$id_prestation);
+		return $query->row();
+	}
+	
+	function getServiceByOrganisation($id_organisation, $id_service = '') {  
+        $setting_service = 'setting_service';
+        $setting_department = 'department';
+        $this->db->select('*');
+        $this->db->from($setting_service);
+        $this->db->join($setting_department, $setting_department . '.id=' . $setting_service . '.id_department', 'left');
+       $this->db->join("organisation", "organisation.id = department.id_organisation AND organisation.id = ".$id_organisation);
+        if ($id_service) {
+            $this->db->where($setting_service . '.idservice', $id_service);
+        }
+        $this->db->where($setting_service . '.status_service', 1);
+       
+        $this->db->order_by($setting_service . '.idservice', 'desc');
+        $query = $this->db->get();
+        return $query->result();
+    }
+
+    function getServiceById($id) {
+        $table = 'setting_service';
+        $this->db->where('idservice', $id);
+        $query = $this->db->get($table);
+        return $query->row();
+    }
+
+    function updateService($id,$data) {
+        $table =  'setting_service';
+        $this->db->where('idservice', $id);
+        $this->db->update($table, $data);
+    }
+
+    function delete($id) {
+        $table =  'setting_service';
+        $this->db->where('idservice', $id);
+        //$this->db->delete($table);
+        $this->db->update($table, array('status_service' => NULL));
+    }
+
+    function editserviceBydepartement($id) {
+        $table = 'setting_service';
+        $this->db->where('id_department', $id);
+        $query = $this->db->get($table);
+        return $query->result();
+    }
+
+    function getServiceAll($id = null) {
+        $setting_service = 'setting_service';
+        $this->db->select('*');
+        $this->db->from($setting_service);
+        if ($id) {
+            $this->db->where($setting_service . '.idservice', $id);
+        }
+
+        $this->db->or_like($setting_service . '.status_service', 1);
+        $this->db->order_by($setting_service . '.idservice', 'desc');
+        $query = $this->db->get();
+        return $query->result();
+    }
+    
+     function getSericeinfoByJason($searchTerm,$id_organisation) {
+         $table =  'setting_service';
+        if (!empty($searchTerm)) {
+            $this->db->select('*');
+            //$this->db->where("name_service like '%" . $searchTerm . "%' AND id_organisation == ".$id_organisation);
+            $this->db->where("name_service like '%" . $searchTerm . "%' ");
+            $this->db->where('status_service', 1);
+            $fetched_records = $this->db->get($table);
+            $users = $fetched_records->result_array();
+        } else {
+            $this->db->select('*');
+              $this->db->where('status_service', 1);
+            //$this->db->where('id_organisation', $id_organisation);
+            $this->db->limit(10);
+            $fetched_records = $this->db->get($table);
+            $users = $fetched_records->result_array();
+        }
+        // Initialize Array with fetched data
+        $data = array();
+        foreach ($users as $user) {
+            $data[] = array("id" => $user['idservice'], "text" => $user['name_service']);
+        }
+        return $data;
+    }
+
+}

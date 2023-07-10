@@ -1,0 +1,1 @@
+ALTER TABLE `payment_category` ADD `keywords` VARCHAR(500) NOT NULL AFTER `description`;

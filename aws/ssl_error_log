@@ -1,0 +1,42 @@
+[Tue Mar 02 08:31:32.153978 2021] [cgi:error] [pid 17783] [client 10.100.103.123:37212] AH02811: script not found or unable to stat: /var/www/cgi-bin/config.exp
+[Tue Mar 02 10:27:35.236278 2021] [cgi:error] [pid 17786] [client 10.100.103.123:42800] AH02811: script not found or unable to stat: /var/www/cgi-bin/config.exp
+[Tue Mar 02 10:54:47.322375 2021] [cgi:error] [pid 17785] [client 10.100.103.123:44156] AH02811: script not found or unable to stat: /var/www/cgi-bin/config.exp
+[Thu Mar 04 17:21:12.681550 2021] [authz_core:error] [pid 19191] [client 10.100.103.123:11834] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Thu Mar 04 17:21:22.395229 2021] [authz_core:error] [pid 19189] [client 10.100.113.215:24902] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Thu Mar 04 17:21:59.853864 2021] [authz_core:error] [pid 19191] [client 10.100.113.215:24924] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Thu Mar 04 17:22:00.077384 2021] [authz_core:error] [pid 19192] [client 10.100.103.123:11862] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Thu Mar 04 17:22:02.561167 2021] [authz_core:error] [pid 19190] [client 10.100.103.123:11876] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Thu Mar 04 17:22:04.842985 2021] [authz_core:error] [pid 19189] [client 10.100.113.215:24942] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Thu Mar 04 17:22:07.652766 2021] [authz_core:error] [pid 19192] [client 10.100.103.123:11888] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Thu Mar 04 17:24:24.062878 2021] [authz_core:error] [pid 19192] [client 10.100.113.215:25070] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Thu Mar 04 17:30:47.182798 2021] [authz_core:error] [pid 21390] [client 10.100.103.123:12310] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Thu Mar 04 17:30:49.521594 2021] [authz_core:error] [pid 21387] [client 10.100.103.123:12312] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Thu Mar 04 17:30:49.597783 2021] [authz_core:error] [pid 21389] [client 10.100.103.123:12314] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Thu Mar 04 17:31:09.778823 2021] [authz_core:error] [pid 21387] [client 10.100.113.215:25394] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Thu Mar 04 17:31:10.084861 2021] [authz_core:error] [pid 21388] [client 10.100.113.215:25396] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Thu Mar 04 17:34:22.651058 2021] [authz_core:error] [pid 21391] [client 10.100.113.215:25562] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Thu Mar 04 17:36:40.791058 2021] [authz_core:error] [pid 22702] [client 10.100.103.123:12610] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Thu Mar 04 17:36:43.742821 2021] [authz_core:error] [pid 22703] [client 10.100.113.215:25668] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Thu Mar 04 17:36:44.835874 2021] [authz_core:error] [pid 22704] [client 10.100.103.123:12620] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Thu Mar 04 17:36:46.589574 2021] [authz_core:error] [pid 22702] [client 10.100.113.215:25672] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Thu Mar 04 17:37:28.793847 2021] [authz_core:error] [pid 22701] [client 10.100.113.215:25708] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Thu Mar 04 17:37:38.984911 2021] [authz_core:error] [pid 22704] [client 10.100.113.215:25718] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Thu Mar 04 17:40:24.276207 2021] [authz_core:error] [pid 22701] [client 10.100.113.215:25832] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Thu Mar 04 17:42:01.180653 2021] [authz_core:error] [pid 22701] [client 10.100.113.215:25902] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Thu Mar 04 20:31:59.100951 2021] [authz_core:error] [pid 26851] [client 10.100.113.215:34216] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Thu Mar 04 20:33:05.546869 2021] [authz_core:error] [pid 27131] [client 10.100.103.123:21216] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Thu Mar 04 20:33:09.990609 2021] [authz_core:error] [pid 27132] [client 10.100.113.215:34314] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Thu Mar 04 20:33:41.738366 2021] [authz_core:error] [pid 27132] [client 10.100.113.215:34342] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Fri Mar 05 15:25:44.723316 2021] [authz_core:error] [pid 25060] [client 10.100.113.215:29144] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Fri Mar 05 15:25:48.495461 2021] [authz_core:error] [pid 25063] [client 10.100.103.123:15456] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Fri Mar 05 15:26:41.743312 2021] [authz_core:error] [pid 25061] [client 10.100.103.123:15498] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Fri Mar 05 15:26:41.985387 2021] [authz_core:error] [pid 25060] [client 10.100.113.215:29192] AH01630: client denied by server configuration: /etc/httpd/htdocs, referer: https://www.ecomed24.com/auth/superlogin
+[Fri Mar 05 15:27:14.709727 2021] [authz_core:error] [pid 25062] [client 10.100.113.215:29224] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Fri Mar 05 15:27:21.327179 2021] [authz_core:error] [pid 25061] [client 10.100.113.215:29230] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Fri Mar 05 15:27:38.611911 2021] [authz_core:error] [pid 25639] [client 10.100.103.123:15546] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Fri Mar 05 15:27:44.520894 2021] [authz_core:error] [pid 25641] [client 10.100.113.215:29258] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Fri Mar 05 15:27:47.057229 2021] [authz_core:error] [pid 25639] [client 10.100.113.215:29262] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Fri Mar 05 15:27:49.012244 2021] [authz_core:error] [pid 25641] [client 10.100.113.215:29264] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Fri Mar 05 15:27:49.291965 2021] [authz_core:error] [pid 25642] [client 10.100.113.215:29266] AH01630: client denied by server configuration: /etc/httpd/htdocs, referer: https://www.ecomed24.com/auth/superlogin
+[Fri Mar 05 19:37:24.760249 2021] [authz_core:error] [pid 24370] [client 10.100.103.123:29286] AH01630: client denied by server configuration: /etc/httpd/htdocs
+[Fri Mar 05 19:37:29.345078 2021] [authz_core:error] [pid 24372] [client 10.100.103.123:29288] AH01630: client denied by server configuration: /etc/httpd/htdocs

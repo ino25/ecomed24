@@ -1,0 +1,16 @@
+-- CHANGEMENTS LAB
+
+ALTER TABLE lab RENAME COLUMN demendeur TO demandeur;
+ALTER TABLE lab MODIFY demandeur VARCHAR(255) DEFAULT NULL;
+UPDATE lab SET demandeur=NULL;
+ALTER TABLE lab RENAME COLUMN demandeur TO id_organisation_source_demande;
+ALTER TABLE lab MODIFY COLUMN id_organisation_source_demande int(11) DEFAULT NULL;
+ALTER TABLE lab ADD COLUMN code varchar(255) DEFAULT NULL;
+
+-- ALTER TABLE lab 
+-- modifier nom demandeur
+-- rendre null
+-- nullify
+-- modifier nom id_organisation_source_demande
+
+-- Ajouter code VARCHAR(255)
