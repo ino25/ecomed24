@@ -1,0 +1,47 @@
+{
+    "name": "Eco-Med24",
+    "version": "1.44.0",
+    "author": "Ecomed24",
+    "private": true,
+    "scripts": {
+        "dev": "nodemon ./bin/www",
+        "start": "node ./bin/www"
+    },
+    "dependencies": {
+        "axios": "^1.4.0",
+        "basic-ftp": "^5.0.3",
+        "express-fileupload": "^1.4.0",
+        "node-fetch": "^2.6.13",
+        "ssh2-sftp-client": "^9.1.0",
+        "@types/express": "^4.17.1",
+        "@types/morgan": "^1.7.37",
+        "@types/socket.io": "^2.1.3",
+        "bcryptjs": "^2.4.3",
+        "body-parse": "^0.1.0",
+        "cookie-parser": "~1.4.4",
+        "cors": "^2.8.5",
+        "cron": "^1.8.2",
+        "debug": "~2.6.9",
+        "dotenv": "^8.1.0",
+        "express": "^4.18.2",
+        "helmet": "^3.21.1",
+        "jsonwebtoken": "^8.5.1",
+        "moment": "^2.29.4",
+        "morgan": "~1.9.1",
+        "multer": "^1.4.5-lts.1",
+        "mysql2": "^3.1.2",
+        "node-ccavenue": "^1.0.5",
+        "nodemailer": "^6.9.1",
+        "phpunserialize": "^1.0.1",
+        "sequelize": "^6.31.1",
+        "socket.io": "^2.5.0",
+        "unescape": "^1.0.1"
+    },
+    "devDependencies": {
+        "@types/dotenv": "^6.1.1",
+        "gulp": "^4.0.2",
+        "gulp-typescript": "^5.0.1",
+        "nodemon": "^2.0.20",
+        "typescript": "^3.6.3"
+    }
+}
