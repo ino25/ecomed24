@@ -981,7 +981,7 @@ exports.getDependantByID = async (req, res) => {
 exports.addDependant = async (req, res) => {
   try {
     let getData = [],getRelationData = [], results;
-        
+    const { count, rows } = await Patient.findAndCountAll({where: { id_organisation: req.org_id }});
     PatientModal = await Patient.create({
                             name: req.body.name,
                             last_name: req.body.last_name,
@@ -1003,7 +1003,8 @@ exports.addDependant = async (req, res) => {
                             grade: req.body.grade,
                             parent_id: req.body.parent_id,
                             added_by: req.userId,
-                            id_organisation: req.org_id
+                            id_organisation: req.org_id,
+                            patient_id:req.org_id+(count+1)
 
                     });
     
