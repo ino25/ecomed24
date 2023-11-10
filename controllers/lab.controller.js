@@ -1,5 +1,5 @@
 const { Sequelize } = require("sequelize");
-const sequelize = require("../models/db");
+const sequelize = require('../config').sequelize;
 const moment = require("moment");
 const fs = require("fs");
 const path = require("path");
