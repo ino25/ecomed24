@@ -1,1 +1,1 @@
-const flux = "auto";
+const flux = "auto auto";
