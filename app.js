@@ -48,6 +48,8 @@ let authRouter = require("./routes/auth");
 let HelperRouter = require("./routes/Helpers");
 const labRoutes = require("./routes/lab.routes");
 const patientsRoutes = require("./routes/patient.routes");
+const billingRoutes = require("./routes/billing.routes");
+const organizationRoutes = require("./routes/organization.routes");
 
 if (app.get("env") === "production") {
   app.use(morgan("combined"));
@@ -79,5 +81,6 @@ app.use("/auth", authRouter);
 app.use("/helper", HelperRouter);
 app.use("/patient", patientsRoutes);
 app.use("/acts", labRoutes);
-
+app.use("/billing", billingRoutes);
+app.use("/organization", organizationRoutes);
 module.exports = { app: app, server: server };

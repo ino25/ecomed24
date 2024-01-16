@@ -155,6 +155,10 @@ const Organisation = sequelize.define('Organisation', {
     type: DataTypes.STRING,
     allowNull: false
   },
+  status: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
   
   
 //   created_at: {
