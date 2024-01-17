@@ -9,7 +9,7 @@ const Organisation = sequelize.define('Organisation', {
   },
   code: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   nom: {
     type: DataTypes.STRING,
@@ -17,149 +17,156 @@ const Organisation = sequelize.define('Organisation', {
   },
   nom_commercial: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   path_logo: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   entete: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   footer: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   signature: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   adresse: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   region: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   departement: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   arrondissement: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   collectivite: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   pays: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   email: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   numero_fixe: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   prenom_responsable_legal: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   nom_responsable_legal: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   portable_responsable_legal: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   fonction_responsable_legal: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   description_courte_responsable_legal: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   prenom_responsable_legal2: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   nom_responsable_legal2: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   portable_responsable_legal2: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   fonction_responsable_legal2: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   description_courte_responsable_legal2: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   id_partenaire_zuuluPay: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   pin_partenaire_zuuluPay_encrypted: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   type: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   est_active: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   date_creation: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   date_mise_a_jour: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   description_courte_activite: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   description_courte_services: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   slogan: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   horaires_ouverture: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   is_transfert: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   is_light: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   status: {
     type: DataTypes.STRING,
     allowNull: false
   },
-  
+  added_by: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+  updated_by: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
   
 //   created_at: {
 //     type: DataTypes.DATE,
@@ -173,7 +180,7 @@ const Organisation = sequelize.define('Organisation', {
 //   }
 }, {
   tableName: 'organisation',
-  timestamps: false // Disable Sequelize's default timestamps
+  timestamps: true // Disable Sequelize's default timestamps
 });
 
 module.exports = Organisation;

@@ -176,4 +176,10 @@ router.delete('/imaging-request/delete/:id',VerifyToken, patientController.delet
 router.get('/medicine-list',VerifyToken, patientController.medicinList);
 router.get('/desease-list',VerifyToken, patientController.deseaseList);
 router.get('/medical-history/timeline/:patient_id',VerifyToken, patientController.timeLine);
+
+
+// Payment History
+router.get('/payment-history/:patient_id',VerifyToken, patientController.getPaymentHistory);
+router.get('/payment-history/payment/details/:patient_id',VerifyToken, patientController.getPaymentHistoryInfo);
+router.get('/payment-history/deposit-logs/:payment_id',VerifyToken, patientController.getPaymentDepositLogs);
 module.exports = router;

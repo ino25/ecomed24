@@ -68,11 +68,15 @@ Appointment.belongsTo(User, {as: 'addedby_details',foreignKey: 'added_by'});
 Appointment.belongsTo(User, {as: 'updatedby_details',foreignKey: 'updated_by'});
 Appointment.belongsTo(Organisation, {as: 'org_details',foreignKey: 'id_organisation'});
 
-// Appointment
+// Invoice & Payments
 Payment.belongsTo(User, {as: 'addedby_details',foreignKey: 'added_by'});
 Payment.belongsTo(User, {as: 'updatedby_details',foreignKey: 'updated_by'});
 Payment.belongsTo(Organisation, {as: 'org_details',foreignKey: 'id_organisation'});
 
+// Patient Deposit
+PatientDeposit.belongsTo(User, {as: 'addedby_details',foreignKey: 'added_by'});
+PatientDeposit.belongsTo(User, {as: 'updatedby_details',foreignKey: 'updated_by'});
+PatientDeposit.belongsTo(Organisation, {as: 'org_details',foreignKey: 'id_organisation'});
 
 // Assurance
 PatientMutuelle.belongsTo(User, {as: 'addedby_details',foreignKey: 'added_by'});
@@ -709,7 +713,7 @@ exports.getPaymentDetailsInvoicePayments = async (req, res) => {
   data.discount_type = SettingsModal.discount;
   data.currentuser = await User.findOne({attributes: ['id', ['id_organisation','org_id'],'first_name','last_name', 'username','email'],where:{id: req.userId}});
   data.mutuelles = await PatientMutuelle.findAll({ 
-      attributes: [['idpm','id'],['pm_idmutuelle','payer_name'], 'pm_idmutuelle','pm_numpolice','pm_charge','pm_datevalid','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]],
+      attributes: [['idpm','id'],['pm_idmutuelle','payer_name'], 'pm_idmutuelle','pm_numpolice','pm_charge','pm_datevalid','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("PatientMutuelle.createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("PatientMutuelle.updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]],
       where: { pm_idpatent: req.params.patient_id,pm_status: 1},
       order:[['id','DESC']],
       include: [{
@@ -735,7 +739,7 @@ exports.getPaymentDetailsInvoicePayments = async (req, res) => {
   data.mutuelles_relationInit = [];
   if(data.patient.parent_id){
       data.mutuellesInit = await PatientMutuelle.findAll({ 
-                          attributes: [['idpm','id'],['pm_idmutuelle','payer_name'], 'pm_idmutuelle','pm_numpolice','pm_charge','pm_datevalid','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]],
+                          attributes: [['idpm','id'],['pm_idmutuelle','payer_name'], 'pm_idmutuelle','pm_numpolice','pm_charge','pm_datevalid','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("PatientMutuelle.createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("PatientMutuelle.updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]],
                           where: { pm_idpatent: data.patient.parent_id,pm_status: 1},
                           order:[['id','DESC']],
                           include: [{
@@ -2771,7 +2775,7 @@ exports.timeLine = async (req, res) => {
     const { count, rows } = await PatientLogs.findAndCountAll({where: { patient_id: req.params.patient_id }});
 
     const PatientLogsModal = await PatientLogs.findAll({
-        attributes: ['id', 'description','type','relation_id', 'status','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"],'patient_id','org_id'], 
+        attributes: ['id', 'description','type','relation_id', 'status','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("PatientLogs.createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("PatientLogs.updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"],'patient_id','org_id'], 
         where: { patient_id: req.params.patient_id },
         order: [['id', 'desc']],
         limit: datalimit,
@@ -2803,10 +2807,115 @@ exports.timeLine = async (req, res) => {
 
 
 
+//  Payments history
+exports.getPaymentHistory = async (req, res) => {
+    try {
+      let offsetdata = parseInt(req.query.offset ? ((req.query.offset == undefined || req.query.offset == 1) ? 0 :req.query.offset) : 0);
+      if(isNaN(offsetdata)){
+          offsetdata = 0;
+      }
+      let datalimit = parseInt(req.query.limit ? ((req.query.limit == undefined) ? 5 :req.query.limit) : 5);
+      if(isNaN(datalimit)){
+          datalimit = 5;
+      }
+      const { count, rows } = await Payment.findAndCountAll({where: { patient: req.params.patient_id }});
+      PaymentModal = await Payment.findAll({ 
+          attributes: ['id','date', 'code','amount','gross_total','amount_received','status_paid','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("Payment.createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("Payment.updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]],
+          where: { patient: req.params.patient_id,bulletinAnalyse: ''},
+          order:[['id','DESC']],
+          limit: datalimit,
+          offset: offsetdata,
+          include: [{
+                model: User,
+                attributes: ['id', ['id_organisation','org_id'],'first_name','last_name', 'username','email'],
+                as:'addedby_details'
+            },{
+                model: User,
+                attributes: ['id', ['id_organisation','org_id'],'first_name','last_name', 'username','email'],
+                as:'updatedby_details'
+            }]
+      });
+      if(PaymentModal === null){
+          res.json({ status: 0, message: 'No Data Found' });
+      }else{
+          res.json({ status: 1, message: 'Patient Payment History', data: PaymentModal,total:count });
+      }
+        
+    } catch (error) {
+        throw error;
+    }
+  };
+
+
+  exports.getPaymentHistoryInfo = async (req, res) => {
+    try {
+      let getData = {};
+      PatientModal = await Patient.findOne({ 
+          attributes: ['id','unique_id', 'name','last_name',['patient_id','code'],['sex','gender'], 'age','email','phone','address','region',['bloodgroup','blood_type'],'birthdate'],
+          where: { id: req.params.patient_id },
+         
+      });
+      // console.log(PatientModal);
+      if(PatientModal === null){
+          res.json({ status: 0, message: 'No Data Found' });
+      }else{
+          if (PatientModal.img_url) {
+              PatientModal.img_url = BASEURL+"/uploads/imgUsers/" + PatientModal.img_url;
+          } else {
+              PatientModal.img_url = BASEURL+"/uploads/user-profile-placeholder.png";
+          }
+        total_balance = await Payment.sum('gross_total', {where: { patient: req.params.patient_id }});
+        total_paid = await Payment.sum('amount_received', {where: { patient: req.params.patient_id }});
+        total_due = total_balance - total_paid;
+        // console.log(PatientModal.dataValues);         
+        res.json({ status: 1, message: 'Patient General INFO', data: PatientModal,total_balance: total_balance,total_paid:total_paid,total_due:total_due});
+     }
+      
+  } catch (error) {
+      res.json({ status: 0, message: error, data: '' });
+      // throw error;
+  }
+  };
+
+
+  exports.getPaymentDepositLogs = async (req, res) => {
+    try {
+      let offsetdata = parseInt(req.query.offset ? ((req.query.offset == undefined || req.query.offset == 1) ? 0 :req.query.offset) : 0);
+      if(isNaN(offsetdata)){
+          offsetdata = 0;
+      }
+      let datalimit = parseInt(req.query.limit ? ((req.query.limit == undefined) ? 5 :req.query.limit) : 5);
+      if(isNaN(datalimit)){
+          datalimit = 5;
+      }
+      const { count, rows } = await PatientDeposit.findAndCountAll({where: { payment_id: req.params.payment_id }});
+      PatientDepositModal = await PatientDeposit.findAll({ 
+          attributes: ['id','patient', ['id_organisation','org_id'],'payment_id','deposited_amount','deposit_type','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("PatientDeposit.createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("PatientDeposit.updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]],
+          where: { payment_id: req.params.payment_id},
+          order:[['id','DESC']],
+          limit: datalimit,
+          offset: offsetdata,
+          include: [{
+                model: User,
+                attributes: ['id', ['id_organisation','org_id'],'first_name','last_name', 'username','email'],
+                as:'addedby_details'
+            },{
+                model: User,
+                attributes: ['id', ['id_organisation','org_id'],'first_name','last_name', 'username','email'],
+                as:'updatedby_details'
+            }]
+      });
+      if(PatientDepositModal === null){
+          res.json({ status: 0, message: 'No Data Found' });
+      }else{
+          res.json({ status: 1, message: 'Payment Deposit Logs', data: PatientDepositModal,total:count });
+      }
+        
+    } catch (error) {
+        throw error;
+    }
+  };
 
 
 
-
-
-
-
+  
