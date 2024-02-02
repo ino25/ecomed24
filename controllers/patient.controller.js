@@ -1122,7 +1122,7 @@ exports.getAssurance = async (req, res) => {
     }
     const { count, rows } = await PatientMutuelle.findAndCountAll({where: { pm_idpatent: req.params.patient_id }});
     PatientMutuelleModal = await PatientMutuelle.findAll({ 
-        attributes: [['idpm','id'],['pm_idmutuelle','payer_name'], 'pm_idmutuelle','pm_numpolice','pm_charge','pm_datevalid','validity_date','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]],
+        attributes: [['idpm','id'],['pm_idmutuelle','payer_name'], 'pm_idmutuelle','pm_numpolice','pm_charge','pm_datevalid','validity_date','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("PatientMutuelle.createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("PatientMutuelle.updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]],
         where: { pm_idpatent: req.params.patient_id},
         order:[['id','DESC']],
         limit: datalimit,
@@ -1463,7 +1463,7 @@ exports.getVitalSign = async (req, res) => {
    
 
     VitalSignModal = await VitalSign.findAll({ 
-        attributes: ['id', 'date_string', ['frequenceRespiratoire','respiratory_rate'], ['frequenceCardiaque','heart_rate'],  ['saturationArterielle','stauration_en_o2'], 'temperature','systolique','diastolique',['tensionArterielle','blood_pressure'],'weight','blood_sugar','height','body_mass_index','id_organisation','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]],
+        attributes: ['id', 'date_string', ['frequenceRespiratoire','respiratory_rate'], ['frequenceCardiaque','heart_rate'],  ['saturationArterielle','stauration_en_o2'], 'temperature','systolique','diastolique',['tensionArterielle','blood_pressure'],'weight','blood_sugar','height','body_mass_index','id_organisation','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("VitalSign.createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("VitalSign.updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]],
         where: { patient: req.params.patient_id },
         order: [['id', 'DESC']],
         limit: datalimit,
@@ -1684,7 +1684,7 @@ exports.getCurrentMedication = async (req, res) => {
     }
     const { count, rows } = await CurrentMedications.findAndCountAll({where: { patient_id: req.params.patient_id }});
     CurrentMedicationsModal = await CurrentMedications.findAll({
-        attributes: ['id', 'patient_id', 'doctor_id', 'content', 'date_time', 'status','added_by','updated_by','org_id',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt",],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt",]], 
+        attributes: ['id', 'patient_id', 'doctor_id', 'content', 'date_time', 'status','added_by','updated_by','org_id',[Sequelize.fn("DATE_FORMAT", Sequelize.col("CurrentMedications.createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt",],[Sequelize.fn("DATE_FORMAT", Sequelize.col("CurrentMedications.updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt",]], 
         where: { patient_id: req.params.patient_id },
         order: [['id', 'DESC']],
         limit: datalimit,
@@ -1811,7 +1811,7 @@ exports.getKnownHealthIssues = async (req, res) => {
     const { count, rows } = await PreConditions.findAndCountAll({where: { patient_id: req.params.patient_id }});
 
     PreConditionsModal = await PreConditions.findAll({
-        attributes: ['id', 'patient_id', 'doctor_id', 'content', 'date_time', 'status','added_by','updated_by','org_id',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt",],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt",]], 
+        attributes: ['id', 'patient_id', 'doctor_id', 'content', 'date_time', 'status','added_by','updated_by','org_id',[Sequelize.fn("DATE_FORMAT", Sequelize.col("PreConditions.createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt",],[Sequelize.fn("DATE_FORMAT", Sequelize.col("PreConditions.updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt",]], 
         where: { patient_id: req.params.patient_id },
         order: [['id', 'DESC']],
         limit: datalimit,
