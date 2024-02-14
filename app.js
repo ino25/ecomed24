@@ -3,6 +3,7 @@ const cookieParser = require("cookie-parser");
 const morgan = require("morgan");
 const helmet = require("helmet");
 const cors = require("cors");
+const i18n = require('i18n');
 const bodyParser = require("body-parser");
 const path = require("path");
 require("dotenv/config");
@@ -22,18 +23,43 @@ if (process.env.NODE_ENV === "production") {
 }
 
 // Sync models with the database
-sequelize
-  .sync()
-  .then(() => {
-    console.log("Database synced");
-  })
-  .catch((error) => {
-    console.error("Error syncing database:", error);
-  });
+// sequelize
+//   .sync()
+//   .then(() => {
+//     console.log("Database synced");
+//   })
+//   .catch((error) => {
+//     console.error("Error syncing database:", error);
+//   });
 
 let app = express();
+
+// Configure i18n
+i18n.configure({
+  locales: ['en', 'fr', 'es'], // Add more locales as needed
+  defaultLocale: 'fr',
+  directory: __dirname + '/locales', // Folder where translation files are stored
+  objectNotation: true, // Use dot notation for nested keys
+  updateFiles: false, // Do not write to files
+});
+
+// Use i18n middleware
+app.use(i18n.init);
+
+// Set the default locale for the app
+// app.locals.__ = res.__;
+
+// Set up a middleware to set the user's locale based on a fixed variable
+app.use((req, res, next) => {
+  const fixedLocale = 'fr'; // Set the fixed language/locale here
+  req.setLocale(fixedLocale);
+  res.locals.currentLocale = fixedLocale;
+  next();
+});
+
 let server = http.Server(options, app);
 app.use("/pdfs", express.static("pdfs"));
+app.use('/uploads', express.static('uploads'));
 const limitInBytes = 50 * 1024 * 1024 * 1024;
 app.use(
   bodyParser.raw({ type: "application/octet-stream", limit: limitInBytes })
@@ -41,11 +67,8 @@ app.use(
 const documentsPath = path.join(__dirname, "pdfs");
 app.use("/documents", express.static(documentsPath));
 
-// let indexRouter = require('./routes/index');
 let authRouter = require("./routes/auth");
-// let usersRouter = require('./routes/users');
-// let patientsRouter = require('./routes/Patients');
-let HelperRouter = require("./routes/Helpers");
+let helperRouter = require("./routes/helper.routes");
 const labRoutes = require("./routes/lab.routes");
 const patientsRoutes = require("./routes/patient.routes");
 const billingRoutes = require("./routes/billing.routes");
@@ -74,11 +97,13 @@ app.use(function (req, res, next) {
 });
 
 app.get("/", (req, res) => {
-  res.json("Bienvenu dans ECOMED24!");
+  const welcomeMessage = res.__('index');
+  // res.send(welcomeMessage);
+  res.json(welcomeMessage);
 });
 app.use("/auth", authRouter);
 // app.use('/user', usersRouter);
-app.use("/helper", HelperRouter);
+app.use("/helper", helperRouter);
 app.use("/patient", patientsRoutes);
 app.use("/acts", labRoutes);
 app.use("/billing", billingRoutes);

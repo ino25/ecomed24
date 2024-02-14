@@ -7,7 +7,7 @@ const support = require('../multer/pdf')
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-      cb(null, '../uploads/imgUsers')
+      cb(null, 'uploads/imgUsers')
     },
     filename: function (req, file, cb) {
         const { originalname } = file;
@@ -21,7 +21,7 @@ const storage = multer.diskStorage({
   //Attachment/Document Storage
   const Documentstorage = multer.diskStorage({
     destination: function (req, file, cb) {
-      cb(null, '../uploads/documentsPatient/')
+      cb(null, 'uploads/documentsPatient/')
     },
     filename: function (req, file, cb) {
         const { originalname } = file;

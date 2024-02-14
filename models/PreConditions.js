@@ -15,6 +15,10 @@ const PreConditions = sequelize.define('PreConditions', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  title: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   doctor_id: {
     type: DataTypes.STRING,
     allowNull: true

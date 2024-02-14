@@ -1,0 +1,120 @@
+const Sequelize = require('sequelize');
+const Database = require('../config').sequelize;
+const Op = Sequelize.Op;
+const moment = require("moment");
+moment.locale('en');
+const path = require('path');
+const nodemailer = require("nodemailer");
+
+var User = require('../models/User');
+var Patient = require('../models/Patient');
+
+var Organisation = require('../models/Organisation');
+var OrganisationType = require('../models/OrganizationType');
+var PricingCategory = require('../models/PricingCategory');
+var Payment = require('../models/Payment');
+var ServiceCategory = require('../models/ServiceCategory');
+var Settings = require('../models/Settings');
+
+var Country = require('../models/Country');
+var Region = require('../models/Region');
+var District = require('../models/District');
+
+const multer  = require('multer');
+const fs = require('fs');
+var Doctor = require('../models/Doctor');
+var SettingService = require('../models/SettingService');
+//////Modal Relationship
+
+exports.getDoctorsList = async (req, res) => {
+    try {
+        let getData = [];
+        DoctorModal = await Doctor.findAll({ 
+            attributes: ['id', 'name']});
+        if(DoctorModal === null){
+            res.json({ status: 0, message: 'No Data Found' });
+        }else{
+            res.json({ status: 1, message: 'Doctors List', data: DoctorModal });
+        }
+    } catch (error) {
+        throw error;
+    }
+};
+exports.getServicesList = async (req, res) => {
+    try {
+        let getData = [];
+        SettingServiceModal = await SettingService.findAll({ 
+            attributes: [['idservice','id'],'name_service', 'code_service'],where: { status_service: 1 } });
+        if(SettingServiceModal === null){
+            res.json({ status: 0, message: 'No Data Found' });
+        }else{
+            res.json({ status: 1, message: 'Service List', data: SettingServiceModal });
+        }
+    } catch (error) {
+        throw error;
+    }
+};
+
+
+
+
+exports.getCountryList = async (req, res) => {
+    try {
+      
+        CountryModal = await Country.findAll({attributes: ['id', 'name','status','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]], 
+                                order: [['id', 'ASC']],
+                                where: { status: 1 }
+                            });
+        if(CountryModal === null){
+            res.json({ status: 0, message: 'No Data Found' });
+        }else{
+            res.json({ status: 1, message: 'Country List', data: CountryModal });
+        }
+    } catch (error) {
+        throw error;
+    }
+};
+
+exports.getRegionList = async (req, res) => {
+    try {
+      
+        RegionModal = await Region.findAll({attributes: ['id', 'name','status','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]], 
+                                    where: { country_id: req.params.country_id },
+                                
+                            });
+        if(RegionModal === null){
+            res.json({ status: 0, message: 'No Data Found' });
+        }else{
+            res.json({ status: 1, message: 'Region List', data: RegionModal });
+        }
+    } catch (error) {
+        throw error;
+    }
+};
+
+exports.getDistrictList = async (req, res) => {
+    try {
+      
+        DistrictModal = await District.findAll({attributes: ['id', 'name','status','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]], 
+                                    where: { id_region: req.params.region_id },
+                                
+                            });
+        if(DistrictModal === null){
+            res.json({ status: 0, message: 'No Data Found' });
+        }else{
+            res.json({ status: 1, message: 'District List', data: DistrictModal });
+        }
+    } catch (error) {
+        throw error;
+    }
+};
+
+
+
+
+
+
+
+
+
+

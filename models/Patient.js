@@ -116,7 +116,15 @@ const Patient = sequelize.define('Patient', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  country: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   region: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  district: {
     type: DataTypes.STRING,
     allowNull: true
   },

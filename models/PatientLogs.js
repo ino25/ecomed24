@@ -23,6 +23,10 @@ const PatientLogs = sequelize.define('PatientLogs', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  action: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   relation_id: {
     type: DataTypes.INTEGER,
     allowNull: true

@@ -1,13 +1,17 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config').sequelize;
 
-const Bankb = sequelize.define('Bankb', {
+const District = sequelize.define('District', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true
   },
-  group: {
+  id_region: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  name: {
     type: DataTypes.STRING,
     allowNull: false
   },
@@ -15,14 +19,22 @@ const Bankb = sequelize.define('Bankb', {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
+  added_by: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  },
+  updated_by: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  },
   
 
 }, {
-  tableName: 'bankb',
+  tableName: 'district',
   timestamps: false // Disable Sequelize's default timestamps
 });
 
-module.exports = Bankb;
+module.exports = District;
 
 
 

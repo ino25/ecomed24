@@ -1,8 +1,12 @@
+const i18n = require('i18n');
+const langPatientModule = i18n.__('patientModule');
+const langCommon = i18n.__('common');
 const Sequelize = require('sequelize');
 const Database = require('../config').sequelize;
 const Op = Sequelize.Op;
 const moment = require("moment");
 moment.locale('en');
+
 const path = require('path');
 const nodemailer = require("nodemailer");
 
@@ -128,7 +132,7 @@ PatientLogs.belongsTo(User, {as: 'updatedby_details',foreignKey: 'updated_by'});
 PatientLogs.belongsTo(Organisation, {as: 'org_details',foreignKey: 'org_id'});
 
 const BASEURL = process.env.SITE_URL;
-
+const APP_URL = process.env.APP_URL;
 exports.getAllPatients = async (req, res) => {
   try {
     let offsetdata = parseInt(req.query.offset ? ((req.query.offset == undefined || req.query.offset == 1) ? 0 :req.query.offset) : 0);
@@ -148,9 +152,9 @@ exports.getAllPatients = async (req, res) => {
           where: { id_organisation: req.org_id }
          });
       if(PatientModal === null){
-          res.json({ status: 0, message: 'No Data Found' });
+          res.json({ status: 0, message: langCommon.nodatafound });
       }else{
-          res.json({ status: 1, message: 'Patient List', data: PatientModal,total:count });
+          res.json({ status: 1, message: langPatientModule.patientListFetched, data: PatientModal,total:count });
       }
   } catch (error) {
       throw error;
@@ -161,7 +165,7 @@ exports.updateUniqueID = async (req, res) => {
   try {
     PatientModal = await Patient.findAll({ });
     if(PatientModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
         PatientModal.map(async patient => {
             await Patient.update({ unique_id: '2101'+patient.id_organisation+patient.id }, {where: {id: patient.id}});
@@ -185,7 +189,9 @@ exports.addPatient = async (req, res) => {
                               email: req.body.email,
                               passport: req.body.passport,
                               address: req.body.address,
+                              country: req.body.country,
                               region: req.body.region,
+                              district: req.body.district,
                               estCivil: req.body.estCivil,
                               bloodgroup: req.body.bloodgroup,
                               birth_position: req.body.birth_position,
@@ -195,18 +201,22 @@ exports.addPatient = async (req, res) => {
                               matricule: req.body.matricule,
                               grade: req.body.grade,
                               parent_id: req.body.parent_id,
-                              unique_id:req.body.unique_id,
                               registration_time: moment().unix(),
                               add_date: moment().format('MM/DD/YY'),
                               id_organisation:req.org_id,
                               added_by:req.userId,
-                              img_url:req.files.profile[0].filename,
                               status:1,
                       });
+            
           if(PatientModal === null){
-              res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+              res.json({ status: 0, message: langCommon.errormessage });
           }else{
-              res.json({ status: 1, message: 'New Patient Has been added.', data: '' });
+            if(req.files.profile){
+                await Patient.update({img_url:req.files.profile[0].filename}, {where: {id: PatientModal.id}});
+            }
+            
+            await Patient.update({ unique_id: '2101'+PatientModal.id_organisation+PatientModal.id }, {where: {id: PatientModal.id}});
+              res.json({ status: 1, message: langPatientModule.patientAdd, data: '' });
           }
           
   } catch (error) {
@@ -218,23 +228,25 @@ exports.getGeneralInfo = async (req, res) => {
   try {
     let getData = {};
     PatientModal = await Patient.findOne({ 
-        attributes: ['id','unique_id', 'name','last_name',['patient_id','code'],['sex','gender'], 'age','email','phone','address','region',['registration_time','register'],'grade','estCivil','passport','matricule',['bloodgroup','blood_type'],'birthdate',['birth_position','birth_place'],'religion','img_url',['nom_contact','emergency_contact_name'],['phone_contact','emergency_contact_no']],
+        attributes: ['id','unique_id', 'name','last_name',['patient_id','code'],['sex','gender'], 'age','email','phone','address','country','region','district',['registration_time','register'],'grade','estCivil','passport','matricule',['bloodgroup','blood_type'],'birthdate',['birth_position','birth_place'],'religion','img_url',['nom_contact','emergency_contact_name'],['phone_contact','emergency_contact_no']],
         where: { id: req.params.patient_id },
        
     });
+    // console.log(PatientModal.birthdate);
+    // PatientModal.birthdate = moment(PatientModal.birthdate).format('d/m/Y')
     // console.log(PatientModal);
     if(PatientModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
         if (PatientModal.img_url) {
-            PatientModal.img_url = BASEURL+"/uploads/imgUsers/" + PatientModal.img_url;
+            PatientModal.img_url = APP_URL+"/uploads/imgUsers/" + PatientModal.img_url;
         } else {
-            PatientModal.img_url = BASEURL+"/uploads/user-profile-placeholder.png";
+            PatientModal.img_url = APP_URL+"/uploads/user-profile-placeholder.png";
         }
-        next_appointment = await Appointment.findOne({ attributes: ['id','patient', 'id_organisation','time_slot','s_time','e_time','appointment_date'],where: { status: 'Confirmed',patient: req.params.patient_id,appointment_date:{[Op.gte]:moment().format('YYYY-MM-DD')} },order:[['appointment_date', 'ASC']]});
-        last_appointment = await Appointment.findOne({ attributes: ['id','patient', 'id_organisation','time_slot','s_time','e_time','appointment_date'],where: { status: 'Treaty',patient: req.params.patient_id,appointment_date:{[Op.lte]:moment().format('YYYY-MM-DD')} },order:[['appointment_date', 'DESC']]});
+        next_appointment = await Appointment.findOne({ attributes: ['id','patient', 'id_organisation','time_slot','s_time','e_time',[Sequelize.fn("DATE_FORMAT", Sequelize.col("appointment_date"),"%d/%m/%Y"),"appointment_date"]],where: { status: 'Confirmed',patient: req.params.patient_id,appointment_date:{[Op.gte]:moment().format('YYYY-MM-DD')} },order:[['appointment_date', 'ASC']]});
+        last_appointment = await Appointment.findOne({ attributes: ['id','patient', 'id_organisation','time_slot','s_time','e_time',[Sequelize.fn("DATE_FORMAT", Sequelize.col("appointment_date"),"%d/%m/%Y"),"appointment_date"]],where: { status: 'Treaty',patient: req.params.patient_id,appointment_date:{[Op.lte]:moment().format('YYYY-MM-DD')} },order:[['appointment_date', 'DESC']]});
         // console.log(PatientModal.dataValues);         
-        res.json({ status: 1, message: 'Patient General INFO', data: PatientModal,next_appointment: next_appointment,last_appointment:last_appointment});
+        res.json({ status: 1, message: langPatientModule.patientGeneralInfo, data: PatientModal,next_appointment: next_appointment,last_appointment:last_appointment});
     }
     
 } catch (error) {
@@ -250,13 +262,15 @@ exports.updateGeneralInfo = async (req, res) => {
                     name: req.body.name,
                     last_name: req.body.last_name,
                     sex: req.body.sex,
-                    birthdate: req.body.birthdate,
+                    birthdate: moment(req.body.birthdate).format('MM/DD/YYYY'),
                     age: req.body.age,
                     phone: req.body.phone,
                     email: req.body.email,
                     passport: req.body.passport,
                     address: req.body.address,
+                    country: req.body.country,
                     region: req.body.region,
+                    district: req.body.district,
                     estCivil: req.body.estCivil,
                     bloodgroup: req.body.bloodgroup,
                     birth_position: req.body.birth_position,
@@ -275,14 +289,9 @@ exports.updateGeneralInfo = async (req, res) => {
         PatientModal = await Patient.update(getData, {where: {id: req.params.patient_id}
                             });
         if(PatientModal === null){
-            res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+            res.json({ status: 0, message: langCommon.errormessage });
         }else{
-            // if (PatientModal.img_url) {
-            //     PatientModal.img_url = "/uploads/imgUsers/user_pic/" + PatientModal.img_url;
-            // } else {
-            //     PatientModal.img_url = "/uploads/imgUsers/user-profile-placeholder.png";
-            // }
-            res.json({ status: 1, message: 'Patient Details Updated.', data: '' });
+            res.json({ status: 1, message: langPatientModule.patientUpdate, data: '' });
         }
         
 } catch (error) {
@@ -302,16 +311,16 @@ exports.getAppontments = async (req, res) => {
         datalimit = 5;
     }
     const { count, rows } = await Appointment.findAndCountAll({where: { patient: req.params.patient_id }});
-    AppointmentModal = await Appointment.findAll({attributes: ['id', 'date','time_slot','service', 'servicename','tele_consultation','remarks','status','appointment_date','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]], 
+    AppointmentModal = await Appointment.findAll({attributes: ['id', 'date','time_slot','service', 'servicename','tele_consultation','remarks','status',[Sequelize.fn("DATE_FORMAT", Sequelize.col("Appointment.appointment_date"),"%d/%m/%Y"),"appointment_date"],'added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d/%m/%Y %H:%i"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt"]], 
                                                     where: { patient: req.params.patient_id },
                                                     order: [['id', 'DESC']],
                                                     limit: datalimit,
                                                     offset: offsetdata
                                                 });
       if(AppointmentModal === null){
-          res.json({ status: 0, message: 'No Data Found' });
+          res.json({ status: 0, message: langCommon.nodatafound });
       }else{
-          res.json({ status: 1, message: 'Patient Appointment List', data: AppointmentModal,total:count });
+          res.json({ status: 1, message: langPatientModule.appointment.list, data: AppointmentModal,total:count });
       }
       
   } catch (error) {
@@ -321,11 +330,11 @@ exports.getAppontments = async (req, res) => {
 exports.getAppointmentByID = async (req, res) => {
   try {
     let getData = [];
-    AppointmentModal = await Appointment.findOne({attributes: ['id', 'date','appointment_date','time_slot','service', 'servicename','tele_consultation','remarks','status'], where: { id: req.params.appointment_id } });
+    AppointmentModal = await Appointment.findOne({attributes: ['id', 'date',[Sequelize.fn("DATE_FORMAT", Sequelize.col("Appointment.appointment_date"),"%d/%m/%Y"),"appointment_date"],'time_slot','service', 'servicename','tele_consultation','remarks','status'], where: { id: req.params.appointment_id } });
     if(AppointmentModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Appointment has been fetched', data: AppointmentModal });
+        res.json({ status: 1, message: langPatientModule.appointment.individual, data: AppointmentModal });
     }
     
   } catch (error) {
@@ -367,18 +376,19 @@ exports.addAppontment = async (req, res) => {
     });
     
     if(AppointmentModal === null){
-        res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+        res.json({ status: 0, message: langCommon.errormessage });
     }else{
         await PatientLogs.create({
             patient_id: AppointmentModal.patient,
             org_id: req.org_id,
             description: 'New Appointment has been generated.',
             type: 'appointment',
+            action: 'add',
             relation_id: AppointmentModal.id,
             status: 1,
             added_by: req.userId
         });
-        res.json({ status: 1, message: 'New Appointment has been generated.', data: '' });
+        res.json({ status: 1, message: langPatientModule.appointment.add, data: '' });
     }
     
   } catch (error) {
@@ -409,7 +419,7 @@ exports.updateAppontment = async (req, res) => {
     });
     
     if(AppointmentModal === null){
-        res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+        res.json({ status: 0, message: langCommon.errormessage });
     }else{
         AppointmentData = await Appointment.findOne({attributes: ['id','patient'], where: { id: req.params.id } }); 
         console.log(AppointmentData);
@@ -418,11 +428,12 @@ exports.updateAppontment = async (req, res) => {
             org_id: req.org_id,
             description: 'Appointment has been Updated.',
             type: 'appointment',
+            action: 'update',
             relation_id: AppointmentData.id,
             status: 1,
             added_by: req.userId
         });
-        res.json({ status: 1, message: 'Appointment has been Updated.', data: '' });
+        res.json({ status: 1, message: langPatientModule.appointment.update, data: '' });
     }
     
   } catch (error) {
@@ -433,9 +444,9 @@ exports.deleteAppontment = async (req, res) => {
   try {
     AppointmentModal = await Appointment.destroy({where: {id: req.params.id}});
     if(AppointmentModal === null){
-        res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+        res.json({ status: 0, message: langCommon.errormessage });
     }else{
-        res.json({ status: 1, message: 'Appointment has been Deleted.', data: '' });
+        res.json({ status: 1, message: langPatientModule.appointment.delete, data: '' });
     }
   } catch (error) {
   throw error;
@@ -447,18 +458,19 @@ exports.statusAppontment = async (req, res) => {
     console.log(AppointmentData);
     AppointmentModal = await Appointment.update({status: req.body.status}, {where: {id: req.params.id}});
     if(AppointmentModal === null){
-        res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+        res.json({ status: 0, message: langCommon.errormessage });
     }else{
         await PatientLogs.create({
             patient_id: AppointmentData.patient,
             org_id: req.org_id,
             description: 'Appointment status has been Updated.',
             type: 'appointment',
+            action: 'status',
             relation_id: AppointmentData.id,
             status: 1,
             added_by: req.userId
         });
-        res.json({ status: 1, message: 'Appointment status has been Updated.', data: '' });
+        res.json({ status: 1, message: langPatientModule.appointment.status, data: '' });
     }
     
 } catch (error) {
@@ -473,9 +485,9 @@ exports.serviceAppontment = async (req, res) => {
         where: {status_service: 1}
       });
     if(SettingServiceModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Appointment services', data: SettingServiceModal });
+        res.json({ status: 1, message: langPatientModule.appointment.services, data: SettingServiceModal });
     }
     
 } catch (error) {
@@ -486,10 +498,6 @@ exports.timeSlotAppontment = async (req, res) => {
   try {
     let getData = [];
     HolidaysServiceModal = await HolidaysService.findAll();
-    console.log(req.body);
-   
-    // console.log(moment(req.body.date).format("MM/DD/yyyy") );
-    // console.log(moment(req.body.date).format("dddd") );
     TimeSlotServiceModal = await TimeSlotService.findAll({
         attributes: ['id', 'service','s_time','e_time',[Sequelize.fn('CONCAT', Sequelize.col(`s_time`),' - ',Sequelize.col(`e_time`)), 'time_slots']],
         where: {service: req.body.service,weekday: moment(req.body.date).format("dddd")},order: [['s_time_key', 'asc']]
@@ -500,9 +508,9 @@ exports.timeSlotAppontment = async (req, res) => {
     //     TimeSlotServiceModal = await TimeSlotService.findAll({where: {service: req.params.id,weekday: req.params.id},order: [['s_time_key', 'asc']]});
     // }
     if(TimeSlotServiceModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Available time slots', data: TimeSlotServiceModal });
+        res.json({ status: 1, message: langPatientModule.appointment.timeslots, data: TimeSlotServiceModal });
     }
     
 } catch (error) {
@@ -523,16 +531,16 @@ exports.getInvoicePayments = async (req, res) => {
     }
     const { count, rows } = await Payment.findAndCountAll({where: { patient: req.params.patient_id }});
     PaymentModal = await Payment.findAll({ 
-        attributes: ['id','date', 'code','amount','gross_total','amount_received','status_paid','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]],
+        attributes: ['id','date', 'code','amount','gross_total','amount_received','status_paid','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d/%m/%Y %H:%i"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt"]],
         where: { patient: req.params.patient_id,bulletinAnalyse: ''},
         order:[['id','DESC']],
         limit: datalimit,
         offset: offsetdata
     });
     if(PaymentModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Patient invoices and payments list', data: PaymentModal,total:count });
+        res.json({ status: 1, message: langPatientModule.payment.list, data: PaymentModal,total:count });
     }
       
   } catch (error) {
@@ -547,7 +555,7 @@ exports.addDepositInvoicePayments = async (req, res) => {
         deposited_amount = parseInt(req.body.deposited_amount) + parseInt(paymentDetails.amount_received ? paymentDetails.amount_received : 0);
         console.log(deposited_amount);
         if(parseInt(paymentDetails.gross_total) + parseInt(paymentDetails.frais_service) < deposited_amount){
-           return res.json({ status: 0, message: 'You can not deposit more then remaining amount!!' });
+           return res.json({ status: 0, message: langPatientModule.payment.deposit.exceederror });
         }  
         
         let status_paid = 'unpaid';
@@ -584,9 +592,9 @@ exports.addDepositInvoicePayments = async (req, res) => {
                                         added_by: req.userId
                                     });
         if(PatientDepositModal === null){
-            return res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+            return res.json({ status: 0, message: langCommon.errormessage });
         }else{
-            return res.json({ status: 1, message: 'New Deposit has been Added..', data: PatientDepositModal });
+            return res.json({ status: 1, message: langPatientModule.payment.deposit.add, data: PatientDepositModal });
         }
     }else if(req.body.deposit_type == 'OrangeMoney'){
             return res.json({ status: 0, message: 'Orange Money not integrated' });
@@ -649,13 +657,13 @@ exports.getReceiptInvoicePayments = async (req, res) => {
     data.settings = SettingsModalAll;
     data.id_organisation = req.org_id;
     /*data.organisation = OrganisationModal;*/
-    data.path_logo = OrganisationModal.path_logo ? BASEURL+'/'+OrganisationModal.path_logo:null;
+    data.path_logo = OrganisationModal.path_logo ? APP_URL+'/'+OrganisationModal.path_logo:null;
     data.nom_organisation = OrganisationModal.nom;
-    data.entete = OrganisationModal.entete ? BASEURL+'/'+OrganisationModal.entete:null;
-    data.footer = OrganisationModal.footer ? BASEURL+'/'+OrganisationModal.footer:null;
-    data.signature = OrganisationModal.signature ? BASEURL+'/'+OrganisationModal.signature:null;
+    data.entete = OrganisationModal.entete ? APP_URL+'/'+OrganisationModal.entete:null;
+    data.footer = OrganisationModal.footer ? APP_URL+'/'+OrganisationModal.footer:null;
+    data.signature = OrganisationModal.signature ? APP_URL+'/'+OrganisationModal.signature:null;
 
-        res.json({ status: 1, message: 'Receipt', data: data });
+        res.json({ status: 1, message: langPatientModule.payment.paymentreceipt, data: data });
 
 } catch (error) {
     throw error;
@@ -670,9 +678,9 @@ exports.getServiceInvoicePayments = async (req, res) => {
         where: { id_organisation: req.org_id} });
 
     if(ServiceCategoryModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Service Category list', data: ServiceCategoryModal });
+        res.json({ status: 1, message: langPatientModule.payment.services, data: ServiceCategoryModal });
     }
     
 } catch (error) {
@@ -684,9 +692,9 @@ exports.getPartnerOrgInvoicePayments = async (req, res) => {
     let getData = [];
     OrganisationModal = await Organisation.findAll({attributes: ['id','nom'],where: { is_light: 0} });
     if(OrganisationModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Light Organization list', data: OrganisationModal });
+        res.json({ status: 1, message: langPatientModule.payment.partnerorg, data: OrganisationModal });
     }
 } catch (error) {
     throw error;
@@ -697,9 +705,9 @@ exports.getLightOrgInvoicePayments = async (req, res) => {
     let getData = [];
     OrganisationModal = await Organisation.findAll({attributes: ['id','nom'],where: { is_light: 1} });
     if(OrganisationModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Light Organization list', data: OrganisationModal });
+        res.json({ status: 1, message: langPatientModule.payment.lightorg, data: OrganisationModal });
     }
 } catch (error) {
     throw error;
@@ -778,7 +786,7 @@ exports.getPaymentDetailsInvoicePayments = async (req, res) => {
   data.labs = await LabTest.findAll({where: { id_organisation: req.org_id} });
   //console.log(data.services);
 
-  res.json({ status: 1, message: 'Payment Details', data: data });
+  res.json({ status: 1, message: langPatientModule.payment.paymentdetails, data: data });
 };
 exports.addPayments = async (req, res) => {
   try {
@@ -812,7 +820,7 @@ exports.addPayments = async (req, res) => {
         patient_name: PatientModal.name+ ''+PatientModal.last_name,
         patient_phone: PatientModal.phone,
         patient_address: PatientModal.address,
-        doctor_name: 'Sagar Sharma',
+        doctor_name: '',
         date_string: moment().format('d/m/Y H:i'),
         id_organisation: req.org_id,
         remarks: req.body.remarks,
@@ -829,7 +837,7 @@ exports.addPayments = async (req, res) => {
         bulletinAnalyse: '',
     });
     if(PaymentModal === null){
-       return res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+       return res.json({ status: 0, message: langCommon.errormessage });
     }else{
     OrganisationModal = await Organisation.findOne({where: {id: req.org_id}});
     payments = await Payment.findAndCountAll({where: {id_organisation: req.org_id}});
@@ -881,11 +889,12 @@ exports.addPayments = async (req, res) => {
             org_id: req.org_id,
             description: 'New Invoice has been Generated.',
             type: 'payment',
+            action:'add',
             relation_id: PaymentModal.id,
             status: 1,
             added_by: req.userId
         });
-        res.json({ status: 1, message: 'New Invoice has been Generated.', data: '' });
+        res.json({ status: 1, message: langPatientModule.payment.add, data: '' });
     }
     
 } catch (error) {
@@ -934,9 +943,9 @@ exports.getDependants = async (req, res) => {
         }]
     });
     if(PatientRelationModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Dependants List', data: PatientRelationModal,total:count });
+        res.json({ status: 1, message: langPatientModule.dependent.list, data: PatientRelationModal,total:count });
     }
     
 } catch (error) {
@@ -973,9 +982,9 @@ exports.getDependantByID = async (req, res) => {
         }]
     });
     if(PatientRelationModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Dependant Details has been fetched', data: PatientRelationModal });
+        res.json({ status: 1, message: langPatientModule.dependent.individual, data: PatientRelationModal });
     }
     
 } catch (error) {
@@ -1013,7 +1022,7 @@ exports.addDependant = async (req, res) => {
                     });
     
     if(PatientModal === null){
-        res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+        res.json({ status: 0, message: langCommon.errormessage });
     }else{
         PatientRelationModal = await PatientRelation.create({
             parent_id: req.body.parent_id,
@@ -1029,11 +1038,12 @@ exports.addDependant = async (req, res) => {
             org_id: req.org_id,
             description: 'New Dependant has been Added.',
             type: 'dependent',
+            action:'add',
             relation_id: PatientRelationModal.id,
             status: 1,
             added_by: req.userId
         });
-        res.json({ status: 1, message: 'New Dependant has been Added.', data: {'relational_details':PatientModal,'data':PatientRelationModal} });
+        res.json({ status: 1, message: langPatientModule.dependent.add, data: {'relational_details':PatientModal,'data':PatientRelationModal} });
     }
 
 } catch (error) {
@@ -1047,7 +1057,7 @@ exports.updateDependant = async (req, res) => {
     PatientRelationModal = await PatientRelation.findOne({where: {id: req.params.id}});
     // console.log(PatientRelationModal);
     if(PatientRelationModal === null){
-        res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+        res.json({ status: 0, message: langCommon.errormessage });
     }else{
         PatientRelationupdate = await PatientRelation.update({relation_type: req.body.relation_type,updated_by: req.userId,}, {where: {id: req.params.id}});
 
@@ -1080,11 +1090,12 @@ exports.updateDependant = async (req, res) => {
                                 org_id: req.org_id,
                                 description: 'Dependent has been Updated.',
                                 type: 'dependent',
+                                action:'update',
                                 relation_id: PatientRelationModal.id,
                                 status: 1,
                                 added_by: req.userId
                             });
-        res.json({ status: 1, message: 'Dependent has been Updated.', data: '' });
+        res.json({ status: 1, message: langPatientModule.dependent.update, data: '' });
     }
     
   } catch (error) {
@@ -1099,9 +1110,9 @@ exports.deleteDependant = async (req, res) => {
         if(PatientRelationModal === null){
             PatientRelationModal = await PatientRelation.destroy({where: {id: req.params.id}});
             PatientModal = await Patient.destroy({where: {id: PatientRelationModal.relative_id}});
-            res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+            res.json({ status: 0, message: langCommon.errormessage });
         }else{
-            res.json({ status: 1, message: 'Dependants has been Deleted.', data: '' });
+            res.json({ status: 1, message: langPatientModule.dependent.deleted, data: '' });
         }
         
 } catch (error) {
@@ -1145,9 +1156,9 @@ exports.getAssurance = async (req, res) => {
             as:'nom_mutuelle_details'
         }] });
     if(PatientMutuelleModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Patient Assurance list', data: PatientMutuelleModal,total:count });
+        res.json({ status: 1, message: langPatientModule.assurance.list, data: PatientMutuelleModal,total:count });
     }
     
 } catch (error) {
@@ -1180,9 +1191,9 @@ exports.getAssuranceByID = async (req, res) => {
             as:'nom_mutuelle_details'
         }] });
     if(PatientMutuelleModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Patient Assurance ', data: PatientMutuelleModal });
+        res.json({ status: 1, message: langPatientModule.assurance.individual, data: PatientMutuelleModal });
     }
     
   } catch (error) {
@@ -1196,9 +1207,9 @@ exports.getAssuranceOrg = async (req, res) => {
         attributes: ['id', 'nom'],
         where: { [Op.or]: [{ type: 'ASSURANCE' }, { type: 'IPM' }] } });
     if(OrganisationModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Assurance Organization list', data: OrganisationModal });
+        res.json({ status: 1, message: langPatientModule.assurance.orglist, data: OrganisationModal });
     }
     
 } catch (error) {
@@ -1221,18 +1232,19 @@ exports.addAssurance = async (req, res) => {
             added_by: req.userId,
         });
         if(PatientMutuelleModal === null){
-        res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+        res.json({ status: 0, message: langCommon.errormessage });
         }else{
             await PatientLogs.create({
                 patient_id: PatientMutuelleModal.pm_idpatent,
                 org_id: req.org_id,
                 description: 'New Assurance has been Added.',
                 type: 'assurance',
+                action:'add',
                 relation_id: PatientMutuelleModal.idpm,
                 status: 1,
                 added_by: req.userId
             });
-        res.json({ status: 1, message: 'New Assurance has been Added.', data: '' });
+        res.json({ status: 1, message: langPatientModule.assurance.add, data: '' });
         }
 } catch (error) {
     throw error;
@@ -1253,7 +1265,7 @@ exports.updateAssurance = async (req, res) => {
                                 {where: {idpm: req.params.id}
                             });
         if(PatientMutuelleModal === null){
-            res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+            res.json({ status: 0, message: langCommon.errormessage });
         }else{
             AssuranceD = await PatientMutuelle.findOne({where: {idpm: req.params.id}});
 
@@ -1262,11 +1274,12 @@ exports.updateAssurance = async (req, res) => {
                 org_id: req.org_id,
                 description: 'Assurance has been Updated.',
                 type: 'assurance',
+                action:'update',
                 relation_id: AssuranceD.idpm,
                 status: 1,
                 added_by: req.userId
             });
-            res.json({ status: 1, message: 'Assurance has been Updated.', data: '' });
+            res.json({ status: 1, message: langPatientModule.assurance.update, data: '' });
         }
         
 } catch (error) {
@@ -1279,9 +1292,9 @@ exports.deleteAssurance = async (req, res) => {
         getData.push(req.params.id);
         PatientMutuelleModal = await PatientMutuelle.findOne({where: {idpm: req.params.id}});
         if(PatientMutuelleModal === null){
-            res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+            res.json({ status: 0, message: langCommon.errormessage });
         }else{
-            res.json({ status: 1, message: 'Assurance has been Deleted.', data: '' });
+            res.json({ status: 1, message: langPatientModule.assurance.deleted, data: '' });
         }
 } catch (error) {
     throw error;
@@ -1301,7 +1314,7 @@ exports.getAttachments = async (req, res) => {
     }
     const { count, rows } = await PatientMaterial.findAndCountAll({where: { patient: req.params.patient_id }});
     PatientMaterialModal = await PatientMaterial.findAll({ 
-        attributes: ['id', 'title', [Sequelize.fn('CONCAT', BASEURL+'/uploads/documentsPatient/',Sequelize.col(`url`)), 'url'] , 'category','id_organisation','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("PatientMaterial.createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("PatientMaterial.updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]],
+        attributes: ['id', 'title', [Sequelize.fn('CONCAT', APP_URL+'/uploads/documentsPatient/',Sequelize.col(`url`)), 'url'] , 'category','id_organisation','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("PatientMaterial.createdAt"),"%d/%m/%Y %H:%i"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("PatientMaterial.updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt"]],
         where: { patient: req.params.patient_id },
         order:[['id','DESC']],
         limit: datalimit,
@@ -1325,9 +1338,9 @@ exports.getAttachments = async (req, res) => {
                 }]
     });
     if(PatientMaterialModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Patient Document list', data: PatientMaterialModal,total:count });
+        res.json({ status: 1, message: langPatientModule.documents.list, data: PatientMaterialModal,total:count });
     }
     
   } catch (error) {
@@ -1337,12 +1350,12 @@ exports.getAttachments = async (req, res) => {
 exports.getAttachmentsByID = async (req, res) => {
   try {
     PatientMaterialModal = await PatientMaterial.findOne({ 
-        attributes: ['id', 'title',  [Sequelize.fn('CONCAT', BASEURL+'/uploads/documentsPatient/',Sequelize.col(`url`)), 'url'], 'date'],
+        attributes: ['id', 'title',  [Sequelize.fn('CONCAT', APP_URL+'/uploads/documentsPatient/',Sequelize.col(`url`)), 'url'], 'date'],
         where: { id: req.params.attachment_id } });
     if(PatientMaterialModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Patient Document', data: PatientMaterialModal });
+        res.json({ status: 1, message: langPatientModule.documents.list, data: PatientMaterialModal });
     }
       
   } catch (error) {
@@ -1357,9 +1370,9 @@ exports.getAttachmentsTypes = async (req, res) => {
         attributes: ['id', 'name'],
         where: { status: 1 } });
     if(DocumentTypesModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Document Types', data: DocumentTypesModal });
+        res.json({ status: 1, message: langPatientModule.documents.typelist, data: DocumentTypesModal });
     }
     
 } catch (error) {
@@ -1368,7 +1381,7 @@ exports.getAttachmentsTypes = async (req, res) => {
 };
 exports.addAttachments = async (req, res) => {
   if(Object.keys(req.files).length == 0){
-    res.json({ status: 0, message: 'No File attached. Please attach an file' });
+    res.json({ status: 0, message: langPatientModule.documents.missingattachment });
 }
 try {
     let Data = [], results;
@@ -1389,18 +1402,19 @@ try {
                                             date_string: moment().format('YYYY-MM-DD HH:mm:ss'),
                                         });
         if(PatientMaterialModal === null){
-            res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+            res.json({ status: 0, message: langCommon.errormessage });
         }else{
             await PatientLogs.create({
                 patient_id: PatientMaterialModal.patient,
                 org_id: req.org_id,
                 description: 'New Document has been uploaded.',
                 type: 'documents',
+                action:'add',
                 relation_id: PatientMaterialModal.id,
                 status: 1,
                 added_by: req.userId
             });
-            res.json({ status: 1, message: 'New Document has been uploaded.', data: '' });
+            res.json({ status: 1, message: langPatientModule.documents.add, data: '' });
         }
 } catch (error) {
     throw error;
@@ -1422,9 +1436,9 @@ exports.updateAttachments = async (req, res) => {
         results = await patients.updateAttachment(getData);
 
         if (results) {
-            res.json({ status: 1, message: 'Document has been Updated.', data: '' });
+            res.json({ status: 1, message: langPatientModule.documents.update, data: '' });
         } else {
-            res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+            res.json({ status: 0, message: langCommon.errormessage });
         }
   } catch (error) {
       throw error;
@@ -1436,11 +1450,11 @@ exports.deleteAttachments = async (req, res) => {
         getData.push(req.params.id);
         PatientMaterialModal = await PatientMaterial.findOne({where: {id: req.params.id}});
         if(PatientMaterialModal === null){
-            res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+            res.json({ status: 0, message: langCommon.errormessage });
         }else{
             fs.unlinkSync('../uploads/documentsPatient/' + PatientMaterialModal.url);
             PatientMaterialModal = await PatientMaterial.destroy({where: {id: req.params.id}});
-            res.json({ status: 1, message: 'Document has been Deleted.', data: '' });
+            res.json({ status: 1, message: langPatientModule.documents.deleted, data: '' });
         }
         
 } catch (error) {
@@ -1463,7 +1477,7 @@ exports.getVitalSign = async (req, res) => {
    
 
     VitalSignModal = await VitalSign.findAll({ 
-        attributes: ['id', 'date_string', ['frequenceRespiratoire','respiratory_rate'], ['frequenceCardiaque','heart_rate'],  ['saturationArterielle','stauration_en_o2'], 'temperature','systolique','diastolique',['tensionArterielle','blood_pressure'],'weight','blood_sugar','height','body_mass_index','id_organisation','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("VitalSign.createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("VitalSign.updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]],
+        attributes: ['id', 'date_string', ['frequenceRespiratoire','respiratory_rate'], ['frequenceCardiaque','heart_rate'],  ['saturationArterielle','stauration_en_o2'], 'temperature','systolique','diastolique',['tensionArterielle','blood_pressure'],'weight','blood_sugar','height','body_mass_index','id_organisation','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("VitalSign.createdAt"),"%d/%m/%Y %H:%i"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("VitalSign.updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt"]],
         where: { patient: req.params.patient_id },
         order: [['id', 'DESC']],
         limit: datalimit,
@@ -1483,9 +1497,9 @@ exports.getVitalSign = async (req, res) => {
         }]
     });
     if(VitalSignModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Patient Vital Sign list', data: VitalSignModal,total:count });
+        res.json({ status: 1, message: langPatientModule.vital_sign.list, data: VitalSignModal,total:count });
     }
     
 } catch (error) {
@@ -1499,7 +1513,7 @@ exports.getVitalSignGraph = async (req, res) => {
     let offsetdata = parseInt(req.query.offset ? req.query.offset : 0);
     //  console.log(typeof offsetdata);
         getData.respiratory_rate = await VitalSign.findAll({ 
-                                                attributes: ['id', ['frequenceRespiratoire','respiratory_rate'],'id_organisation','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]],
+                                                attributes: ['id', ['frequenceRespiratoire','respiratory_rate'],'id_organisation','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("VitalSign.createdAt"),"%d/%m/%Y %H:%i"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("VitalSign.updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt"]],
                                                 where: { patient: req.params.patient_id,frequenceRespiratoire:{[Op.and]:{[Op.not]: null,[Op.not]: ''} } },
                                                 order: [
                                                     ['id', 'DESC']
@@ -1509,7 +1523,7 @@ exports.getVitalSignGraph = async (req, res) => {
                                                 
                                                             });
         getData.heart_rate = await VitalSign.findAll({ 
-                                                attributes: ['id', ['frequenceCardiaque','heart_rate'],'id_organisation','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]],
+                                                attributes: ['id', ['frequenceCardiaque','heart_rate'],'id_organisation','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("VitalSign.createdAt"),"%d/%m/%Y %H:%i"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("VitalSign.updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt"]],
                                                 where: { patient: req.params.patient_id,frequenceCardiaque:{[Op.or]:{[Op.not]: null,[Op.not]: ''}} },
                                                 order: [
                                                     ['id', 'DESC']
@@ -1519,7 +1533,7 @@ exports.getVitalSignGraph = async (req, res) => {
                                                 
                                             });
         getData.stauration_en_o2 = await VitalSign.findAll({ 
-                                                    attributes: ['id',  ['saturationArterielle','stauration_en_o2'],'id_organisation','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]],
+                                                    attributes: ['id',  ['saturationArterielle','stauration_en_o2'],'id_organisation','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("VitalSign.createdAt"),"%d/%m/%Y %H:%i"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("VitalSign.updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt"]],
                                                     where: { 
                                                         patient: req.params.patient_id,
                                                         saturationArterielle:{[Op.or]:{[Op.not]: null,[Op.not]: ''}}
@@ -1530,7 +1544,7 @@ exports.getVitalSignGraph = async (req, res) => {
                                                     
                                                 });
         getData.temperature = await VitalSign.findAll({ 
-                                                    attributes: ['id', 'temperature','id_organisation','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]],
+                                                    attributes: ['id', 'temperature','id_organisation','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("VitalSign.createdAt"),"%d/%m/%Y %H:%i"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("VitalSign.updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt"]],
                                                     where: { patient: req.params.patient_id,temperature:{[Op.and]:{[Op.not]: null,[Op.not]: ''}} },
                                                     order: [
                                                         ['id', 'DESC']
@@ -1540,7 +1554,7 @@ exports.getVitalSignGraph = async (req, res) => {
                                                     
                                                 });
         getData.blood_pressure = await VitalSign.findAll({ 
-                                                    attributes: ['id','systolique','diastolique',['tensionArterielle','blood_pressure'],'id_organisation','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]],
+                                                    attributes: ['id','systolique','diastolique',['tensionArterielle','blood_pressure'],'id_organisation','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("VitalSign.createdAt"),"%d/%m/%Y %H:%i"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("VitalSign.updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt"]],
                                                     where: { patient: req.params.patient_id,systolique:{[Op.and]:{[Op.not]: null,[Op.not]: ''}},diastolique:{[Op.or]:{[Op.not]: null,[Op.not]: ''}} },
                                                     order: [
                                                         ['id', 'DESC']
@@ -1550,7 +1564,7 @@ exports.getVitalSignGraph = async (req, res) => {
                                                     
                                                 });
 
-    res.json({ status: 1, message: 'Patient Vital Sign Graph', data: getData });
+    res.json({ status: 1, message: langPatientModule.vital_sign.graph, data: getData });
     
 } catch (error) {
     throw error;
@@ -1564,9 +1578,9 @@ exports.getVitalSignByID = async (req, res) => {
         attributes: ['id', 'date_string', ['frequenceRespiratoire','respiratory_rate'], ['frequenceCardiaque','heart_rate'],  ['saturationArterielle','stauration_en_o2'], 'temperature','systolique','diastolique',['tensionArterielle','blood_pressure'],'weight','blood_sugar','height','body_mass_index',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt",]],
         where: { id: req.params.vital_id }});
     if(VitalSignModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Patient Vital Sign', data: VitalSignModal });
+        res.json({ status: 1, message: langPatientModule.vital_sign.individual, data: VitalSignModal });
     }
     
 } catch (error) {
@@ -1603,18 +1617,19 @@ exports.addVitalSign = async (req, res) => {
                                     status: 1,
                                 });
         if(VitalSignModal === null){
-            res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+            res.json({ status: 0, message: langCommon.errormessage });
         }else{
             await PatientLogs.create({
                 patient_id: VitalSignModal.patient,
                 org_id: req.org_id,
                 description: 'New Vital Sign has been Added.',
                 type: 'vital_sign',
+                action:'add',
                 relation_id: VitalSignModal.id,
                 status: 1,
                 added_by: req.userId
             });
-            res.json({ status: 1, message: 'New Vital Sign has been Added.', data: VitalSignModal });
+            res.json({ status: 1, message: langPatientModule.vital_sign.add, data: VitalSignModal });
         }
 
 } catch (error) {
@@ -1646,9 +1661,9 @@ exports.updateVitalSign = async (req, res) => {
         results = await patients.UpdateVitalSign(getData);
 
         if (results) {
-            res.json({ status: 1, message: 'Vital Sign has been Updated.', data: '' });
+            res.json({ status: 1, message: langPatientModule.vital_sign.update, data: '' });
         } else {
-            res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+            res.json({ status: 0, message: langCommon.errormessage });
         }
   } catch (error) {
       throw error;
@@ -1660,9 +1675,9 @@ exports.deleteVitalSign = async (req, res) => {
         getData.push(req.params.id);
         VitalSignModal = await VitalSign.destroy({where: {id: req.params.id}});
         if(VitalSignModal === null){
-            res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+            res.json({ status: 0, message: langCommon.errormessage });
         }else{
-            res.json({ status: 1, message: 'Vital Sign has been Deleted.', data: '' });
+            res.json({ status: 1, message: langPatientModule.vital_sign.deleted, data: '' });
         } 
         
 } catch (error) {
@@ -1704,10 +1719,10 @@ exports.getCurrentMedication = async (req, res) => {
             }]
         });
     if(CurrentMedicationsModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
         
-        res.json({ status: 1, message: 'Current Medication List', data: CurrentMedicationsModal,total:count });
+        res.json({ status: 1, message: langPatientModule.current_medication.list, data: CurrentMedicationsModal,total:count });
     }
   } catch (error) {
       throw error;
@@ -1718,9 +1733,9 @@ exports.getCurrentMedicationByID = async (req, res) => {
     let getData = [], results;
     CurrentMedicationsModal = await CurrentMedications.findOne({ where: { id: req.params.medication_id } });
     if(CurrentMedicationsModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Current Medication', data: CurrentMedicationsModal });
+        res.json({ status: 1, message: langPatientModule.current_medication.individual, data: CurrentMedicationsModal });
     }
   } catch (error) {
       throw error;
@@ -1738,18 +1753,19 @@ exports.addCurrentMedication = async (req, res) => {
             status: 1,
         });
     if(CurrentMedicationsModal === null){
-        res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+        res.json({ status: 0, message: langCommon.errormessage });
     }else{
         await PatientLogs.create({
             patient_id: CurrentMedicationsModal.patient_id,
             org_id: req.org_id,
             description: 'New Medication has been Added.',
             type: 'current_medication',
+            action:'add',
             relation_id: CurrentMedicationsModal.id,
             status: 1,
             added_by: req.userId
         });
-        res.json({ status: 1, message: 'New Medication has been Added.', data: '' });
+        res.json({ status: 1, message: langPatientModule.current_medication.add, data: '' });
     }
 
   } catch (error) {
@@ -1764,18 +1780,19 @@ exports.updateCurrentMedication = async (req, res) => {
         
         CurrentMedicationsModal = await CurrentMedications.update({content: req.body.content,updated_by: req.userId,}, {where: {id: req.params.id}});
         if(CurrentMedicationsModal === null){
-            res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+            res.json({ status: 0, message: langCommon.errormessage });
         }else{
             await PatientLogs.create({
                 patient_id: CurrentMedicationsModal.patient_id,
                 org_id: req.org_id,
-                description: 'Patient Current Medication has been added',
+                description: 'Patient Current Medication has been updated',
                 type: 'current_medication',
+                action:'update',
                 relation_id: CurrentMedicationsModal.id,
                 status: 1,
                 added_by: req.userId
             });
-            res.json({ status: 1, message: 'Medication has been Updated.', data: '' });
+            res.json({ status: 1, message: langPatientModule.current_medication.update, data: '' });
         }
           
   } catch (error) {
@@ -1787,9 +1804,9 @@ exports.deleteCurrentMedication = async (req, res) => {
     let getData = [], results;
     CurrentMedicationsModal = await CurrentMedications.destroy({where: {id: req.params.id}});
     if(CurrentMedicationsModal === null){
-        res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+        res.json({ status: 0, message: langCommon.errormessage });
     }else{
-        res.json({ status: 1, message: 'Medication has been Deleted.', data: '' });
+        res.json({ status: 1, message: langPatientModule.current_medication.delete, data: '' });
     } 
   } catch (error) {
   throw error;
@@ -1811,7 +1828,7 @@ exports.getKnownHealthIssues = async (req, res) => {
     const { count, rows } = await PreConditions.findAndCountAll({where: { patient_id: req.params.patient_id }});
 
     PreConditionsModal = await PreConditions.findAll({
-        attributes: ['id', 'patient_id', 'doctor_id', 'content', 'date_time', 'status','added_by','updated_by','org_id',[Sequelize.fn("DATE_FORMAT", Sequelize.col("PreConditions.createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt",],[Sequelize.fn("DATE_FORMAT", Sequelize.col("PreConditions.updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt",]], 
+        attributes: ['id', 'patient_id', 'doctor_id','title', 'content', 'date_time', 'status','added_by','updated_by','org_id',[Sequelize.fn("DATE_FORMAT", Sequelize.col("PreConditions.createdAt"),"%d/%m/%Y %H:%i"),"createdAt",],[Sequelize.fn("DATE_FORMAT", Sequelize.col("PreConditions.updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt",]], 
         where: { patient_id: req.params.patient_id },
         order: [['id', 'DESC']],
         limit: datalimit,
@@ -1831,9 +1848,9 @@ exports.getKnownHealthIssues = async (req, res) => {
         }]
     });
     if(PreConditionsModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Known Health issues List', data: PreConditionsModal,total:count });
+        res.json({ status: 1, message: langPatientModule.know_health_issue.list, data: PreConditionsModal,total:count });
     }
   } catch (error) {
       throw error;
@@ -1842,11 +1859,13 @@ exports.getKnownHealthIssues = async (req, res) => {
 exports.getKnownHealthIssuesByID = async (req, res) => {
   try {
     let getData = [], results;
-    PreConditionsModal = await PreConditions.findOne({ where: { id: req.params.pre_condition_id } });
+    PreConditionsModal = await PreConditions.findOne({
+        attributes: ['id', 'patient_id', 'doctor_id','title', 'content', 'date_time', 'status','added_by','updated_by','org_id',[Sequelize.fn("DATE_FORMAT", Sequelize.col("PreConditions.createdAt"),"%d/%m/%Y %H:%i"),"createdAt",],[Sequelize.fn("DATE_FORMAT", Sequelize.col("PreConditions.updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt",]], 
+        where: { id: req.params.pre_condition_id } });
     if(PreConditionsModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Known Health issues', data: PreConditionsModal });
+        res.json({ status: 1, message: langPatientModule.know_health_issue.individual, data: PreConditionsModal });
     }
   } catch (error) {
       throw error;
@@ -1860,23 +1879,25 @@ exports.addKnownHealthIssues = async (req, res) => {
                                             patient_id: req.body.patient_id,
                                             doctor_id: req.body.doctor_id,
                                             content: req.body.content,
+                                            title: req.body.title,
                                             added_by: req.userId,
                                             org_id: req.org_id,
                                             status: 1,
                                         });
     if(PreConditionsModal === null){
-        res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+        res.json({ status: 0, message: langCommon.errormessage });
     }else{
         await PatientLogs.create({
             patient_id: PreConditionsModal.patient_id,
             org_id: req.org_id,
             description: 'Patient Know health issue has been added',
             type: 'know_health_issue',
+            action:'add',
             relation_id: PreConditionsModal.id,
             status: 1,
             added_by: req.userId
         });
-        res.json({ status: 1, message: 'New Health has been Added.', data: '' });
+        res.json({ status: 1, message: langPatientModule.know_health_issue.add, data: '' });
     }
         
   } catch (error) {
@@ -1887,20 +1908,21 @@ exports.updateKnownHealthIssues = async (req, res) => {
   try {
     let getData = [], results;
         PreConditionData = await PreConditions.findOne({where: { id: req.params.id} }); 
-        PreConditionsModal = await PreConditions.update({content: req.body.content,updated_by: req.userId,}, {where: {id: req.params.id}});
+        PreConditionsModal = await PreConditions.update({content: req.body.content,title: req.body.title,updated_by: req.userId,}, {where: {id: req.params.id}});
         if(PreConditionsModal === null){
-            res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+            res.json({ status: 0, message: langCommon.errormessage });
         }else{
             await PatientLogs.create({
                 patient_id: PreConditionData.patient_id,
                 org_id: req.org_id,
                 description: 'Patient Know health issue has been updated',
                 type: 'know_health_issue',
+                action:'update',
                 relation_id: PreConditionData.id,
                 status: 1,
                 added_by: req.userId
             });
-            res.json({ status: 1, message: 'Health issue has been Updated.', data: '' });
+            res.json({ status: 1, message: langPatientModule.know_health_issue.update, data: '' });
         }
 
   } catch (error) {
@@ -1912,9 +1934,9 @@ exports.deleteKnownHealthIssues = async (req, res) => {
     let getData = [], results;
         PreConditionsModal = await PreConditions.destroy({where: {id: req.params.id}});
         if(PreConditionsModal === null){
-            res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+            res.json({ status: 0, message: langCommon.errormessage });
         }else{
-            res.json({ status: 1, message: 'Health issue has been Deleted.', data: '' });
+            res.json({ status: 1, message: langPatientModule.know_health_issue.delete, data: '' });
         } 
   } catch (error) {
       throw error;
@@ -1957,9 +1979,9 @@ exports.getConfidentialNotes = async (req, res) => {
     });
     
     if(ConfidentialNotesModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Confidential Notes', data: ConfidentialNotesModal,total:count  });
+        res.json({ status: 1, message: langPatientModule.confidentialnotes.list, data: ConfidentialNotesModal,total:count  });
     }
   } catch (error) {
       throw error;
@@ -1970,9 +1992,9 @@ exports.getConfidentialNotesByID = async (req, res) => {
     let getData = [], results;
     ConfidentialNotesModal = await ConfidentialNotes.findOne({ where: { id: req.params.confidential_notes_id } });
     if(ConfidentialNotesModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Confidential Notes', data: ConfidentialNotesModal });
+        res.json({ status: 1, message: langPatientModule.confidentialnotes.individual, data: ConfidentialNotesModal });
     }
   } catch (error) {
       throw error;
@@ -1991,9 +2013,9 @@ exports.addConfidentialNotes = async (req, res) => {
                                             status: 1,
                                         });
     if(ConfidentialNotesModal === null){
-        res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+        res.json({ status: 0, message: langCommon.errormessage });
     }else{
-        res.json({ status: 1, message: 'New Confidential Note has been Added.', data: '' });
+        res.json({ status: 1, message: langPatientModule.confidentialnotes.add, data: '' });
     }
           
   } catch (error) {
@@ -2005,9 +2027,9 @@ exports.updateConfidentialNotes = async (req, res) => {
     let getData = [], results;
     ConfidentialNotesModal = await ConfidentialNotes.update({note: req.body.content,updated_by: req.userId,}, {where: {id: req.params.id}});
         if(ConfidentialNotesModal === null){
-            res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+            res.json({ status: 0, message: langCommon.errormessage });
         }else{
-            res.json({ status: 1, message: 'Confidential Notes has been Updated.', data: '' });
+            res.json({ status: 1, message: langPatientModule.confidentialnotes.update, data: '' });
         }
 
   } catch (error) {
@@ -2019,9 +2041,9 @@ exports.deleteConfidentialNotes = async (req, res) => {
     let getData = [], results;
     ConfidentialNotesModal = await ConfidentialNotes.destroy({where: {id: req.params.id}});
         if(ConfidentialNotesModal === null){
-            res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+            res.json({ status: 0, message: langCommon.errormessage });
         }else{
-            res.json({ status: 1, message: 'Confidential Notes has been Deleted.', data: '' });
+            res.json({ status: 1, message: langPatientModule.confidentialnotes.deleted, data: '' });
         } 
 } catch (error) {
     throw error;
@@ -2060,9 +2082,9 @@ exports.getClinicalNotes = async (req, res) => {
         }]
     });
     if(ClinicalNotesModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Clinical Notes', data: ClinicalNotesModal,total: count});
+        res.json({ status: 1, message: langPatientModule.clinical_notes.list, data: ClinicalNotesModal,total: count});
     }
   } catch (error) {
       throw error;
@@ -2073,9 +2095,9 @@ exports.getClinicalNotesByID = async (req, res) => {
     let getData = [], results;
     ClinicalNotesModal = await ClinicalNotes.findOne({ where: { id: req.params.clinical_note_id } });
     if(ClinicalNotesModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Clinical Notes', data: ClinicalNotesModal });
+        res.json({ status: 1, message: langPatientModule.clinical_notes.individual, data: ClinicalNotesModal });
     }
   } catch (error) {
       throw error;
@@ -2092,25 +2114,34 @@ exports.addClinicalNotes = async (req, res) => {
                                 channel: req.body.channel,
                                 motive: req.body.motive,
                                 known_health_issues: req.body.known_health_issues,
+                                desease_history: req.body.desease_history,
                                 consultation: req.body.consultation,
+                                diagnostic: req.body.diagnostic,
+                                treatment: req.body.treatment,
+                                observation: req.body.observation,
                                 desease: JSON.parse(req.body.desease),
                                 documents: req.body.documents,
                                 status: 1,
                                 added_by: req.userId,
                             });
     if(ClinicalNotesModal === null){
-        res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+        res.json({ status: 0, message: langCommon.errormessage });
     }else{
+        console.log(req.body);
+
+
+
         await PatientLogs.create({
             patient_id: ClinicalNotesModal.patient_id,
             org_id: req.org_id,
             description: 'Patient New clinical notes has been added ',
             type: 'clinical_notes',
+            action:'add',
             relation_id: ClinicalNotesModal.id,
             status: 1,
             added_by: req.userId
         });
-        res.json({ status: 1, message: 'New Clinical Note has been Added.', data: '' });
+        res.json({ status: 1, message: langPatientModule.clinical_notes.add, data: '' });
     }
         
   } catch (error) {
@@ -2122,9 +2153,9 @@ exports.updateClinicalNotes = async (req, res) => {
     let getData = [], results;
     ClinicalNotesModal = await ClinicalNotes.update({content: req.body.content,updated_by: req.userId,}, {where: {id: req.params.id}});
         if(ClinicalNotesModal === null){
-            res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+            res.json({ status: 0, message: langCommon.errormessage });
         }else{
-            res.json({ status: 1, message: 'Clinical Notes has been Updated.', data: '' });
+            res.json({ status: 1, message: langPatientModule.clinical_notes.update, data: '' });
         }
 
   } catch (error) {
@@ -2136,9 +2167,9 @@ exports.deleteClinicalNotes = async (req, res) => {
     let getData = [], results;
     ClinicalNotesModal = await ClinicalNotes.destroy({where: {id: req.params.id}});
         if(ClinicalNotesModal === null){
-            res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+            res.json({ status: 0, message: langCommon.errormessage });
         }else{
-            res.json({ status: 1, message: 'Clinical Note has been Deleted.', data: '' });
+            res.json({ status: 1, message: langPatientModule.clinical_notes.deleted, data: '' });
         } 
   } catch (error) {
       throw error;
@@ -2166,9 +2197,9 @@ exports.getDeathRecord = async (req, res) => {
         }]
      });
     if(DeathRecordModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Death Record', data: DeathRecordModal });
+        res.json({ status: 1, message: langPatientModule.death_record.individual, data: DeathRecordModal });
     }
   } catch (error) {
       throw error;
@@ -2194,9 +2225,9 @@ exports.getDeathRecordByID = async (req, res) => {
         }]
      });
     if(DeathRecordModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Death Record', data: DeathRecordModal });
+        res.json({ status: 1, message: langPatientModule.death_record.individual, data: DeathRecordModal });
     }
   } catch (error) {
       throw error;
@@ -2225,7 +2256,7 @@ exports.addDeathRecord = async (req, res) => {
         added_by: req.userId
                             });
     if(DeathRecordModal === null){
-        res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+        res.json({ status: 0, message: langCommon.errormessage });
         
     }else{
         await PatientLogs.create({
@@ -2233,11 +2264,12 @@ exports.addDeathRecord = async (req, res) => {
             org_id: req.org_id,
             description: 'Patient Has been died on '+DeathRecordModal.dateofdeath+' '+req.body.timeofdeath,
             type: 'death_record',
+            action:'add',
             relation_id: DeathRecordModal.id,
             status: 1,
             added_by: req.userId
         });
-        res.json({ status: 1, message: 'Death has been recorded.', data: '' });
+        res.json({ status: 1, message: langPatientModule.death_record.add, data: '' });
     }
           
   } catch (error) {
@@ -2245,30 +2277,33 @@ exports.addDeathRecord = async (req, res) => {
   }
 };
 exports.updateDeathRecord = async (req, res) => {
-  try {
-    let getData = [], results;
-    DeathRecordModal = await DeathRecord.update({content: req.body.content,updated_by: req.userId,}, {where: {id: req.params.id}});
-        if(DeathRecordModal === null){
-            res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
-        }else{
-            res.json({ status: 1, message: 'Death record has been Updated.', data: '' });
-        }
-  } catch (error) {
-      throw error;
-  }
+//   try {
+//     let getData = [], results;
+//     DeathRecordModal = await DeathRecord.update({content: req.body.content,updated_by: req.userId,}, {where: {id: req.params.id}});
+//         if(DeathRecordModal === null){
+//             res.json({ status: 0, message: langCommon.errormessage });
+//         }else{
+//             res.json({ status: 1, message: langPatientModule.death_record.update, data: '' });
+//         }
+//   } catch (error) {
+//       throw error;
+//   }
+
+res.json({ status: 0, message: 'Not Implemented', data: '' });
 };
 exports.deleteDeathRecord = async (req, res) => {
   try {
     let getData = [], results;
     DeathRecordModal = await DeathRecord.destroy({where: {id: req.params.id}});
         if(DeathRecordModal === null){
-            res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+            res.json({ status: 0, message: langCommon.errormessage });
         }else{
-            res.json({ status: 1, message: 'Death record has been Deleted.', data: '' });
+            res.json({ status: 1, message: langPatientModule.death_record.deleted, data: '' });
         } 
   } catch (error) {
       throw error;
   }
+  res.json({ status: 0, message: 'Not Implemented', data: '' });
 };
 
 // Hospitalization
@@ -2303,9 +2338,9 @@ exports.getHospitalization = async (req, res) => {
         }]
      });
     if(PatientHospitalizationModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Patient hospitalizations List', data: PatientHospitalizationModal,total:count });
+        res.json({ status: 1, message: langPatientModule.hospitalization.list, data: PatientHospitalizationModal,total:count });
     }
   } catch (error) {
       throw error;
@@ -2316,9 +2351,9 @@ exports.getHospitalizationByID = async (req, res) => {
     let getData = [], results;
     PatientHospitalizationModal = await PatientHospitalization.findOne({ where: { id: req.params.hospitalization_id } });
     if(PatientHospitalizationModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Patient hospitalization Details', data: PatientHospitalizationModal });
+        res.json({ status: 1, message: langPatientModule.hospitalization.individual, data: PatientHospitalizationModal });
     }
   } catch (error) {
       throw error;
@@ -2348,7 +2383,7 @@ exports.addHospitalization = async (req, res) => {
         added_by: req.userId
                             });
     if(PatientHospitalizationModal === null){
-        res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+        res.json({ status: 0, message: langCommon.errormessage });
     }else{
         
         await PatientLogs.create({
@@ -2356,11 +2391,12 @@ exports.addHospitalization = async (req, res) => {
             org_id: req.org_id,
             description: 'Patient Has been hospitalized on '+PatientHospitalizationModal.hospitalization_date,
             type: 'hospitalization',
+            action:'add',
             relation_id: PatientHospitalizationModal.id,
             status: 1,
             added_by: req.userId
         });
-        res.json({ status: 1, message: 'Patient hospitalization has been recorded.', data: '' });
+        res.json({ status: 1, message: langPatientModule.hospitalization.add, data: '' });
     }
           
   } catch (error) {
@@ -2368,27 +2404,29 @@ exports.addHospitalization = async (req, res) => {
   }
 };
 exports.updateHospitalization = async (req, res) => {
-  try {
-    let getData = [], results;
-    PatientHospitalizationModal = await PatientHospitalization.update({content: req.body.content,updated_by: req.userId,}, {where: {id: req.params.id}});
-        if(PatientHospitalizationModal === null){
-            res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
-        }else{
-            res.json({ status: 1, message: 'Patient hospitalization has been Updated.', data: '' });
-        }
+//   try {
+//     let getData = [], results;
+//     PatientHospitalizationModal = await PatientHospitalization.update({content: req.body.content,updated_by: req.userId,}, {where: {id: req.params.id}});
+//         if(PatientHospitalizationModal === null){
+//             res.json({ status: 0, message: langCommon.errormessage });
+//         }else{
+//             res.json({ status: 1, message: langPatientModule.hospitalization.update, data: '' });
+//         }
 
-  } catch (error) {
-      throw error;
-  }
+//   } catch (error) {
+//       throw error;
+//   }
+
+  res.json({ status: 0, message: 'Not Implemented', data: '' });
 };
 exports.deleteHospitalization = async (req, res) => {
   try {
     let getData = [], results;
     PatientHospitalizationModal = await PatientHospitalization.destroy({where: {id: req.params.id}});
         if(PatientHospitalizationModal === null){
-            res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+            res.json({ status: 0, message: langCommon.errormessage });
         }else{
-            res.json({ status: 1, message: 'Patient hospitalization has been Deleted.', data: '' });
+            res.json({ status: 1, message: langPatientModule.hospitalization.deleted, data: '' });
         } 
   } catch (error) {
       throw error;
@@ -2414,9 +2452,9 @@ exports.getPrescription = async (req, res) => {
         offset: offsetdata
      });
     if(PrescriptionsModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Prescription List', data: PrescriptionsModal,total:count });
+        res.json({ status: 1, message: langPatientModule.precription.list, data: PrescriptionsModal,total:count });
     }
   } catch (error) {
       throw error;
@@ -2427,10 +2465,10 @@ exports.getPrescriptionByID = async (req, res) => {
     let getData = [], results;
     PrescriptionsModal = await Prescriptions.findOne({ where: { id: req.params.prescription_id } });
     if(PrescriptionsModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
         
-        res.json({ status: 1, message: 'Prescription fetched', data: PrescriptionsModal });
+        res.json({ status: 1, message: langPatientModule.precription.individual, data: PrescriptionsModal });
     }
   } catch (error) {
       throw error;
@@ -2456,18 +2494,19 @@ exports.addPrescription = async (req, res) => {
           added_by: req.userId
                               });
       if(PrescriptionsModal === null){
-          res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+          res.json({ status: 0, message: langCommon.errormessage });
       }else{
             await PatientLogs.create({
                 patient_id: PrescriptionsModal.patient_id,
                 org_id: req.org_id,
                 description: 'New prescription has been added ',
                 type: 'precription',
+                action:'add',
                 relation_id: PrescriptionsModal.id,
                 status: 1,
                 added_by: req.userId
             });
-          res.json({ status: 1, message: 'New prescription has been added.', data: '' });
+          res.json({ status: 1, message: langPatientModule.precription.add, data: '' });
       }
           
   } catch (error) {
@@ -2475,27 +2514,29 @@ exports.addPrescription = async (req, res) => {
   }
 };
 exports.updatePrescription = async (req, res) => {
-  try {
-    let getData = [], results;
-    PrescriptionsModal = await Prescriptions.update({content: req.body.content,updated_by: req.userId,}, {where: {id: req.params.id}});
-        if(PrescriptionsModal === null){
-            res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
-        }else{
-            res.json({ status: 1, message: 'Prescription has been updated.', data: '' });
-        }
+//   try {
+//     let getData = [], results;
+//     PrescriptionsModal = await Prescriptions.update({content: req.body.content,updated_by: req.userId,}, {where: {id: req.params.id}});
+//         if(PrescriptionsModal === null){
+//             res.json({ status: 0, message: langCommon.errormessage });
+//         }else{
+//             res.json({ status: 1, message: langPatientModule.precription.add, data: '' });
+//         }
 
-  } catch (error) {
-      throw error;
-  }
+//   } catch (error) {
+//       throw error;
+//   }
+
+res.json({ status: 0, message: 'Not Implemented', data: '' });
 };
 exports.deletePrescription = async (req, res) => {
   try {
     let getData = [], results;
     PrescriptionsModal = await Prescriptions.destroy({where: {id: req.params.id}});
         if(PrescriptionsModal === null){
-            res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+            res.json({ status: 0, message: langCommon.errormessage });
         }else{
-            res.json({ status: 1, message: 'Prescription has been Deleted.', data: '' });
+            res.json({ status: 1, message: langPatientModule.precription.deleted, data: '' });
         } 
   } catch (error) {
       throw error;
@@ -2522,9 +2563,9 @@ exports.getLabTest = async (req, res) => {
             offset: offsetdata
         });
       if(TestRequestsModal === null){
-          res.json({ status: 0, message: 'No Data Found' });
+          res.json({ status: 0, message: langCommon.nodatafound });
       }else{
-          res.json({ status: 1, message: 'Lab Request List', data: TestRequestsModal,total:count });
+          res.json({ status: 1, message: langPatientModule.lab.list, data: TestRequestsModal,total:count });
       }
     } catch (error) {
         throw error;
@@ -2535,9 +2576,9 @@ try {
     let getData = [], results;
     TestRequestsModal = await TestRequests.findOne({ where: { id: req.params.request_id,type:'lab' } });
     if(TestRequestsModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Lab Requests fetched', data: TestRequestsModal });
+        res.json({ status: 1, message: langPatientModule.lab.individual, data: TestRequestsModal });
     }
 } catch (error) {
     throw error;
@@ -2547,9 +2588,9 @@ exports.getLabTestList = async (req, res) => {
 try {
         LabTestList = await Database.query("SELECT payment_category.id,payment_category.prestation,setting_service.code_service FROM setting_service LEFT JOIN setting_service_specialite ON setting_service.idservice=setting_service_specialite.id_service LEFT JOIN payment_category ON setting_service.idservice=payment_category.id_service where code_service='labo'",{type: Database.QueryTypes.SELECT});
         if(LabTestList === null){
-            res.json({ status: 0, message: 'No Data Found' });
+            res.json({ status: 0, message: langCommon.nodatafound });
         }else{
-            res.json({ status: 1, message: 'Lab Test List', data: LabTestList });
+            res.json({ status: 1, message: langPatientModule.lab.testlist, data: LabTestList });
         }
     } catch (error) {
         throw error;
@@ -2563,12 +2604,13 @@ exports.addLabTest = async (req, res) => {
             patient_id: req.body.patient_id,
             org_id: req.org_id,
             type: 'lab',
+            action: 'add',
             reports: JSON.parse(req.body.reports),
             status: 0,
             added_by: req.userId
         });
         if(TestRequestsModal === null){
-            res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+            res.json({ status: 0, message: langCommon.errormessage });
             
         }else{
             await PatientLogs.create({
@@ -2576,11 +2618,12 @@ exports.addLabTest = async (req, res) => {
                 org_id: req.org_id,
                 description: 'New Lab Request has been added ',
                 type: 'lab',
+                action:'add_lab',
                 relation_id: TestRequestsModal.id,
                 status: 1,
                 added_by: req.userId
             });
-            res.json({ status: 1, message: 'New Lab Request has been added.', data: '' });
+            res.json({ status: 1, message: langPatientModule.lab.add, data: '' });
         }
             
     } catch (error) {
@@ -2588,27 +2631,28 @@ exports.addLabTest = async (req, res) => {
     }
   };
 exports.updateLabTest = async (req, res) => {
-    try {
-        let getData = [], results;
-        TestRequestsModal = await TestRequests.update({content: req.body.content,updated_by: req.userId,}, {where: {id: req.params.id}});
-            if(TestRequestsModal === null){
-                res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
-            }else{
-                res.json({ status: 1, message: 'Lab Request has been updated.', data: '' });
-            }
+    // try {
+    //     let getData = [], results;
+    //     TestRequestsModal = await TestRequests.update({content: req.body.content,updated_by: req.userId,}, {where: {id: req.params.id}});
+    //         if(TestRequestsModal === null){
+    //             res.json({ status: 0, message: langCommon.errormessage });
+    //         }else{
+    //             res.json({ status: 1, message: langPatientModule.lab.update, data: '' });
+    //         }
 
-    } catch (error) {
-        throw error;
-    }
+    // } catch (error) {
+    //     throw error;
+    // }
+    res.json({ status: 0, message: 'Not Implemented', data: '' });
 };
 exports.deleteLabTest = async (req, res) => {
     try {
         let getData = [], results;
         TestRequestsModal = await TestRequests.destroy({where: {id: req.params.id}});
             if(TestRequestsModal === null){
-                res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+                res.json({ status: 0, message: langCommon.errormessage });
             }else{
-                res.json({ status: 1, message: 'Lab Request has been Deleted.', data: '' });
+                res.json({ status: 1, message: langPatientModule.lab.deleted, data: '' });
             } 
     } catch (error) {
         throw error;
@@ -2635,9 +2679,9 @@ try {
         offset: offsetdata
      });
     if(ImagingRequestsModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'ImagingRequest', data: ImagingRequestsModal,total:count });
+        res.json({ status: 1, message: langPatientModule.imaging.list, data: ImagingRequestsModal,total:count });
     }
 } catch (error) {
     throw error;
@@ -2648,9 +2692,9 @@ try {
     let getData = [], results;
     TestRequestsModal = await TestRequests.findOne({ where: { id: req.params.request_id,type: 'imaging' } });
     if(TestRequestsModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Prescription fetched', data: TestRequestsModal });
+        res.json({ status: 1, message: langPatientModule.imaging.individual, data: TestRequestsModal });
     }
 } catch (error) {
     throw error;
@@ -2661,9 +2705,9 @@ exports.getImagingRequestList = async (req, res) => {
 
         ImagingReq = await Database.query("SELECT setting_service_specialite.idspe,setting_service_specialite.name_specialite,setting_service.code_service FROM setting_service LEFT JOIN setting_service_specialite ON setting_service.idservice=setting_service_specialite.id_service where code_service='IMAG'",{type: Database.QueryTypes.SELECT});
         if(ImagingReq === null){
-            res.json({ status: 0, message: 'No Data Found' });
+            res.json({ status: 0, message: langCommon.nodatafound });
         }else{
-            res.json({ status: 1, message: 'Imaging List', data: ImagingReq });
+            res.json({ status: 1, message: langPatientModule.imaging.imaaginglist, data: ImagingReq });
         }
     } catch (error) {
         throw error;
@@ -2676,12 +2720,13 @@ try {
         patient_id: req.body.patient_id,
         org_id: req.org_id,
         type: 'imaging',
+        action:'add',
         reports: JSON.parse(req.body.reports),
         status: 0,
         added_by: req.userId
                             });
     if(TestRequestsModal === null){
-        res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+        res.json({ status: 0, message: langCommon.errormessage });
         
     }else{
         await PatientLogs.create({
@@ -2689,11 +2734,12 @@ try {
             org_id: req.org_id,
             description: 'New Imaging Request has been added ',
             type: 'imaging_request',
+            action:'add',
             relation_id: TestRequestsModal.id,
             status: 1,
             added_by: req.userId
         });
-        res.json({ status: 1, message: 'New Imaging Request has been added.', data: '' });
+        res.json({ status: 1, message: langPatientModule.imaging.add, data: '' });
     }
         
 } catch (error) {
@@ -2701,23 +2747,25 @@ try {
 }
 };
 exports.updateImagingRequest = async (req, res) => {
-try {
-    TestRequestsModal = await TestRequests.update({content: req.body.content,updated_by: req.userId,}, {where: {id: req.params.id}});
-        if(TestRequestsModal === null){
-            res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
-        }else{
-            res.json({ status: 1, message: 'Imaging Request has been updated.', data: '' });
-        }
+// try {
+//     TestRequestsModal = await TestRequests.update({content: req.body.content,updated_by: req.userId,}, {where: {id: req.params.id}});
+//         if(TestRequestsModal === null){
+//             res.json({ status: 0, message: langCommon.errormessage });
+//         }else{
+//             res.json({ status: 1, message: 'Imaging Request has been updated.', data: '' });
+//         }
 
-} catch (error) {
-    throw error;
-}
+// } catch (error) {
+//     throw error;
+// }
+
+res.json({ status: 0, message: 'Not Implemented', data: '' });
 };
 exports.deleteImagingRequest = async (req, res) => {
 try {
     TestRequestsModal = await TestRequests.destroy({where: {id: req.params.id}});
         if(TestRequestsModal === null){
-            res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+            res.json({ status: 0, message: langCommon.errormessage });
         }else{
             res.json({ status: 1, message: 'Imaging Request has been Deleted.', data: '' });
         } 
@@ -2736,9 +2784,9 @@ exports.medicinList = async (req, res) => {
             attributes: ['id', 'name', 'category', 'dosage', 'type', 'generic','company','description'], 
             where: { status: 'Active' } });
     if(MasterMedicineModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Medicin List', data: MasterMedicineModal });
+        res.json({ status: 1, message: langPatientModule.helper.medicinlist, data: MasterMedicineModal });
     }
   } catch (error) {
       throw error;
@@ -2754,9 +2802,9 @@ exports.deseaseList = async (req, res) => {
         }
       },limit: 50 });
     if(IllnessModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Desease List', data: IllnessModal });
+        res.json({ status: 1, message: langPatientModule.helper.deseaselist, data: IllnessModal });
     }
   } catch (error) {
       throw error;
@@ -2775,7 +2823,7 @@ exports.timeLine = async (req, res) => {
     const { count, rows } = await PatientLogs.findAndCountAll({where: { patient_id: req.params.patient_id }});
 
     const PatientLogsModal = await PatientLogs.findAll({
-        attributes: ['id', 'description','type','relation_id', 'status','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("PatientLogs.createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("PatientLogs.updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"],'patient_id','org_id'], 
+        attributes: ['id', 'description','action','type','relation_id', 'status','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("PatientLogs.createdAt"),"%d/%m/%Y %H:%i"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("PatientLogs.updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt"],'patient_id','org_id'], 
         where: { patient_id: req.params.patient_id },
         order: [['id', 'desc']],
         limit: datalimit,
@@ -2795,9 +2843,9 @@ exports.timeLine = async (req, res) => {
         }]
     });
     if(PatientLogsModal === null){
-        res.json({ status: 0, message: 'No Data Found' });
+        res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: 'Patient Logs', data: PatientLogsModal,total:count });
+        res.json({ status: 1, message: langPatientModule.helper.timeline, data: PatientLogsModal,total:count });
     }
   } catch (error) {
       throw error;
@@ -2836,9 +2884,9 @@ exports.getPaymentHistory = async (req, res) => {
             }]
       });
       if(PaymentModal === null){
-          res.json({ status: 0, message: 'No Data Found' });
+          res.json({ status: 0, message: langCommon.nodatafound });
       }else{
-          res.json({ status: 1, message: 'Patient Payment History', data: PaymentModal,total:count });
+          res.json({ status: 1, message: langPatientModule.payment.list, data: PaymentModal,total:count });
       }
         
     } catch (error) {
@@ -2847,7 +2895,7 @@ exports.getPaymentHistory = async (req, res) => {
   };
 
 
-  exports.getPaymentHistoryInfo = async (req, res) => {
+exports.getPaymentHistoryInfo = async (req, res) => {
     try {
       let getData = {};
       PatientModal = await Patient.findOne({ 
@@ -2857,18 +2905,18 @@ exports.getPaymentHistory = async (req, res) => {
       });
       // console.log(PatientModal);
       if(PatientModal === null){
-          res.json({ status: 0, message: 'No Data Found' });
+          res.json({ status: 0, message: langCommon.nodatafound });
       }else{
           if (PatientModal.img_url) {
-              PatientModal.img_url = BASEURL+"/uploads/imgUsers/" + PatientModal.img_url;
+              PatientModal.img_url = APP_URL+"/uploads/imgUsers/" + PatientModal.img_url;
           } else {
-              PatientModal.img_url = BASEURL+"/uploads/user-profile-placeholder.png";
+              PatientModal.img_url = APP_URL+"/uploads/user-profile-placeholder.png";
           }
         total_balance = await Payment.sum('gross_total', {where: { patient: req.params.patient_id }});
         total_paid = await Payment.sum('amount_received', {where: { patient: req.params.patient_id }});
         total_due = total_balance - total_paid;
         // console.log(PatientModal.dataValues);         
-        res.json({ status: 1, message: 'Patient General INFO', data: PatientModal,total_balance: total_balance,total_paid:total_paid,total_due:total_due});
+        res.json({ status: 1, message: langPatientModule.payment.historyinfo, data: PatientModal,total_balance: total_balance,total_paid:total_paid,total_due:total_due});
      }
       
   } catch (error) {
@@ -2906,9 +2954,9 @@ exports.getPaymentHistory = async (req, res) => {
             }]
       });
       if(PatientDepositModal === null){
-          res.json({ status: 0, message: 'No Data Found' });
+          res.json({ status: 0, message: langCommon.nodatafound });
       }else{
-          res.json({ status: 1, message: 'Payment Deposit Logs', data: PatientDepositModal,total:count });
+          res.json({ status: 1, message: langPatientModule.payment.paymentdepositlogs, data: PatientDepositModal,total:count });
       }
         
     } catch (error) {

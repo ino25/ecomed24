@@ -1,0 +1,156 @@
+{
+    "index":"Bienvenue sur notre API!",
+    "common":{
+        "nodatafound":"No data Found",
+        "errormessage":"Something Went Wrong, Please Try Againg Later!!",
+        "servererror":"System not working please contact administrator"
+    },
+    "patientModule": {
+        "patientAdd":"Patient successfully Added!",
+        "patientUpdate":"Patient successfully updated!",
+        "patientStatus":"Patient Status Successfully changed!",
+        "patientDeleted":"Patient Successfully Deleted!",
+        "patientListFetched":"Patient List Fetched!",
+        "patientGeneralInfo":"Patient Genreal Info Fetched!",
+        "vital_sign":{
+            "add":"Patient Vital Sign successfully Added!",
+            "update":"Patient Vital Sign successfully updated!",
+            "status":"Patient Vital Sign Status Successfully changed!",
+            "deleted":"Patient Vital Sign Successfully Deleted!",
+            "list":"Patient Vital Sign List Fetched!",
+            "individual":"Patient Vital Sign Details Fetched!",
+            "graph":"Patient Vital Sign Details Fetched!"
+        },
+        "clinical_notes":{
+            "add":"Patient Clinical Notes successfully Added!",
+            "update":"Patient Clinical Notes successfully updated!",
+            "status":"Patient Clinical Notes Status Successfully changed!",
+            "deleted":"Patient Clinical Notes Successfully Deleted!",
+            "individual":"Patient Clinical Notes  Details Fetched!",
+            "list":"Patient Clinical Notes List Fetched!"
+        },
+        "confidentialnotes":{
+            "add":"Patient Confidential Notes successfully Added!",
+            "update":"Patient Confidential Notes successfully updated!",
+            "status":"Patient Confidential Notes Status Successfully changed!",
+            "deleted":"Patient Confidential Notes Successfully Deleted!",
+            "individual":"Patient Confidential Notes Details Fetched!",
+            "list":"Patient Confidential Notes List Fetched!"
+        },
+        "know_health_issue":{
+            "add":"Patient Known Health Issue successfully Added!",
+            "update":"Patient Known Health Issue successfully updated!",
+            "status":"Patient Known Health Issue Status Successfully changed!",
+            "deleted":"Patient Known Health Issue Successfully Deleted!",
+            "list":"Patient Known Health Issue Fetched!",
+            "individual":"Patient Known Health Issue Details Fetched!"
+        },
+        "appointment":{
+            "add":"Patient Appointment successfully Added!",
+            "update":"Patient Appointment successfully updated!",
+            "status":"Patient Appointment Status Successfully changed!",
+            "deleted":"Patient Appointment Successfully Deleted!",
+            "list":"Patient Appointment List Fetched!",
+            "individual":"Patient Appointment Details Fetched!",
+            "services":"Patient Appointment services fetched!",
+            "timeslots":"Patient Appointment Timeslots fetched!"
+        },
+        "payment":{
+            "add":"New Invoice has been Generated.",
+            "update":"Patient Payment successfully updated!",
+            "status":"Patient Payment Status Successfully changed!",
+            "deleted":"Patient Payment Successfully Deleted!",
+            "list":"Patient Payment List Fetched!",
+            "historyinfo":"Patient Payment History info Fetched!",
+            "paymentreceipt":"Patient Payment Receipt Fetched!",
+            "services":"Payment services Fetched!",
+            "partnerorg":"Partner Organisation Fetched!",
+            "lightorg":"Light Organisation Fetched!",
+            "paymentdetails":"Light Organisation Fetched!",
+            "paymentdepositlogs":"Payment Deposit Logs Fetched!",
+            "deposit":{
+                "add":"New Deposit has been Added.",
+                "exceederror":"You can not deposit more then remaining amount!!"
+            }
+        },
+        "assurance":{
+            "add":"Patient Assurance successfully Added!",
+            "update":"Patient Assurance successfully updated!",
+            "status":"Patient Assurance Status Successfully changed!",
+            "deleted":"Patient Assurance Successfully Deleted!",
+            "individual":"Patient Assurance Details Fetched!",
+            "list":"Patient Assurance List Fetched!",
+            "orglist":"Patient Assurance List Fetched!"
+        },
+        "dependent":{
+            "add":"Patient Dependant successfully Added!",
+            "update":"Patient Dependant successfully updated!",
+            "status":"Patient Dependant Status Successfully changed!",
+            "deleted":"Patient Dependant Successfully Deleted!",
+            "individual":"Dependant Details Fetched!",
+            "list":"Patient Dependant List Fetched!"
+        },
+        "documents":{
+            "add":"Patient Documents successfully Added!",
+            "update":"Patient Documents successfully updated!",
+            "status":"Patient Documents Status Successfully changed!",
+            "deleted":"Patient Document Successfully Deleted!",
+            "individual":"Document Details Fetched!",
+            "list":"Patient Documents Fetched!",
+            "typelist":"Patient Documents Fetched!",
+            "missingattachment":"No File attached. Please attach an file"
+        },
+        "current_medication":{
+            "add":"Patient Current Medication successfully Added!",
+            "update":"Patient Current Medication successfully updated!",
+            "status":"Patient Current Medication Status Successfully changed!",
+            "deleted":"Patient Current Medication Successfully Deleted!",
+            "list":"Patient Current Medication List Fetched!",
+            "individual":"Document Details Fetched!"
+        },
+        "death_record":{
+            "add":"Patient Death Record successfully Added!",
+            "update":"Patient Death Record successfully updated!",
+            "status":"Patient Death Record Status Successfully changed!",
+            "deleted":"Patient Death Record Successfully Deleted!",
+            "individual":"Patient Death Details Fetched!"
+        },
+        "hospitalization":{
+            "add":"Patient hospitalization successfully Added!",
+            "update":"Patient hospitalization successfully updated!",
+            "status":"Patient hospitalization Status Successfully changed!",
+            "deleted":"Patient hospitalization Successfully Deleted!",
+            "list":"Patient hospitalization List Fetched!",
+            "individual":"Patient hospitalization Details Fetched!"
+        },
+        "precription":{
+            "add":"Patient Prescription successfully Added!",
+            "update":"Patient Prescription successfully updated!",
+            "status":"Patient Prescription Status Successfully changed!",
+            "deleted":"Patient Prescription Successfully Deleted!",
+            "list":"Patient Prescription List Fetched!",
+            "individual":"Patient Prescription Details Fetched!"
+        },
+        "lab":{
+            "add":"Patient Lab Request successfully Added!",
+            "update":"Patient Lab Request successfully updated!",
+            "status":"Patient Lab Request Status Successfully changed!",
+            "deleted":"Patient Lab Request Successfully Deleted!",
+            "list":"Patient Lab Request List Fetched!",
+            "individual":"Patient Lab Request Details Fetched!",
+            "testlist":"Patient Imaging Request List Fetched!"
+        },
+        "imaging":{
+            "add":"Patient Imaging Request successfully Added!",
+            "update":"Patient Imaging Request successfully updated!",
+            "status":"Patient Imaging Request Status Successfully changed!",
+            "deleted":"Patient Imaging Request Successfully Deleted!",
+            "list":"Patient Imaging Request List Fetched!",
+            "individual":"Patient Imaging Request Details Fetched!",
+            "imaaginglist":"Patient Imaging Request List Fetched!"
+        }
+    },
+    
+    "organizationModule": "Hello, {name}!"
+}
+  

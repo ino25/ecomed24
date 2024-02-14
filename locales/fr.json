@@ -1,0 +1,156 @@
+{
+    "index":"Bienvenue sur notre API!",
+    "common":{
+        "nodatafound":"No data Found",
+        "errormessage":"Something Went Wrong, Please Try Againg Later!!",
+        "servererror":"System not working please contact administrator"
+    },
+    "patientModule": {
+        "patientAdd":"Patient successfully Added!",
+        "patientUpdate":"Patient successfully updated!",
+        "patientStatus":"Patient Status Successfully changed!",
+        "patientDeleted":"Patient Successfully Deleted!",
+        "patientListFetched":"Patient List Fetched!",
+        "patientGeneralInfo":"Patient Genreal Info Fetched!",
+        "vital_sign":{
+            "add":"Signes vitaux enregistrés!",
+            "update":"Signes vitaux mis à jour!",
+            "status":"Signes vitaux mis à jour!",
+            "deleted":"Signes vitaux supprimés!",
+            "list":"Patient Vital Sign List Fetched!",
+            "individual":"Patient Vital Sign Details Fetched!",
+            "graph":"Patient Vital Sign Details Fetched!"
+        },
+        "clinical_notes":{
+            "add":"Notes cliniques enregistrées!",
+            "update":"Notes cliniques mises à jour!",
+            "status":"Notes cliniques mises à jour!",
+            "deleted":"Notes cliniques supprimées!",
+            "individual":"Patient Clinical Notes  Details Fetched!",
+            "list":"Patient Clinical Notes List Fetched!"
+        },
+        "confidentialnotes":{
+            "add":"Patient Confidential Notes successfully Added!",
+            "update":"Patient Confidential Notes successfully updated!",
+            "status":"Patient Confidential Notes Status Successfully changed!",
+            "deleted":"Patient Confidential Notes Successfully Deleted!",
+            "individual":"Patient Confidential Notes Details Fetched!",
+            "list":"Patient Confidential Notes List Fetched!"
+        },
+        "know_health_issue":{
+            "add":"Antécédants enregistrés!",
+            "update":"Antécédants mis à jour!",
+            "status":"Antécédants mis à jour!",
+            "deleted":"Antécédants supprimés!",
+            "list":"Patient Known Health Issue Fetched!",
+            "individual":"Patient Known Health Issue Details Fetched!"
+        },
+        "appointment":{
+            "add":"Rendez-vous enregistré!",
+            "update":"Rendez-vous mis à jour!",
+            "status":"Rendez-vous mis à jour!",
+            "deleted":"Rendez-vous supprimé",
+            "list":"Patient Appointment List Fetched!",
+            "individual":"Patient Appointment Details Fetched!",
+            "services":"Patient Appointment services fetched!",
+            "timeslots":"Patient Appointment Timeslots fetched!"
+        },
+        "payment":{
+            "add":"Paiement enregistré!",
+            "update":"Paiement mis à jour!",
+            "status":"Paiement mis à jour!",
+            "deleted":"Paiement supprimé!",
+            "list":"Patient Payment List Fetched!",
+            "historyinfo":"Patient Payment History info Fetched!",
+            "paymentreceipt":"Patient Payment Receipt Fetched!",
+            "services":"Payment services Fetched!",
+            "partnerorg":"Partner Organisation Fetched!",
+            "lightorg":"Light Organisation Fetched!",
+            "paymentdetails":"Light Organisation Fetched!",
+            "paymentdepositlogs":"Payment Deposit Logs Fetched!",
+            "deposit":{
+                "add":"New Deposit has been Added.",
+                "exceederror":"You can not deposit more then remaining amount!!"
+            }
+        },
+        "assurance":{
+            "add":"Tiers-payant enregistré!",
+            "update":"Tiers-payant mis à jour!",
+            "status":"Tiers-payant mis à jour!",
+            "deleted":"Tiers-payant supprimé!",
+            "individual":"Patient Assurance Details Fetched!",
+            "list":"Patient Assurance List Fetched!",
+            "orglist":"Patient Assurance List Fetched!"
+        },
+        "dependent":{
+            "add":"Personne à charge enregistrée!",
+            "update":"Personne à charge mise à jour!",
+            "status":"Personne à charge mise à jour!",
+            "deleted":"Personne à charge supprimée!",
+            "individual":"Dependant Details Fetched!",
+            "list":"Patient Dependant List Fetched!"
+        },
+        "documents":{
+            "add":"Document ajouté au dossier!",
+            "update":"Document mis à jour!",
+            "status":"Document mis à jour!",
+            "deleted":"Document supprimé!",
+            "individual":"Document Details Fetched!",
+            "list":"Patient Documents Fetched!",
+            "typelist":"Patient Documents Fetched!",
+            "missingattachment":"No File attached. Please attach an file"
+        },
+        "current_medication":{
+            "add":"Traitement enregistré!",
+            "update":"Traitement mis à jour!",
+            "status":"Traitement mis à jour!",
+            "deleted":"Traitement supprimé!",
+            "list":"Patient Current Medication List Fetched!",
+            "individual":"Document Details Fetched!"
+        },
+        "death_record":{
+            "add":"Décès du patient enregistré!",
+            "update":"Correction deces patient!",
+            "status":"Correction deces patient!",
+            "deleted":"Correction deces patient!",
+            "individual":"Patient Death Details Fetched!"
+        },
+        "hospitalization":{
+            "add":"Demande d'hospitalisation enregistrée!",
+            "update":"Demande d'hospitalisation mise à jour!",
+            "status":"Demande d'hospitalisation mise à jour!",
+            "deleted":"Demande d'hospitalisation supprimée!",
+            "list":"Patient hospitalization List Fetched!",
+            "individual":"Patient hospitalization Details Fetched!"
+        },
+        "precription":{
+            "add":"Ordonnance enregistrée",
+            "update":"Ordonnance mise à jour!",
+            "status":"Ordonnance mise à jour!",
+            "deleted":"Ordonnance supprimée!",
+            "list":"Patient Prescription List Fetched!",
+            "individual":"Patient Prescription Details Fetched!"
+        },
+        "lab":{
+            "add":"Demande d'analyses médicales enregistrée!",
+            "update":"Demande d'analyses médicales mise à jour!",
+            "status":"Demande d'analyses médicales mise à jour!",
+            "deleted":"Demande d'analyses médicales supprimée!",
+            "list":"Patient Lab Request List Fetched!",
+            "individual":"Patient Lab Request Details Fetched!",
+            "testlist":"Patient Imaging Request List Fetched!"
+        },
+        "imaging":{
+            "add":"Demande d'examen d'imagerie enregistrée!",
+            "update":"Demande d'examen d'imagerie mise à jour!",
+            "status":"Demande d'examen d'imagerie mise à jour!",
+            "deleted":"Demande d'examen d'imagerie supprimée!",
+            "list":"Patient Imaging Request List Fetched!",
+            "individual":"Patient Imaging Request Details Fetched!",
+            "imaaginglist":"Patient Imaging Request List Fetched!"
+        }
+    },
+    
+    "organizationModule": "Hello, {name}!"
+}
+  
