@@ -148,6 +148,11 @@
             "list":"Patient Imaging Request List Fetched!",
             "individual":"Patient Imaging Request Details Fetched!",
             "imaaginglist":"Patient Imaging Request List Fetched!"
+        },
+        "helper":{
+            "medicinlist":"Medicin list fetched!",
+            "deseaselist":"Desease list fetched",
+            "timeline":"Patient Timeline Fetched!"
         }
     },
     
