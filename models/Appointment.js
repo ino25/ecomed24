@@ -99,6 +99,10 @@ const Appointment = sequelize.define('Appointment', {
     type: DataTypes.TINYINT,
     allowNull: true
   },
+  clinical_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
   added_by: {
     type: DataTypes.INTEGER,
     allowNull: true

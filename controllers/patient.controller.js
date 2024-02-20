@@ -1637,37 +1637,37 @@ exports.addVitalSign = async (req, res) => {
 }
 };
 exports.updateVitalSign = async (req, res) => {
-  try {
-    let getData = [], results;
-    getData.push(req.body.uniqueID);
-    getData.push(req.orgId);
-    getData.push(req.body.prescripteur);
-    getData.push(req.body.frequenceRespiratoire);
-    getData.push(req.body.frequenceCardiaque);
-    getData.push(req.body.saturationArterielle);
-    getData.push(req.body.temperature);
-    getData.push(req.body.systolique);
-    getData.push(req.body.diastolique);
-    getData.push(req.body.tensionArterielle);
+//   try {
+//     let getData = [], results;
+//     getData.push(req.body.uniqueID);
+//     getData.push(req.orgId);
+//     getData.push(req.body.prescripteur);
+//     getData.push(req.body.frequenceRespiratoire);
+//     getData.push(req.body.frequenceCardiaque);
+//     getData.push(req.body.saturationArterielle);
+//     getData.push(req.body.temperature);
+//     getData.push(req.body.systolique);
+//     getData.push(req.body.diastolique);
+//     getData.push(req.body.tensionArterielle);
 
-    getData.push(req.userId);///loggedin id
+//     getData.push(req.userId);///loggedin id
 
-    getData.push(req.body.add_date);
-    getData.push(req.body.patient_name);
-    getData.push(req.body.patient_address);
-    getData.push(req.body.patient_phone);
-    getData.push(req.body.date_string);
-    getData.push(req.body.date);
-        results = await patients.UpdateVitalSign(getData);
+//     getData.push(req.body.add_date);
+//     getData.push(req.body.patient_name);
+//     getData.push(req.body.patient_address);
+//     getData.push(req.body.patient_phone);
+//     getData.push(req.body.date_string);
+//     getData.push(req.body.date);
+//         results = await patients.UpdateVitalSign(getData);
 
-        if (results) {
-            res.json({ status: 1, message: langPatientModule.vital_sign.update, data: '' });
-        } else {
-            res.json({ status: 0, message: langCommon.errormessage });
-        }
-  } catch (error) {
-      throw error;
-  }
+//         if (results) {
+//             res.json({ status: 1, message: langPatientModule.vital_sign.update, data: '' });
+//         } else {
+//             res.json({ status: 0, message: langCommon.errormessage });
+//         }
+//   } catch (error) {
+//       throw error;
+//   }
 };
 exports.deleteVitalSign = async (req, res) => {
   try {
@@ -2105,31 +2105,165 @@ exports.getClinicalNotesByID = async (req, res) => {
 };
 exports.addClinicalNotes = async (req, res) => {
   try {
-    let getData = [], results;
-        
+    let patientID = req.body.patient_id;
+    let clinicalNotes_data = req.body.clinical_notes;
+    let appointment_data = req.body.appointment;
+    let VitalSign_data = req.body.vital_sign;
+    let lab_data = req.body.lab;
+    let imaging_data = req.body.imaging;
+    let Prescription_data = req.body.prescription;
+    let hospitalization_data = req.body.hospitalization;
+    console.log(req.body);
+    console.log(clinicalNotes_data);
+    PatientModal = await Patient.findOne({where : {id:patientID}});
     ClinicalNotesModal = await ClinicalNotes.create({ 
-                                patient_id: req.body.patient_id,
+                                patient_id: patientID,
                                 org_id: req.org_id,
-                                date_time: req.body.date_time,
-                                channel: req.body.channel,
-                                motive: req.body.motive,
-                                known_health_issues: req.body.known_health_issues,
-                                desease_history: req.body.desease_history,
-                                consultation: req.body.consultation,
-                                diagnostic: req.body.diagnostic,
-                                treatment: req.body.treatment,
-                                observation: req.body.observation,
-                                desease: JSON.parse(req.body.desease),
-                                documents: req.body.documents,
+                                date_time: clinicalNotes_data.date_time,
+                                channel: clinicalNotes_data.channel,
+                                motive: clinicalNotes_data.motive,
+                                known_health_issues: clinicalNotes_data.known_health_issues,
+                                desease_history: clinicalNotes_data.desease_history,
+                                consultation: clinicalNotes_data.consultation,
+                                diagnostic: clinicalNotes_data.diagnostic,
+                                treatment: clinicalNotes_data.treatment,
+                                observation: clinicalNotes_data.observation,
+                                desease: clinicalNotes_data.desease,
                                 status: 1,
                                 added_by: req.userId,
                             });
+    
+    if(appointment_data != null){
+            // Appointment
+            let room_id = 'teleconsulation_ecomed24-'+ PatientModal.phone + '-' + Math.floor((Math.random() * 444444) + 1000000);
+            let live_meeting_link = 'https://teleconsultation.ecomed24.com/' + room_id;
+
+            AppointmentModal = await Appointment.create({ 
+                                                    patient: patientID,
+                                                    clinical_id: ClinicalNotesModal.id,
+                                                    code: appointment_data.code,
+                                                    id_organisation: req.org_id,
+                                                    doctor: appointment_data.doctor,
+                                                    date: moment(appointment_data.date).unix(),
+                                                    time_slot: appointment_data.time_slot,
+                                                    s_time: appointment_data.s_time,
+                                                    e_time: appointment_data.e_time,
+                                                    remarks: appointment_data.remarks,
+                                                    add_date: moment().format('MM/DD/YYYY'),
+                                                    registration_time: moment().unix(),
+                                                    s_time_key: appointment_data.s_time_key,
+                                                    status: appointment_data.status,
+                                                    user: req.userId,
+                                                    request: appointment_data.request,
+                                                    patientname: appointment_data.patientname,
+                                                    doctorname: appointment_data.doctorname,
+                                                    service: appointment_data.service,
+                                                    servicename: appointment_data.servicename,
+                                                    room_id: room_id,
+                                                    live_meeting_link: live_meeting_link,
+                                                    appointment_date:moment(appointment_data.date).format('YYYY-MM-DD'),
+                                                    tele_consultation: appointment_data.tele_consultation == 1 ? 1 : 0,
+                                                    added_by: req.userId,
+                                            });
+    }
+    
+    if(VitalSign_data != null){
+        VitalSignModal = await VitalSign.create({ 
+            patient: patientID,
+            clinical_id: ClinicalNotesModal.id,
+            id_organisation: req.org_id,
+            prescripteur: VitalSign_data.prescripteur,
+            frequenceRespiratoire: VitalSign_data.frequenceRespiratoire,
+            frequenceCardiaque: VitalSign_data.frequenceCardiaque,
+            saturationArterielle: VitalSign_data.saturationArterielle,
+            temperature: VitalSign_data.temperature,
+            systolique: VitalSign_data.systolique,
+            diastolique: VitalSign_data.diastolique,
+            tensionArterielle: VitalSign_data.tensionArterielle,
+            weight: VitalSign_data.weight,
+            blood_sugar: VitalSign_data.blood_sugar,
+            height: VitalSign_data.height,
+            body_mass_index: VitalSign_data.body_mass_index,
+            ion_user_id: req.userId,//loggedin id
+            add_date: moment(VitalSign_data.add_date).format('YYYY-MM-DD'),
+            patient_name: '',
+            patient_address: '',
+            patient_phone: '',
+            date_string: moment().format('DD-MM-YYYY'),
+            date: moment().unix(),
+            added_by: req.userId,
+            status: 1,
+        });
+    }
+
+    if(lab_data != null){
+        TestRequestsModal = await TestRequests.create({ 
+                                            patient_id: patientID,
+                                            clinical_id: ClinicalNotesModal.id,
+                                            org_id: req.org_id,
+                                            type: 'lab',
+                                            action: 'add',
+                                            reports: lab_data.reports,
+                                            status: 0,
+                                            added_by: req.userId
+                                    });
+    }
+
+    if(imaging_data != null){
+        TestRequestsModal = await TestRequests.create({ 
+                                            patient_id: patientID,
+                                            clinical_id: ClinicalNotesModal.id,
+                                            org_id: req.org_id,
+                                            type: 'imaging',
+                                            action:'add',
+                                            reports: imaging_data.reports,
+                                            status: 0,
+                                            added_by: req.userId
+                                });
+    }
+    if(Prescription_data != null){
+        PrescriptionsModal = await Prescriptions.create({ 
+                                            patient_id: patientID,
+                                            org_id: req.org_id,
+                                            clinical_id: ClinicalNotesModal.id,
+                                            patient_name: PatientModal.name +' '+PatientModal.last_name,
+                                            patient_gender: PatientModal.sex,
+                                            patient_age: PatientModal.age,
+                                            patient_dob: PatientModal.birthdate,
+
+                                            advice: Prescription_data.advice,
+                                            medicin: Prescription_data.medicin,
+
+                                            status: 1,
+                                            added_by: req.userId
+                                });
+    }
+    if(appointment_data != null){
+        PatientHospitalizationModal = await PatientHospitalization.create({ 
+                                            patient_id: patientID,
+                                            org_id: req.org_id,
+                                            clinical_id: ClinicalNotesModal.id,
+
+                                            patient_name: PatientModal.name +' '+PatientModal.last_name,
+                                            patient_dob: PatientModal.birthdate,
+                                            patient_age: PatientModal.age,
+                                            patient_gender: PatientModal.sex,
+                                            patient_phone: PatientModal.phone_contact,
+                                            patient_address: PatientModal.address,
+
+                                            reason: hospitalization_data.reason,
+                                            current_disease: hospitalization_data.current_disease,
+                                            hospitalization_date: hospitalization_data.hospitalization_date,
+                                            hospitalization_time: hospitalization_data.hospitalization_time,
+
+                                            status: 1,
+                                            added_by: req.userId
+                                });
+    }
     if(ClinicalNotesModal === null){
         res.json({ status: 0, message: langCommon.errormessage });
     }else{
         console.log(req.body);
-
-
 
         await PatientLogs.create({
             patient_id: ClinicalNotesModal.patient_id,
@@ -2892,7 +3026,7 @@ exports.getPaymentHistory = async (req, res) => {
     } catch (error) {
         throw error;
     }
-  };
+};
 
 
 exports.getPaymentHistoryInfo = async (req, res) => {
@@ -2923,10 +3057,10 @@ exports.getPaymentHistoryInfo = async (req, res) => {
       res.json({ status: 0, message: error, data: '' });
       // throw error;
   }
-  };
+};
 
 
-  exports.getPaymentDepositLogs = async (req, res) => {
+exports.getPaymentDepositLogs = async (req, res) => {
     try {
       let offsetdata = parseInt(req.query.offset ? ((req.query.offset == undefined || req.query.offset == 1) ? 0 :req.query.offset) : 0);
       if(isNaN(offsetdata)){
@@ -2962,7 +3096,7 @@ exports.getPaymentHistoryInfo = async (req, res) => {
     } catch (error) {
         throw error;
     }
-  };
+};
 
 
 

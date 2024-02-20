@@ -91,6 +91,10 @@ const VitalSign = sequelize.define('VitalSign', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  clinical_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
   added_by: {
     type: DataTypes.INTEGER,
     allowNull: true

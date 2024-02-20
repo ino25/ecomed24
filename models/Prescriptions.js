@@ -43,7 +43,10 @@ const Prescriptions = sequelize.define('Prescriptions', {
     type: DataTypes.STRING,
     allowNull: true
   },
-  
+  clinical_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
   status: {
     type: DataTypes.INTEGER,
     allowNull: true
