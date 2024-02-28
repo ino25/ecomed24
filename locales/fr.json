@@ -43,7 +43,9 @@
             "status":"Statut des antécédants mis à jour!",
             "deleted":"Antécédants supprimés!",
             "list":"Antécédants récupérés!",
-            "individual":"Détails de l'antécédant récupérés!"
+            "individual":"Détails de l'antécédant récupérés!",
+            "HealthIssueTypes":"Health Issue Types fetched.",
+            "HealthIssues":"Health Issue fetched."
         },
         "appointment":{
             "add":"Rendez-vous enregistré!",
@@ -152,6 +154,7 @@
         "helper":{
             "medicinlist":"Liste de médicaments récupérée!",
             "deseaselist":"Liste des maladies récupérée",
+            "nosologiedeseaselist":"Nosologie Desease list fetched.",
             "timeline":"Historique de patients récupéré!"
         }
     },

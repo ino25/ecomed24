@@ -116,6 +116,8 @@ router.post('/known-health-issue/add',VerifyToken, patientController.addKnownHea
 router.patch('/known-health-issue/update/:id',VerifyToken, patientController.updateKnownHealthIssues);
 router.delete('/known-health-issue/delete/:id',VerifyToken, patientController.deleteKnownHealthIssues);
 
+router.get('/get-issue-types',VerifyToken, patientController.getHealthIssueTypes);
+router.get('/get-health-issue-by-type/:type_id',VerifyToken, patientController.getHealthIssueByType);
 
 // Confidential Notes
 router.get('/confidential-notes/:patient_id',VerifyToken, patientController.getConfidentialNotes);
@@ -175,6 +177,7 @@ router.delete('/imaging-request/delete/:id',VerifyToken, patientController.delet
 
 router.get('/medicine-list',VerifyToken, patientController.medicinList);
 router.get('/desease-list',VerifyToken, patientController.deseaseList);
+router.get('/nosologie-desease-list',VerifyToken, patientController.NosologieDeseaseList);
 router.get('/medical-history/timeline/:patient_id',VerifyToken, patientController.timeLine);
 
 

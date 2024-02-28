@@ -19,6 +19,8 @@ var HolidaysService = require('../models/HolidaysService');
 var TimeSlotService = require('../models/TimeSlotService');
 var CurrentMedications = require('../models/CurrentMedications');
 var PreConditions = require('../models/PreConditions');
+var HealthIssueType = require('../models/HealthIssueType');
+var HealthIssue = require('../models/HealthIssue');
 var PatientRelation = require('../models/PatientRelation');
 var PatientMaterial = require('../models/PatientMaterial');
 var DocumentTypes = require('../models/DocumentTypes');
@@ -40,6 +42,7 @@ var PatientLogs = require('../models/PatientLogs');
 var Prescriptions = require('../models/Prescriptions');
 var TestRequests = require('../models/TestRequests');
 var Illness = require('../models/Illness');
+var NosologieIllness = require('../models/NosologieIllness');
 var IllnessConsultation = require('../models/IllnessConsultation');
 const multer  = require('multer');
 const fs = require('fs');
@@ -1828,7 +1831,7 @@ exports.getKnownHealthIssues = async (req, res) => {
     const { count, rows } = await PreConditions.findAndCountAll({where: { patient_id: req.params.patient_id }});
 
     PreConditionsModal = await PreConditions.findAll({
-        attributes: ['id', 'patient_id', 'doctor_id','title', 'content', 'date_time', 'status','added_by','updated_by','org_id',[Sequelize.fn("DATE_FORMAT", Sequelize.col("PreConditions.createdAt"),"%d/%m/%Y %H:%i"),"createdAt",],[Sequelize.fn("DATE_FORMAT", Sequelize.col("PreConditions.updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt",]], 
+        attributes: ['id', 'patient_id', 'doctor_id', 'content', 'date_time', 'status','added_by','updated_by','org_id',[Sequelize.fn("DATE_FORMAT", Sequelize.col("PreConditions.createdAt"),"%d/%m/%Y %H:%i"),"createdAt",],[Sequelize.fn("DATE_FORMAT", Sequelize.col("PreConditions.updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt",]], 
         where: { patient_id: req.params.patient_id },
         order: [['id', 'DESC']],
         limit: datalimit,
@@ -1860,7 +1863,7 @@ exports.getKnownHealthIssuesByID = async (req, res) => {
   try {
     let getData = [], results;
     PreConditionsModal = await PreConditions.findOne({
-        attributes: ['id', 'patient_id', 'doctor_id','title', 'content', 'date_time', 'status','added_by','updated_by','org_id',[Sequelize.fn("DATE_FORMAT", Sequelize.col("PreConditions.createdAt"),"%d/%m/%Y %H:%i"),"createdAt",],[Sequelize.fn("DATE_FORMAT", Sequelize.col("PreConditions.updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt",]], 
+        attributes: ['id', 'patient_id','type_id','issue_id', 'doctor_id', 'content', 'date_time', 'status','added_by','updated_by','org_id',[Sequelize.fn("DATE_FORMAT", Sequelize.col("PreConditions.createdAt"),"%d/%m/%Y %H:%i"),"createdAt",],[Sequelize.fn("DATE_FORMAT", Sequelize.col("PreConditions.updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt",]], 
         where: { id: req.params.pre_condition_id } });
     if(PreConditionsModal === null){
         res.json({ status: 0, message: langCommon.nodatafound });
@@ -1879,7 +1882,8 @@ exports.addKnownHealthIssues = async (req, res) => {
                                             patient_id: req.body.patient_id,
                                             doctor_id: req.body.doctor_id,
                                             content: req.body.content,
-                                            title: req.body.title,
+                                            type_id: req.body.type_id,
+                                            issue_id: req.body.issue_id,
                                             added_by: req.userId,
                                             org_id: req.org_id,
                                             status: 1,
@@ -1906,9 +1910,8 @@ exports.addKnownHealthIssues = async (req, res) => {
 };
 exports.updateKnownHealthIssues = async (req, res) => {
   try {
-    let getData = [], results;
         PreConditionData = await PreConditions.findOne({where: { id: req.params.id} }); 
-        PreConditionsModal = await PreConditions.update({content: req.body.content,title: req.body.title,updated_by: req.userId,}, {where: {id: req.params.id}});
+        PreConditionsModal = await PreConditions.update({type_id: req.body.type_id,issue_id: req.body.issue_id,content: req.body.content,title: req.body.title,updated_by: req.userId,}, {where: {id: req.params.id}});
         if(PreConditionsModal === null){
             res.json({ status: 0, message: langCommon.errormessage });
         }else{
@@ -1942,7 +1945,39 @@ exports.deleteKnownHealthIssues = async (req, res) => {
       throw error;
   }
 };
+exports.getHealthIssueTypes = async (req, res) => {
+    try {
+      
+        HealthIssueTypeModal = await HealthIssueType.findAll({attributes: ['id', 'name','code','status','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]], 
+                                order: [['id', 'ASC']],
+                                where: { status: 1 }
+                            });
+        if(HealthIssueTypeModal === null){
+            res.json({ status: 0, message: 'No Data Found' });
+        }else{
+            res.json({ status: 1, message: langPatientModule.know_health_issue.HealthIssueTypes, data: HealthIssueTypeModal });
+        }
+    } catch (error) {
+        throw error;
+    }
+};
 
+exports.getHealthIssueByType = async (req, res) => {
+    try {
+      
+        HealthIssueModal = await HealthIssue.findAll({attributes: ['id', 'name','status','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]], 
+                                    where: { type_id: req.params.type_id },
+                                
+                            });
+        if(HealthIssueModal === null){
+            res.json({ status: 0, message: 'No Data Found' });
+        }else{
+            res.json({ status: 1, message: langPatientModule.know_health_issue.HealthIssues, data: HealthIssueModal });
+        }
+    } catch (error) {
+        throw error;
+    }
+};
 
 // Confidential Notes
 exports.getConfidentialNotes = async (req, res) => {
@@ -2929,7 +2964,6 @@ exports.medicinList = async (req, res) => {
 exports.deseaseList = async (req, res) => {
   try {
     let getData = [], results;
-        console.log(req);
     IllnessModal = await Illness.findAll({ where: {
         affection: {
           [Op.like]: ''+req.query.search+'%'
@@ -2943,6 +2977,29 @@ exports.deseaseList = async (req, res) => {
   } catch (error) {
       throw error;
   }
+};
+
+exports.NosologieDeseaseList = async (req, res) => {
+    try {
+        console.log(req.query.search);
+        let search = req.query.search ? ((req.query.search == undefined) ? '' :req.query.search) : '';
+        if(isNaN(search)){
+            search = '';
+        }
+        console.log(search);
+        NosologieIllnessModal = await NosologieIllness.findAll({ where: {
+          name: {
+            [Op.like]: ''+search+'%'
+          }
+        },limit: 50 });
+      if(NosologieIllnessModal === null){
+          res.json({ status: 0, message: langCommon.nodatafound });
+      }else{
+          res.json({ status: 1, message: langPatientModule.helper.nosologiedeseaselist, data: NosologieIllnessModal });
+      }
+    } catch (error) {
+        throw error;
+    }
 };
 exports.timeLine = async (req, res) => {
   try {

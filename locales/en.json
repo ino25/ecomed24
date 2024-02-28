@@ -43,7 +43,9 @@
             "status":"Patient Known Health Issue Status Successfully changed!",
             "deleted":"Patient Known Health Issue Successfully Deleted!",
             "list":"Patient Known Health Issue Fetched!",
-            "individual":"Patient Known Health Issue Details Fetched!"
+            "individual":"Patient Known Health Issue Details Fetched!",
+            "HealthIssueTypes":"Health Issue Types fetched.",
+            "HealthIssues":"Health Issue fetched."
         },
         "appointment":{
             "add":"Patient Appointment successfully Added!",
@@ -151,7 +153,8 @@
         },
         "helper":{
             "medicinlist":"Medicin list fetched!",
-            "deseaselist":"Desease list fetched",
+            "deseaselist":"Desease list fetched!",
+            "nosologiedeseaselist":"Nosologie Desease list fetched!",
             "timeline":"Patient Timeline Fetched!"
         }
     },
