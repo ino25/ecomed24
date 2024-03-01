@@ -35,7 +35,27 @@ const ClinicalNotes = sequelize.define('ClinicalNotes', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  desease_history: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  diagnostic: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  treatment: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  observation: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   desease: {
+    type: DataTypes.JSON,
+    allowNull: true
+  },
+  nosologie: {
     type: DataTypes.JSON,
     allowNull: true
   },

@@ -218,7 +218,7 @@ exports.addPatient = async (req, res) => {
                 await Patient.update({img_url:req.files.profile[0].filename}, {where: {id: PatientModal.id}});
             }
             
-            await Patient.update({ unique_id: '2101'+PatientModal.id_organisation+PatientModal.id }, {where: {id: PatientModal.id}});
+            await Patient.update({ unique_id: PatientModal.country+'01'+PatientModal.id_organisation+PatientModal.id }, {where: {id: PatientModal.id}});
               res.json({ status: 1, message: langPatientModule.patientAdd, data: '' });
           }
           
@@ -2164,6 +2164,7 @@ exports.addClinicalNotes = async (req, res) => {
                                 treatment: clinicalNotes_data.treatment,
                                 observation: clinicalNotes_data.observation,
                                 desease: clinicalNotes_data.desease,
+                                nosologie: clinicalNotes_data.nosologie,
                                 status: 1,
                                 added_by: req.userId,
                             });
