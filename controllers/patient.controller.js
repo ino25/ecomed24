@@ -6,7 +6,7 @@ const Database = require('../config').sequelize;
 const Op = Sequelize.Op;
 const moment = require("moment");
 moment.locale('en');
-
+const levenshtein = require('fast-levenshtein');
 const path = require('path');
 const nodemailer = require("nodemailer");
 
@@ -58,6 +58,9 @@ CurrentMedications.belongsTo(Organisation, {as: 'org_details',foreignKey: 'org_i
 PreConditions.belongsTo(User, {as: 'addedby_details',foreignKey: 'added_by'});
 PreConditions.belongsTo(User, {as: 'updatedby_details',foreignKey: 'updated_by'});
 PreConditions.belongsTo(Organisation, {as: 'org_details',foreignKey: 'org_id'});
+
+PreConditions.belongsTo(HealthIssueType, {as: 'type_details',foreignKey: 'type_id'});
+PreConditions.belongsTo(HealthIssue, {as: 'issue_details',foreignKey: 'issue_id'});
 
 // Attachments
 
@@ -148,7 +151,16 @@ exports.getAllPatients = async (req, res) => {
     }
     const { count, rows } = await Patient.findAndCountAll({where: { id_organisation: req.org_id }});
       PatientModal = await Patient.findAll({ 
-          attributes: ['id','unique_id', 'name','last_name',['patient_id','code'],['sex','gender'], 'age','email','phone','address','region',['registration_time','register'],'grade','estCivil','passport','matricule',['bloodgroup','blood_type'],'birthdate',['birth_position','birth_place'],'religion','img_url',['nom_contact','emergency_contact_name'],['phone_contact','emergency_contact_no']],
+          attributes: ['id','unique_id', 'name','last_name',
+          ['patient_id','code'],
+          ['sex','gender'], 'age','email','phone','address','region',
+          ['registration_time','register'],'grade','estCivil','passport','matricule',
+          ['bloodgroup','blood_type'],'birthdate',
+          ['birth_position','birth_place'],'religion','img_url',
+          ['nom_contact','emergency_contact_name'],
+          ['phone_contact','emergency_contact_no'],
+          [Sequelize.literal('(SELECT ((SUM(p.gross_total) + SUM(p.frais_service)) - (select SUM(patient_deposit.deposited_amount) as sum_deposit from patient_deposit where patient = p.patient)) as total_due from payment as p where p.bulletinAnalyse like "" and p.patient = Patient.id and id_organisation='+req.org_id+')'), 'due_amount']
+        ],
           order: [['id', 'DESC']],
           limit: datalimit,
           offset: offsetdata,
@@ -180,8 +192,111 @@ exports.updateUniqueID = async (req, res) => {
   }
 };
 
+async function filterObjectsByMatchingPercentage(objects, fieldQueryPairs, minPercentage) {
+    // Remove empty values from fieldQueryPairs
+    fieldQueryPairs = Object.fromEntries(
+      Object.entries(fieldQueryPairs).filter(([field, query]) => query !== '')
+    );
+  
+    const bestMatchingObjs = [];
+  
+    for (const obj of objects) {
+      const matchingFields = {};
+      let combinedPercentage = 0;
+      const totalFields = Object.keys(fieldQueryPairs).length;
+  
+      for (const [field, query] of Object.entries(fieldQueryPairs)) {
+        const propertyValue = obj.get(field); // Use the get method to access the property
+        if (propertyValue !== null && propertyValue !== undefined) {
+          const distance = levenshtein.get(propertyValue.toString(), query.toString());
+          const percentage = ((1 - distance / Math.max(query.length, propertyValue.length)) * 100) || 0;
+  
+          matchingFields[field] = percentage;
+          combinedPercentage += percentage;
+        } else {
+          // Handle the case when the property is null or undefined
+        }
+      }
+  
+      // Convert the Sequelize object to a plain JavaScript object
+      const plainObject = obj.toJSON();
+  
+      // Add the matchingFields and overallPercentage properties
+      plainObject.matchingFields = matchingFields;
+      plainObject.overallPercentage = totalFields > 0 ? combinedPercentage / totalFields : 0;
+  
+      if (
+        plainObject.overallPercentage >= minPercentage &&
+        (bestMatchingObjs.length === 0 || plainObject.overallPercentage >= bestMatchingObjs[0].overallPercentage)
+      ) {
+        if (bestMatchingObjs.length > 0 && plainObject.overallPercentage > bestMatchingObjs[0].overallPercentage) {
+          bestMatchingObjs.length = 0;
+        }
+        bestMatchingObjs.push(plainObject);
+      }
+    }
+  
+    return bestMatchingObjs;
+  }
+  
+
+async function checkDuplicatePatients(name,lastname,phone,birthdate,email,cin=''){
+    if(cin != ''){
+        PatientModal = await Patient.findAll({ 
+            attributes: ['id','unique_id', 'name','last_name',
+            ['patient_id','code'],
+            ['sex','gender'], 'age','email','phone','address','region',
+            ['registration_time','register'],'grade','estCivil','passport','matricule',
+            ['bloodgroup','blood_type'],'birthdate',
+            ['birth_position','birth_place'],'religion','img_url',
+            ['nom_contact','emergency_contact_name'],
+            ['phone_contact','emergency_contact_no'],
+            
+          ],
+            order: [['id', 'DESC']],
+            where: { cin: cin }
+           });
+        return { status_code: 1, message: 'Patient Already Exists With Exact match.',data:data };
+
+    }
+
+    if(cin == ''){
+        // $this->db->like('name', $name,'both');
+        // $this->db->like('last_name', $lastname,'both');
+        PatientModal = await Patient.findAll({ 
+            attributes: ['id','unique_id', 'name','last_name',
+            ['patient_id','code'],
+            ['sex','gender'], 'age','email','phone','address','region',
+            ['registration_time','register'],'grade','estCivil','passport','matricule',
+            ['bloodgroup','blood_type'],'birthdate',
+            ['birth_position','birth_place'],'religion','img_url',
+            ['nom_contact','emergency_contact_name'],
+            ['phone_contact','emergency_contact_no'],
+            
+          ],
+            order: [['id', 'DESC']]
+           });
+        fieldQueryPairs = {
+            'name':name,
+            'last_name':lastname,
+            'phone':phone,
+            'birthdate':birthdate,
+            'email':email,
+        };
+        maxDistance = 2; // Maximum Levenshtein distance
+        minPercentage = 80;
+        filteredData =  await filterObjectsByMatchingPercentage(PatientModal, fieldQueryPairs, minPercentage);
+        
+        return { status_code: 1, message: 'Patient Found With Similar Details.',data:filteredData };
+    }
+}
 exports.addPatient = async (req, res) => {
   try { 
+    duplicatesRefdata = await checkDuplicatePatients(req.body.name,req.body.last_name,req.body.phone,moment(req.body.birthdate).format('DD/MM/YYYY'),req.body.email);
+    
+    if(duplicatesRefdata.data.length > 0){
+        return res.json({ status: 0,is_duplicates:true, message: duplicatesRefdata.message,data:duplicatesRefdata.data });
+    }
       PatientModal = await Patient.create({
                               name: req.body.name,
                               last_name: req.body.last_name,
@@ -1831,7 +1946,7 @@ exports.getKnownHealthIssues = async (req, res) => {
     const { count, rows } = await PreConditions.findAndCountAll({where: { patient_id: req.params.patient_id }});
 
     PreConditionsModal = await PreConditions.findAll({
-        attributes: ['id', 'patient_id', 'doctor_id', 'content', 'date_time', 'status','added_by','updated_by','org_id',[Sequelize.fn("DATE_FORMAT", Sequelize.col("PreConditions.createdAt"),"%d/%m/%Y %H:%i"),"createdAt",],[Sequelize.fn("DATE_FORMAT", Sequelize.col("PreConditions.updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt",]], 
+        attributes: ['id', 'patient_id', 'doctor_id','type_id','issue_id', 'content', 'date_time', 'status','added_by','updated_by','org_id',[Sequelize.fn("DATE_FORMAT", Sequelize.col("PreConditions.createdAt"),"%d/%m/%Y %H:%i"),"createdAt",],[Sequelize.fn("DATE_FORMAT", Sequelize.col("PreConditions.updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt",]], 
         where: { patient_id: req.params.patient_id },
         order: [['id', 'DESC']],
         limit: datalimit,
@@ -1848,6 +1963,14 @@ exports.getKnownHealthIssues = async (req, res) => {
             model: Organisation,
             attributes: ['id', 'nom','email','adresse'],
             as:'org_details'
+        },{
+            model: HealthIssueType,
+            attributes: ['id', 'name','code'],
+            as:'type_details'
+        },{
+            model: HealthIssue,
+            attributes: ['id', 'name','type_id'],
+            as:'issue_details'
         }]
     });
     if(PreConditionsModal === null){
@@ -3060,7 +3183,7 @@ exports.getPaymentHistory = async (req, res) => {
       }
       const { count, rows } = await Payment.findAndCountAll({where: { patient: req.params.patient_id }});
       PaymentModal = await Payment.findAll({ 
-          attributes: ['id','date', 'code','amount','gross_total','amount_received','status_paid','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("Payment.createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("Payment.updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]],
+          attributes: ['id','date', 'code','amount','gross_total','amount_received','status_paid','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("Payment.createdAt"),"%d/%m/%Y %H:%i"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("Payment.updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt"]],
           where: { patient: req.params.patient_id,bulletinAnalyse: ''},
           order:[['id','DESC']],
           limit: datalimit,

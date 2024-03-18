@@ -19,6 +19,13 @@ var PaymentCategory = require('../models/PaymentCategory');
 const multer  = require('multer');
 const fs = require('fs');
 
+
+// Attachments
+
+Organisation.belongsTo(User, {as: 'addedby_details',foreignKey: 'added_by'});
+Organisation.belongsTo(User, {as: 'updatedby_details',foreignKey: 'updated_by'});
+Organisation.belongsTo(OrganisationType, {as: 'type_details',foreignKey: 'type'});
+// Organisation.belongsTo(DocumentTypes, {as: 'doctypes_details',foreignKey: 'category'});
 //////Modal Relationship
 
 exports.getOrganizationList = async (req, res) => {
@@ -32,10 +39,23 @@ exports.getOrganizationList = async (req, res) => {
           datalimit = 5;
       }
       const { count, rows } = await Organisation.findAndCountAll();
-      OrganisationModal = await Organisation.findAll({attributes: ['id', 'code','nom','nom_commercial', 'email','portable_responsable_legal','type','est_active','is_light','status','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]], 
+      OrganisationModal = await Organisation.findAll({attributes: ['id', 'code','nom','nom_commercial', 'email','portable_responsable_legal','type','adresse','est_active','is_light','status','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("Organisation.createdAt"),"%d/%m/%Y %H:%i"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("Organisation.updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt"]], 
                                 order: [['id', 'DESC']],
                                 limit: datalimit,
-                                offset: offsetdata
+                                offset: offsetdata,
+                                include: [{
+                                    model: User,
+                                    attributes: ['id', ['id_organisation','org_id'],'first_name','last_name', 'username','email'],
+                                    as:'addedby_details'
+                                },{
+                                    model: User,
+                                    attributes: ['id', ['id_organisation','org_id'],'first_name','last_name', 'username','email'],
+                                    as:'updatedby_details'
+                                },{
+                                    model: OrganisationType,
+                                    attributes: ['id', 'name'],
+                                    as:'type_details'
+                                }]
                             });
         if(OrganisationModal === null){
             res.json({ status: 0, message: 'No Data Found' });
@@ -50,7 +70,7 @@ exports.getOrganizationList = async (req, res) => {
 exports.getOrganizationByID = async (req, res) => {
     try {
       
-      OrganisationModal = await Organisation.findAll({attributes: ['id', 'code','nom','nom_commercial', 'email','portable_responsable_legal','adresse','region','type','est_active','is_light','status','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]], 
+      OrganisationModal = await Organisation.findAll({attributes: ['id', 'code','nom','nom_commercial', 'email','portable_responsable_legal','adresse','region','departement','type','est_active','is_light','status','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d/%m/%Y %H:%i"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt"]], 
                                     where: { id: req.params.org_id },
                                 
                             });
@@ -74,7 +94,9 @@ exports.addOrganization = async (req, res) => {
                                 email: req.body.email,
                                 age: req.body.terrification,
                                 adresse: req.body.address,
+                                country: req.body.country,
                                 region: req.body.region,
+                                district: req.body.district,
                                 added_by:req.userId,
                                 status:1,
                         });
@@ -99,7 +121,9 @@ exports.updateOrganization = async (req, res) => {
                                             email: req.body.email,
                                             age: req.body.terrification,
                                             adresse: req.body.address,
+                                            pays: req.body.country,
                                             region: req.body.region,
+                                            departement: req.body.district,
                                             updated_by: req.userId,
                                         }, 
                                         {
