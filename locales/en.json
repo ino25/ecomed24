@@ -159,6 +159,30 @@
         }
     },
     
-    "organizationModule": "Hello, {name}!"
+    "organizationModule": {
+        "add":"New Organization has been added!",
+        "update":"Organization has been updated successfully!",
+        "status":"Status has been updated successfull!",
+        "deleted":"Organization has been deleted successfully!",
+        "list":"Organization list fetched",
+        "individual":"Organization details has been fetched!"
+    },
+    "Roles": {
+        "add":"New Roles has been added.",
+        "update":"Role successfully updated.",
+        "status":"Status has been updated successfull!",
+        "deleted":"Role has been deleted successfully!",
+        "list":"Roles successfull fetched",
+        "individual":"Role details fetched"
+    },
+    "Permissions": {
+        "add":"New Roles has been added.",
+        "update":"Role successfully updated.",
+        "status":"Status has been updated successfull!",
+        "deleted":"Role has been deleted successfully!",
+        "list":"Roles successfull fetched",
+        "individual":"Role details fetched",
+        "permissionassign":"Détails de l'ordonnance récupérés!"
+    }
 }
   

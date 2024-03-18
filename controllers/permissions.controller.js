@@ -1,5 +1,5 @@
 const i18n = require('i18n');
-const langRoleModule = i18n.__('Roles');
+const langPermissionModule = i18n.__('Permissions');
 const langCommon = i18n.__('common');
 const Sequelize = require('sequelize');
 const Database = require('../config').sequelize;
@@ -43,7 +43,7 @@ exports.getList = async (req, res) => {
       if(PermissionModal === null){
           res.json({ status: 0, message: langCommon.nodatafound });
       }else{
-          res.json({ status: 1, message: langRoleModule.appointment.list, data: PermissionModal,total:count });
+          res.json({ status: 1, message: langPermissionModule.list, data: PermissionModal,total:count });
       }
       
   } catch (error) {
@@ -56,7 +56,7 @@ exports.getByID = async (req, res) => {
     if(PermissionModal === null){
         res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: langPatientModule.appointment.individual, data: PermissionModal });
+        res.json({ status: 1, message: langPermissionModule.individual, data: PermissionModal });
     }
     
   } catch (error) {
@@ -75,7 +75,7 @@ exports.add = async (req, res) => {
     if(PermissionModal === null){
         res.json({ status: 0, message: langCommon.errormessage });
     }else{
-        res.json({ status: 1, message: langPatientModule.appointment.add, data: '' });
+        res.json({ status: 1, message: langPermissionModule.add, data: '' });
     }
     
   } catch (error) {
@@ -86,7 +86,7 @@ exports.update = async (req, res) => {
   try {
     
     PermissionModal = await Permission.update({ 
-            name: req.body.time_slot,
+            name: req.body.name,
             type: req.body.type,
             status: req.body.status,
             updated_by: req.userId
@@ -98,7 +98,7 @@ exports.update = async (req, res) => {
         res.json({ status: 0, message: langCommon.errormessage });
     }else{
         
-        res.json({ status: 1, message: langPatientModule.appointment.update, data: '' });
+        res.json({ status: 1, message: langPermissionModule.update, data: '' });
     }
     
   } catch (error) {
@@ -111,7 +111,7 @@ exports.delete = async (req, res) => {
     if(PermissionModal === null){
         res.json({ status: 0, message: langCommon.errormessage });
     }else{
-        res.json({ status: 1, message: langPatientModule.appointment.delete, data: '' });
+        res.json({ status: 1, message: langPermissionModule.delete, data: '' });
     }
   } catch (error) {
   throw error;
@@ -124,7 +124,7 @@ exports.status = async (req, res) => {
     if(PermissionModal === null){
         res.json({ status: 0, message: langCommon.errormessage });
     }else{
-        res.json({ status: 1, message: langPatientModule.appointment.status, data: '' });
+        res.json({ status: 1, message: langPermissionModule.status, data: '' });
     }
     
 } catch (error) {
@@ -147,7 +147,7 @@ exports.AllowPermissionToOrg = async (req, res) => {
       if(OrgPermissionModal === null){
           res.json({ status: 0, message: langCommon.errormessage });
       }else{
-          res.json({ status: 1, message: langPatientModule.appointment.add, data: '' });
+          res.json({ status: 1, message: langPermissionModule.permissionassign, data: '' });
       }
       
     } catch (error) {

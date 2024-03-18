@@ -86,7 +86,7 @@ exports.update = async (req, res) => {
   try {
     
     RoleModal = await Role.update({ 
-            name: req.body.time_slot,
+            name: req.body.name,
             status: req.body.status,
             updated_by: req.userId
     }, {

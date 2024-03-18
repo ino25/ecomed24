@@ -170,10 +170,19 @@
     "Roles": {
         "add":"New Roles has been added.",
         "update":"Role successfully updated.",
-        "status":"Statut de l'ordonnance mis à jour!",
-        "deleted":"Ordonnance supprimée!",
-        "list":"Liste des ordonnances récupérée!",
-        "individual":"Détails de l'ordonnance récupérés!"
+        "status":"Status has been updated successfull!",
+        "deleted":"Role has been deleted successfully!",
+        "list":"Roles successfull fetched",
+        "individual":"Role details fetched"
+    },
+    "Permissions": {
+        "add":"New Permissions has been added.",
+        "update":"Permissions successfully updated.",
+        "status":"Status has been updated successfull!",
+        "deleted":"Permissions has been deleted successfully!",
+        "list":"Permissions successfull fetched",
+        "individual":"Permissions details fetched",
+        "permissionassign":"Permission successfull assigned to Organization"
     }
 }
   
