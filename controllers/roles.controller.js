@@ -11,6 +11,7 @@ const nodemailer = require("nodemailer");
 
 var User = require('../models/User');
 var Role = require('../models/Role');
+var Organisation = require('../models/Organisation');
 
 
 //////Modal Relationship
@@ -42,7 +43,7 @@ exports.getList = async (req, res) => {
       if(RoleModal === null){
           res.json({ status: 0, message: langCommon.nodatafound });
       }else{
-          res.json({ status: 1, message: langRoleModule.appointment.list, data: RoleModal,total:count });
+          res.json({ status: 1, message: langRoleModule.list, data: RoleModal,total:count });
       }
       
   } catch (error) {
@@ -56,7 +57,7 @@ exports.getByID = async (req, res) => {
     if(RoleModal === null){
         res.json({ status: 0, message: langCommon.nodatafound });
     }else{
-        res.json({ status: 1, message: langPatientModule.appointment.individual, data: RoleModal });
+        res.json({ status: 1, message: langRoleModule.individual, data: RoleModal });
     }
     
   } catch (error) {
@@ -75,7 +76,7 @@ exports.add = async (req, res) => {
     if(RoleModal === null){
         res.json({ status: 0, message: langCommon.errormessage });
     }else{
-        res.json({ status: 1, message: langPatientModule.appointment.add, data: '' });
+        res.json({ status: 1, message: langRoleModule.add, data: '' });
     }
     
   } catch (error) {
@@ -97,7 +98,7 @@ exports.update = async (req, res) => {
         res.json({ status: 0, message: langCommon.errormessage });
     }else{
         
-        res.json({ status: 1, message: langPatientModule.appointment.update, data: '' });
+        res.json({ status: 1, message: langRoleModule.update, data: '' });
     }
     
   } catch (error) {
@@ -110,7 +111,7 @@ exports.delete = async (req, res) => {
     if(RoleModal === null){
         res.json({ status: 0, message: langCommon.errormessage });
     }else{
-        res.json({ status: 1, message: langPatientModule.appointment.delete, data: '' });
+        res.json({ status: 1, message: langRoleModule.appointment.delete, data: '' });
     }
   } catch (error) {
   throw error;
@@ -123,7 +124,7 @@ exports.status = async (req, res) => {
     if(RoleModal === null){
         res.json({ status: 0, message: langCommon.errormessage });
     }else{
-        res.json({ status: 1, message: langPatientModule.appointment.status, data: '' });
+        res.json({ status: 1, message: langRoleModule.appointment.status, data: '' });
     }
     
 } catch (error) {

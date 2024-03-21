@@ -1,18 +1,21 @@
-require('dotenv/config');
-var express = require("express");
-var router = express.Router();
-const query = require('../config').query;
+const Sequelize = require('sequelize');
+const Database = require('../config').sequelize;
+const Op = Sequelize.Op;
+const moment = require("moment");
+moment.locale('en');
+const path = require('path');
+const nodemailer = require("nodemailer");
+
 var User = require('../models/User');
-var crypto = require('crypto');
-var jwt = require('jsonwebtoken');
-const VerifyToken = require('./VerifyToken');
-const file = require('../helpers/FileHelper');
-const mailer = require('../helpers/Mailer');
+
+const multer  = require('multer');
+const fs = require('fs');
+
+//////Modal Relationship
 
 
 
-// Check user credentials and generate jwt
-router.post('/login', async (req, res) => {
+exports.Login = async (req, res) => {
     try {
         let getData = [];
         // if (!req.body.organization || !req.body.email || !req.body.password || !req.body.ip) {
@@ -69,91 +72,123 @@ router.post('/login', async (req, res) => {
                 await userModal.update({ token: token ,}, {where: {id: userModal.id,active:1}});
                 res.json({ status: 1, message: "Login Successful!!", data: userModal, token: token });
         }
-       
     } catch (error) {
         throw error;
     }
+};
 
-});
-
-// Register user
-router.post('/register', async (req, res) => {
+exports.LoginWithOtp = async (req, res) => {
     try {
-        let getData = [];
-        // if (!req.body.organization || !req.body.name || !req.body.email || !req.body.country || !req.body.state || !req.body.city || !req.body.mobile || !req.body.password || !req.body.ip) {
-        if (!req.body.organization || !req.body.name || !req.body.email || !req.body.country || !req.body.state || !req.body.city || !req.body.mobile || !req.body.password) {
-            return res.json({ status: 0, message: "Bad Request. Check Body Parameters." });
+        if (!req.body.mobile) {
+            return res.json({ status: false, message: "Bad Request. Check Body Parameters." });
         }
-        const organization = req.body.organization.trim();
-        const userName = req.body.name.trim();
-        const userMail = req.body.email.trim();
-        const hash = crypto.createHash('md5').update(req.body.password.trim()).digest("hex");
-
-        getData.push(organization);
-        getData.push(userMail);
-        //getData.push(hash);
-
-        await user.getSingleRegisterUser(getData).then(async (results) => {
-            if (results.length) {
-                res.json({ status: 2, message: "User Already Registered!!" });
-            } else {
-                let userData = [];
-                let mailData = {};
-                const activationKey = crypto.createHash('md5').update(userMail + organization).digest("hex");
-
-                // Prepare array for user creation
-                userData.push(userName);
-                userData.push(req.body.mobile);
-                userData.push(userMail);
-                userData.push(hash);
-                userData.push(req.body.country);
-                userData.push(req.body.state);
-                userData.push(req.body.city);
-                userData.push(organization);
-                userData.push(organization);
-                userData.push(activationKey);
-                // userData.push(req.body.ip.trim());
-                //userData.push(1234567);
-
-                // Get student email template from database
-                // await query(user.getMailBody, [organization, 'reg', 3]).then((data) => {
-                // mailData = JSON.parse(data[0].template);
-                // });
-
-                // Generate activation link
-                //const reglink = 'https://' + organization + '.' + process.env.URL + '/account-activation/' + activationKey;
-
-                // Reading email layout
-                //mailData.email = file.readEmail('email.html');
-
-                // Replacing data in email template nad email layout
-                // mailData.gjshtml = mailData.gjshtml.replaceArray(['{{user}}', '{{reg}}', '{{act}}'], [userName, reglink, activationKey]);
-                // mailData.email = mailData.email.replaceArray(['{{title}}', '{{css}}', '{{body}}'], ['Account Activation', mailData.gjscss, mailData.gjshtml]);
-
-                await query(user.createUser, userData).then(async (data) => {
-                    if (data.affectedRows) {
-                        // await mailer(userMail, 'Contact <contact@pathfinderacademy.in>', 'Account Activation', mailData.email).then(() => {
-                        // res.json({ status: 1, message: "Registration Successful!! Check your mail for activation link!!" });
-                        // }).catch(() => {
-                        // res.json({ status: 0, message: "Server busy. Please contact admin." });
-                        // });
-                        res.json({ status: 1, message: "Your Registration completed, Redirecting to log in page." });
-
-                    }
-                }).catch(() => {
-                    res.json({ status: 0, message: "Something went wrong. Please try again later." });
+        
+        var otp = "1234";
+        let hash = crypto.createHash('md5').update(otp).digest("hex");
+        const userModal = await User.findOne({attributes:['id','email','username','name','mobile_number','failed_attempt','user_type','status'], where: { mobile_number: req.body.mobile.trim() } });
+        if(userModal === null){
+                NewUser = await User.create({
+                    mobile_number: req.body.mobile,
+                    user_type: req.body.user_type,
+                    password:hash,
+                    status: 1
                 });
-            }
+                
+                
+                await User.update({ otp: otp ,}, {where: {id: NewUser.id}});
+                res.json({ status: true, message: "OTP sent to your mobile no."});
+        }else{
+                //OTP Integration Here
+
+                
+                // if user is found and valid create a Update OTP in db
+                await User.update({ otp: otp ,}, {where: {id: userModal.id}});
+                res.json({ status: true, message: "OTP sent to your mobile no." });
+        }
+    } catch (error) {
+        throw error;
+    }
+};
+
+exports.VerifyOTP = async (req, res) => {
+    try {
+        if (!req.body.mobile || !req.body.otp) {
+            return res.json({ status: false, message: "Bad Request. Check Body Parameters." });
+        }
+        
+        // let hash = crypto.createHash('md5').update(req.body.password).digest("hex");
+
+        
+        const userModal = await User.findOne({attributes:['id','email','username','name','mobile_number','failed_attempt','user_type','status'], where: { mobile_number: req.body.mobile.trim(),otp:req.body.otp } });
+        if(userModal === null){
+            res.json({ status: false, message: "Please Enter valid otp or try resend otp." });
+        }else{
+            // console.log(userModal.id);
+            const payload = { id: userModal.id, user_type: userModal.user_type,username:userModal.username,email:userModal.email,name:userModal.name };
+                let options = {
+                    algorithm: 'HS256',
+                }
+
+                if (req.body.remember) {
+                    options.expiresIn = '24h'
+                } else {
+                    options.expiresIn = '5h'
+                }
+
+                if (userModal.profile) {
+                    userModal.profile = userModal.profile;
+                } else {
+                    userModal.profile = "/upload/user-profile-placeholder.png";
+                }
+
+                if (userModal.profile) {
+                    userModal.logo = userModal.profile;
+                }
+
+                
+                // if user is found and valid create a token
+                var token = jwt.sign(payload, process.env.SECRET, options);
+                await User.update({ token: token ,}, {where: {id: userModal.id}});
+                res.json({ status: true, message: "Login Successful!!", data: userModal, token: token });
+        }
+    } catch (error) {
+        throw error;
+    }
+};
+exports.Logout = async (req, res) => {
+    try {
+        let postData = [];
+        postData.push(req.userId);
+        postData.push(req.orgId);
+
+        await user.setLogout(postData).then((results) => {
+            res.json({ status: 1, message: "Logged Out Successfully!!", data: results });
         }).catch((error) => {
-            throw error;
+            res.json({ status: 0, message: "Something Went Wrong. Please Try Again Later." });
         });
     } catch (error) {
         throw error;
     }
-});
+};
 
-// Check user credentials and generate temporary password for user
-router.post('/forgot', async (req, res) => {
+exports.getUserPermission = async (req, res) => {
+    try {
+        let getData = [];
+        // OrgPermissionModal = await OrgPermission.findAll({ attributes: ['id', 'sp_id'],where: { status_service: 1 } });
+
+        // OrgPermissionModal = await Database.query("SELECT op.id,sp.name,sp.type FROM ecomed24.org_permissions as op  LEFT JOIN ecomed24.system_permissions as sp ON op.sp_id= sp.id where op.status=1 and op.org_id = "+req.org_id+";",{type: Database.QueryTypes.SELECT});
+        // if(OrgPermissionModal === null){
+        //     res.json({ status: 0, message: 'No Data Found' });
+        // }else{
+        //     res.json({ status: 1, message: 'Organization Permission fetched', data: OrgPermissionModal });
+        // }
+    } catch (error) {
+        // throw error;
+    }
+};
+
+
+exports.ForgotPassword = async (req, res) => {
     try {
         let postData = [], postPass = [], mailData = {};
         if (!req.body.organization || !req.body.email) {
@@ -219,11 +254,9 @@ router.post('/forgot', async (req, res) => {
     } catch (error) {
         throw error;
     }
+}
 
-});
-
-// Register user
-router.post('/activate', async (req, res) => {
+exports.AccountActivation = async (req, res) => {
     try {
         let getData = [];
         if (!req.body.organization || !req.body.key) {
@@ -245,23 +278,15 @@ router.post('/activate', async (req, res) => {
     } catch (error) {
         throw error;
     }
-});
+}
 
-// Logout user
-router.get('/logout', VerifyToken, async (req, res) => {
-    try {
-        let postData = [];
-        postData.push(req.userId);
-        postData.push(req.orgId);
 
-        await user.setLogout(postData).then((results) => {
-            res.json({ status: 1, message: "Logged Out Successfully!!", data: results });
-        }).catch((error) => {
-            res.json({ status: 0, message: "Something Went Wrong. Please Try Again Later." });
-        });
-    } catch (error) {
-        throw error;
-    }
-});
 
-module.exports = router;
+
+
+
+
+
+
+
+

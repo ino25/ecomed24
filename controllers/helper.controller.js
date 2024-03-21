@@ -24,7 +24,7 @@ const multer  = require('multer');
 const fs = require('fs');
 var Doctor = require('../models/Doctor');
 var SettingService = require('../models/SettingService');
-//////Modal Relationship
+var OrgPermission = require('../models/OrgPermission');
 
 exports.getDoctorsList = async (req, res) => {
     try {
@@ -61,7 +61,7 @@ exports.getServicesList = async (req, res) => {
 exports.getCountryList = async (req, res) => {
     try {
       
-        CountryModal = await Country.findAll({attributes: ['id', 'name','status','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]], 
+        CountryModal = await Country.findAll({attributes: ['id', 'name','country_code','status','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d-%m-%Y %H:%i:%s"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d-%m-%Y %H:%i:%s"),"updatedAt"]], 
                                 order: [['id', 'ASC']],
                                 where: { status: 1 }
                             });
@@ -110,6 +110,21 @@ exports.getDistrictList = async (req, res) => {
 };
 
 
+exports.getOrganizationPermission = async (req, res) => {
+    try {
+        let getData = [];
+        // OrgPermissionModal = await OrgPermission.findAll({ attributes: ['id', 'sp_id'],where: { status_service: 1 } });
+
+        OrgPermissionModal = await Database.query("SELECT op.id,sp.name,sp.type FROM ecomed24.org_permissions as op  LEFT JOIN ecomed24.system_permissions as sp ON op.sp_id= sp.id where op.status=1 and op.org_id = "+req.org_id+";",{type: Database.QueryTypes.SELECT});
+        if(OrgPermissionModal === null){
+            res.json({ status: 0, message: 'No Data Found' });
+        }else{
+            res.json({ status: 1, message: 'Organization Permission fetched', data: OrgPermissionModal });
+        }
+    } catch (error) {
+        throw error;
+    }
+};
 
 
 

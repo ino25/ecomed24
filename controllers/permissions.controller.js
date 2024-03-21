@@ -12,7 +12,7 @@ const nodemailer = require("nodemailer");
 var User = require('../models/User');
 var Permission = require('../models/Permission');
 var OrgPermission = require('../models/OrgPermission');
-
+var Organisation = require('../models/Organisation');
 
 //////Modal Relationship
 

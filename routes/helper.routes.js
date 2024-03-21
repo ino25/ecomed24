@@ -13,6 +13,11 @@ router.get('/get-country-list',VerifyToken, helperController.getCountryList);
 router.get('/get-region-list/:country_id',VerifyToken, helperController.getRegionList);
 router.get('/get-district-list/:region_id',VerifyToken, helperController.getDistrictList);
 
+//Get organization Permissions 
+router.get('/get-permissions',VerifyToken, helperController.getOrganizationPermission);
+
+
+
 
 
 

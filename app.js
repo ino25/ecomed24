@@ -67,7 +67,7 @@ app.use(
 const documentsPath = path.join(__dirname, "pdfs");
 app.use("/documents", express.static(documentsPath));
 
-let authRouter = require("./routes/auth");
+let authRouter = require("./routes/auth.routes");
 let helperRouter = require("./routes/helper.routes");
 const labRoutes = require("./routes/lab.routes");
 const patientsRoutes = require("./routes/patient.routes");
