@@ -12,6 +12,7 @@ var Patient = require('../models/Patient');
 var Organisation = require('../models/Organisation');
 var OrganisationType = require('../models/OrganizationType');
 var PricingCategory = require('../models/PricingCategory');
+var PatientDepositInvoice = require('../models/PatientDepositInvoice');
 var Payment = require('../models/Payment');
 var ServiceCategory = require('../models/ServiceCategory');
 var Settings = require('../models/Settings');
@@ -26,6 +27,12 @@ Organisation.belongsTo(User, {as: 'addedby_details',foreignKey: 'added_by'});
 Organisation.belongsTo(User, {as: 'updatedby_details',foreignKey: 'updated_by'});
 Organisation.belongsTo(OrganisationType, {as: 'type_details',foreignKey: 'type'});
 // Organisation.belongsTo(DocumentTypes, {as: 'doctypes_details',foreignKey: 'category'});
+
+
+// Patient Deposit invoice
+PatientDepositInvoice.belongsTo(User, {as: 'addedby_details',foreignKey: 'added_by'});
+PatientDepositInvoice.belongsTo(User, {as: 'updatedby_details',foreignKey: 'updated_by'});
+PatientDepositInvoice.belongsTo(Organisation, {as: 'org_details',foreignKey: 'id_organisation'});
 //////Modal Relationship
 
 exports.getOrganizationList = async (req, res) => {
@@ -184,6 +191,93 @@ exports.getOrganizationType = async (req, res) => {
         throw error;
     }
 };
+
+
+
+
+exports.getInvoicePaymentsByORG = async (req, res) => {
+    try {
+        id_organisation = req.params.org_id;
+      OrganisationModal = await Database.query("select organisation.nom,(select organisation.nom from organisation where organisation.id = payment_pro.id_organisation_destinataire limit 1) as destinataire, payment_pro.* from payment_pro join organisation on organisation.id = payment_pro.id_organisation where payment_pro.id_organisation = "+id_organisation+" UNION ALL select organisation.nom, (select organisation.nom from organisation where organisation.id = payment_pro.id_organisation limit 1) as destinataire, payment_pro.* from payment_pro join organisation on organisation.id = payment_pro.id_organisation_destinataire where payment_pro.id_organisation_destinataire = "+id_organisation,{type: Database.QueryTypes.SELECT});
+        if(OrganisationModal === null){
+            res.json({ status: 0, message: 'No Data Found' });
+        }else{
+            res.json({ status: 1, message: 'Organization Invoice List', data: OrganisationModal });
+        }
+    } catch (error) {
+        throw error;
+    }
+}
+
+exports.getPaymentReceipt = async (req, res) => {
+    try {
+        let payment_id = req.params.payment_id;
+        PaymentReceipt =  await Database.query("select payment_pro.codefacture,CONCAT(codefacture, '.pdf') AS file,'/uploads/invoicefile/' AS url from payment_pro where idpro=" + payment_id,{type: Database.QueryTypes.SELECT});
+          if(PaymentReceipt === null){
+              res.json({ status: 0, message: 'No Data Found' });
+          }else{
+              res.json({ status: 1, message: 'Payment Receipt', data: PaymentReceipt });
+          }
+      } catch (error) {
+          throw error;
+      }
+}
+
+exports.getPaymentDetails = async (req, res) => {
+    let data = {};
+    let payment_id = req.params.payment_id;
+  data.settings = await Settings.findOne();
+  PaymentDetails = await Database.query("select payment_pro.idpro as id,(select organisation.nom from organisation where organisation.id = payment_pro.id_organisation_destinataire limit 1) as destinataire,payment_pro.codefacture,payment_pro.amount,(SELECT SUM(deposited_amount) AS total_deposited_amount FROM patient_deposit_invoice where payment_id=payment_pro.idpro) as total_deposited_amount,(payment_pro.amount - (SELECT SUM(deposited_amount) AS total_deposited_amount FROM patient_deposit_invoice where payment_id=payment_pro.idpro)) as total_due,payment_pro.id_organisation_destinataire from payment_pro where idpro="+payment_id,{type: Database.QueryTypes.SELECT});
+ 
+  //console.log(data.services);
+
+  res.json({ status: 1, message: 'Payment Details', data: PaymentDetails });
+}
+
+exports.getDepositList = async (req, res) => {
+    try {
+        let payment_id = req.params.payment_id;
+      Deposits =  await Database.query("select payment_pro.codefacture, patient_deposit_invoice.* from patient_deposit_invoice, payment_pro where payment_pro.idpro = patient_deposit_invoice.payment_id and patient_deposit_invoice.payment_id=" + payment_id +" order by id desc  ",{type: Database.QueryTypes.SELECT});
+        if(Deposits === null){
+            res.json({ status: 0, message: 'No Data Found' });
+        }else{
+            res.json({ status: 1, message: 'Organization Deposit List', data: Deposits });
+        }
+    } catch (error) {
+        throw error;
+    }
+}
+
+exports.addDeposit = async (req, res) => {
+    try {
+        let getData = [],getRelationData = [], results;
+        console.log(req.body);
+        PatientDepositInvoiceModal = await PatientDepositInvoice.create({ 
+                                                    date: moment().unix(),
+                                                    deposited_amount: req.body.deposited_amount,
+                                                    payment_id: req.body.payment_id,
+                                                    amount_received_id: req.body.amount_received_id,
+                                                    deposit_type: req.body.deposit_type,
+                                                    partner_id: req.body.partner_id,
+                                                    reference: req.body.reference,
+                                                    id_organisation: req.org_id,
+                                                    user: req.userId,
+                                                    added_by: req.userId,
+            
+                                        });
+        if(PatientDepositInvoiceModal === null){
+            return res.json({ status: 0, message: langCommon.errormessage });
+        }else{
+
+
+
+            return res.json({ status: 1, message: "New Deposit has been saved", data: '' });
+        }
+        
+    } catch (error) {
+        throw error;
+    }
+}
 
 
 

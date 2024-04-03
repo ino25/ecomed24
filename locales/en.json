@@ -156,6 +156,24 @@
             "deseaselist":"Desease list fetched!",
             "nosologiedeseaselist":"Nosologie Desease list fetched!",
             "timeline":"Patient Timeline Fetched!"
+        },
+        "medicalHistory":{
+            "logstypefetched":"Logs Type Fetched",
+            "logsType":{
+                "appointment":"Appointment",
+                "payment":"Payment",
+                "dependent":"Dependent",
+                "assurance":"Assurance",
+                "documents":"Documents",
+                "vital_sign":"Vital Sign",
+                "know_health_issue":"Known Health Issue",
+                "clinical_notes":"Clinical Notes",
+                "hospitalization":"Hospitalization",
+                "precription":"Prescription",
+                "imaging_request":"Imaging Request",
+                "lab":"Lab",
+                "death_record":"Death Record"
+            }
         }
     },
     

@@ -179,7 +179,8 @@ router.get('/medicine-list',VerifyToken, patientController.medicinList);
 router.get('/desease-list',VerifyToken, patientController.deseaseList);
 router.get('/nosologie-desease-list',VerifyToken, patientController.NosologieDeseaseList);
 router.get('/medical-history/timeline/:patient_id',VerifyToken, patientController.timeLine);
-
+router.get('/medical-history/timeline/logs/type',VerifyToken, patientController.logsType);
+router.get('/medical-history/timeline/doctors/:patient_id',VerifyToken, patientController.TimelineDoctors);
 
 // Payment History
 router.get('/payment-history/:patient_id',VerifyToken, patientController.getPaymentHistory);

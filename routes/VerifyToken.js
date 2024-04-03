@@ -23,6 +23,8 @@ async function verifyToken(req, res, next) {
         // if everything good, save to request for use in other routes
         req.userId = decoded.id;
         req.org_id = decoded.org_id;
+        req.role_id = decoded.role_id;
+        req.email = decoded.email;
         next();
     });
 }

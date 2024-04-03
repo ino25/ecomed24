@@ -3186,6 +3186,54 @@ exports.NosologieDeseaseList = async (req, res) => {
         throw error;
     }
 };
+
+// Function to get the start and end dates for the specified date type
+function getDateRange(dateType) {
+    let startDate, endDate;
+    const now = moment();
+  
+    switch (dateType) {
+      case 'this_week':
+        startDate = now.startOf('week').toDate();
+        endDate = now.endOf('week').toDate();
+        break;
+      case 'last_week':
+        startDate = now.subtract(1, 'weeks').startOf('week').toDate();
+        endDate = now.endOf('week').toDate();
+        break;
+      case 'this_month':
+        startDate = now.startOf('month').toDate();
+        endDate = now.endOf('month').toDate();
+        break;
+      case 'last_month':
+        startDate = now.subtract(1, 'months').startOf('month').toDate();
+        endDate = now.endOf('month').toDate();
+        break;
+      case 'this_quarter':
+        startDate = now.startOf('quarter').toDate();
+        endDate = now.endOf('quarter').toDate();
+        break;
+      case 'last_quarter':
+        startDate = now.subtract(1, 'quarters').startOf('quarter').toDate();
+        endDate = now.subtract(1, 'quarters').endOf('quarter').toDate();
+        break;
+      case 'this_year':
+        startDate = now.startOf('year').toDate();
+        endDate = now.endOf('year').toDate();
+        break;
+      case 'last_year':
+        startDate = now.subtract(1, 'years').startOf('year').toDate();
+        endDate = now.subtract(1, 'years').endOf('year').toDate();
+        break;
+      // Add more cases for other date types if needed
+      default:
+        startDate = moment().toDate();
+        endDate = moment().toDate();
+    }
+  
+    return { startDate, endDate };
+}
+
 exports.timeLine = async (req, res) => {
   try {
     let offsetdata = parseInt(req.query.offset ? ((req.query.offset == undefined || req.query.offset == 1) ? 0 :req.query.offset) : 0);
@@ -3196,11 +3244,41 @@ exports.timeLine = async (req, res) => {
     if(isNaN(datalimit)){
         datalimit = 5;
     }
-    const { count, rows } = await PatientLogs.findAndCountAll({where: { patient_id: req.params.patient_id }});
+
+    // Initialize an empty object to store dynamic conditions
+    let conditions = {};
+    conditions.patient_id = req.params.patient_id;
+    // Apply filters based on user selections from the request
+    if (req.query.type) {
+        conditions.type = req.query.type;
+    }
+    if (req.query.by) {
+        conditions.by = req.query.by;
+    }
+    
+        // Date conditions based on date_type or custom range
+    if (req.query.date_type) {
+        if(req.query.date_type == 'date_range'){
+            console.log(moment(req.query.from_date).format('YYYY-MM-DD 00:00:00'));
+            conditions.createdAt = {
+                [Op.between]: [moment(req.query.from_date).format('YYYY-MM-DD 00:00:00'), moment(req.query.to_date).format('YYYY-MM-DD 00:00:00')]
+            };
+        }else{
+            const { startDate, endDate } = getDateRange(req.query.date_type);
+            conditions.createdAt = {
+              [Op.between]: [startDate, endDate]
+            };
+        }
+      
+    }
+    console.log(req.query);
+    console.log(conditions);
+
+    const { count, rows } = await PatientLogs.findAndCountAll({where: conditions});
 
     const PatientLogsModal = await PatientLogs.findAll({
         attributes: ['id', 'description','action','type','relation_id', 'status','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("PatientLogs.createdAt"),"%d/%m/%Y %H:%i"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("PatientLogs.updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt"],'patient_id','org_id'], 
-        where: { patient_id: req.params.patient_id },
+        where: conditions,
         order: [['id', 'desc']],
         limit: datalimit,
         offset: offsetdata,
@@ -3229,7 +3307,43 @@ exports.timeLine = async (req, res) => {
 };
 
 
+exports.logsType = async (req, res) => {
+    try {
+        const Types = [
+            {'type':'appointment','name':langPatientModule.medicalHistory.logsType.appointment},
+            {'type':'payment','name':langPatientModule.medicalHistory.logsType.payment},
+            {'type':'dependent','name':langPatientModule.medicalHistory.logsType.dependent},
+            {'type':'assurance','name':langPatientModule.medicalHistory.logsType.assurance},
+            {'type':'documents','name':langPatientModule.medicalHistory.logsType.documents},
+            {'type':'vital_sign','name':langPatientModule.medicalHistory.logsType.vital_sign},
+            {'type':'know_health_issue','name':langPatientModule.medicalHistory.logsType.know_health_issue},
+            {'type':'clinical_notes','name':langPatientModule.medicalHistory.logsType.clinical_notes},
+            {'type':'hospitalization','name':langPatientModule.medicalHistory.logsType.hospitalization},
+            {'type':'precription','name':langPatientModule.medicalHistory.logsType.precription},
+            {'type':'imaging_request','name':langPatientModule.medicalHistory.logsType.imaging_request},
+            {'type':'lab','name':langPatientModule.medicalHistory.logsType.lab},
+            {'type':'death_record','name':langPatientModule.medicalHistory.logsType.death_record},
+        ];
+      res.json({ status: 1, message: langPatientModule.medicalHistory.logstypefetched, data: Types });
 
+    } catch (error) {
+        throw error;
+    }
+};
+
+exports.TimelineDoctors = async (req, res) => {
+    try {
+        let patient_id = req.params.patient_id;
+      Deposits =  await Database.query("SELECT u.id, CONCAT(u.first_name, ' ', u.last_name) AS name FROM patient_logs as pg LEFT JOIN users u ON pg.added_by = u.id where pg.patient_id = "+patient_id+" GROUP BY pg.added_by",{type: Database.QueryTypes.SELECT});
+        if(Deposits === null){
+            res.json({ status: 0, message: 'No Data Found' });
+        }else{
+            res.json({ status: 1, message: 'Timeline Doctors List', data: Deposits });
+        }
+    } catch (error) {
+        throw error;
+    }
+};
 
 //  Payments history
 exports.getPaymentHistory = async (req, res) => {

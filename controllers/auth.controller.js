@@ -5,9 +5,10 @@ const moment = require("moment");
 moment.locale('en');
 const path = require('path');
 const nodemailer = require("nodemailer");
-
+var crypto = require('crypto');
+var jwt = require('jsonwebtoken');
 var User = require('../models/User');
-
+var RolePermissionsMap = require('../models/RolePermissionsMap');
 const multer  = require('multer');
 const fs = require('fs');
 
@@ -34,7 +35,7 @@ exports.Login = async (req, res) => {
             res.json({ status: 0, message: "Email or password may be wrong, Try with valid credentials." });
         }else{
             console.log(userModal.id);
-            const payload = { id: userModal.id, org_id: userModal.id_organisation,username:userModal.username,email:userModal.email,name:userModal.first_name };
+            const payload = { id: userModal.id, org_id: userModal.id_organisation,username:userModal.username,email:userModal.email,name:userModal.first_name,role_id:userModal.role_id };
                 let options = {
                     algorithm: 'HS256',
                 }
@@ -79,13 +80,13 @@ exports.Login = async (req, res) => {
 
 exports.LoginWithOtp = async (req, res) => {
     try {
-        if (!req.body.mobile) {
+        if (!req.body.email) {
             return res.json({ status: false, message: "Bad Request. Check Body Parameters." });
         }
         
         var otp = "1234";
         let hash = crypto.createHash('md5').update(otp).digest("hex");
-        const userModal = await User.findOne({attributes:['id','email','username','name','mobile_number','failed_attempt','user_type','status'], where: { mobile_number: req.body.mobile.trim() } });
+        const userModal = await User.findOne({attributes:['id','email','username','name','mobile_number','failed_attempt','user_type','status'], where: { email: req.body.email.trim() } });
         if(userModal === null){
                 NewUser = await User.create({
                     mobile_number: req.body.mobile,
@@ -171,19 +172,21 @@ exports.Logout = async (req, res) => {
     }
 };
 
+
+
 exports.getUserPermission = async (req, res) => {
+    
     try {
         let getData = [];
-        // OrgPermissionModal = await OrgPermission.findAll({ attributes: ['id', 'sp_id'],where: { status_service: 1 } });
-
-        // OrgPermissionModal = await Database.query("SELECT op.id,sp.name,sp.type FROM ecomed24.org_permissions as op  LEFT JOIN ecomed24.system_permissions as sp ON op.sp_id= sp.id where op.status=1 and op.org_id = "+req.org_id+";",{type: Database.QueryTypes.SELECT});
-        // if(OrgPermissionModal === null){
-        //     res.json({ status: 0, message: 'No Data Found' });
-        // }else{
-        //     res.json({ status: 1, message: 'Organization Permission fetched', data: OrgPermissionModal });
-        // }
+        
+        PermissionModal = await Database.query("SELECT rpm.id,sp.name,sp.type FROM role_permissions_map as rpm LEFT JOIN org_permissions as op ON op.sp_id= rpm.op_id LEFT JOIN system_permissions as sp ON op.sp_id= sp.id where rpm.status=1 and rpm.role_id = "+req.role_id+";",{type: Database.QueryTypes.SELECT});
+        if(PermissionModal === null){
+            res.json({ status: 0, message: 'Please Assign role first and try re login.' });
+        }else{
+            res.json({ status: 1, message: 'User Permission fetched', data: PermissionModal });
+        }
     } catch (error) {
-        // throw error;
+        throw error;
     }
 };
 

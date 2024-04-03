@@ -115,7 +115,7 @@ exports.getOrganizationPermission = async (req, res) => {
         let getData = [];
         // OrgPermissionModal = await OrgPermission.findAll({ attributes: ['id', 'sp_id'],where: { status_service: 1 } });
 
-        OrgPermissionModal = await Database.query("SELECT op.id,sp.name,sp.type FROM ecomed24.org_permissions as op  LEFT JOIN ecomed24.system_permissions as sp ON op.sp_id= sp.id where op.status=1 and op.org_id = "+req.org_id+";",{type: Database.QueryTypes.SELECT});
+        OrgPermissionModal = await Database.query("SELECT op.id,sp.name,sp.type FROM org_permissions as op  LEFT JOIN system_permissions as sp ON op.sp_id= sp.id where op.status=1 and op.org_id = "+req.org_id+";",{type: Database.QueryTypes.SELECT});
         if(OrgPermissionModal === null){
             res.json({ status: 0, message: 'No Data Found' });
         }else{

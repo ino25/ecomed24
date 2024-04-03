@@ -9,6 +9,7 @@ const VerifyToken = require('./VerifyToken');
 const file = require('../helpers/FileHelper');
 const mailer = require('../helpers/Mailer');
 const authController = require("../controllers/auth.controller");
+// const helperController = require("../controllers/helper.controller");
 
 router.post('/login', authController.Login);
 router.post('/login-with-otp', authController.LoginWithOtp);
@@ -18,6 +19,6 @@ router.post('/activate', authController.AccountActivation);
 router.get('/logout',VerifyToken, authController.Logout);
 
 //Get User Permissions
-router.get('/get-user-permissions',VerifyToken, helperController.getUserPermission);
+router.get('/get-user-permissions',VerifyToken, authController.getUserPermission);
 
 module.exports = router;
