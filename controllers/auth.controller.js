@@ -179,7 +179,7 @@ exports.getUserPermission = async (req, res) => {
     try {
         let getData = [];
         
-        PermissionModal = await Database.query("SELECT rpm.id,sp.name,sp.type FROM role_permissions_map as rpm LEFT JOIN org_permissions as op ON op.sp_id= rpm.op_id LEFT JOIN system_permissions as sp ON op.sp_id= sp.id where rpm.status=1 and rpm.role_id = "+req.role_id+";",{type: Database.QueryTypes.SELECT});
+        PermissionModal = await Database.query("SELECT rpm.id,sp.name,sp.description,sp.module_id FROM role_permissions_map as rpm inner JOIN org_permissions as op ON op.sp_id= rpm.op_id inner JOIN system_permissions as sp ON op.sp_id= sp.id where rpm.status=1 and rpm.role_id = "+req.role_id+";",{type: Database.QueryTypes.SELECT});
         if(PermissionModal === null){
             res.json({ status: 0, message: 'Please Assign role first and try re login.' });
         }else{

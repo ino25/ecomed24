@@ -3,19 +3,10 @@ const Database = require('../config').sequelize;
 const Op = Sequelize.Op;
 const moment = require("moment");
 moment.locale('en');
+const fs = require("fs");
 const path = require('path');
 const nodemailer = require("nodemailer");
-
-var User = require('../models/User');
-var Patient = require('../models/Patient');
-
-var Organisation = require('../models/Organisation');
-var OrganisationType = require('../models/OrganizationType');
-var PricingCategory = require('../models/PricingCategory');
-var Payment = require('../models/Payment');
-var ServiceCategory = require('../models/ServiceCategory');
-var Settings = require('../models/Settings');
-
+const axios = require("axios");
 var Country = require('../models/Country');
 var Region = require('../models/Region');
 var District = require('../models/District');
@@ -115,7 +106,7 @@ exports.getOrganizationPermission = async (req, res) => {
         let getData = [];
         // OrgPermissionModal = await OrgPermission.findAll({ attributes: ['id', 'sp_id'],where: { status_service: 1 } });
 
-        OrgPermissionModal = await Database.query("SELECT op.id,sp.name,sp.type FROM org_permissions as op  LEFT JOIN system_permissions as sp ON op.sp_id= sp.id where op.status=1 and op.org_id = "+req.org_id+";",{type: Database.QueryTypes.SELECT});
+        OrgPermissionModal = await Database.query("SELECT op.id,sp.name,sp.description,sp.module_id FROM org_permissions as op  LEFT JOIN system_permissions as sp ON op.sp_id= sp.id where op.status=1 and op.org_id = "+req.org_id+";",{type: Database.QueryTypes.SELECT});
         if(OrgPermissionModal === null){
             res.json({ status: 0, message: 'No Data Found' });
         }else{
@@ -125,6 +116,61 @@ exports.getOrganizationPermission = async (req, res) => {
         throw error;
     }
 };
+
+
+// exports.savePDFdf = async (req, res) => {
+//     const { formData } = req.body;
+//     const templateNameValue =
+//       "ecoMed24.dev/ecomed-templates/ecomed_MasterLabTemplate.docx";
+//     const outputName = `lab-report--00${formData?.id_acte}.pdf`;
+//     const accessKey =
+//       "ODBiYzNkNzItYWE2Ni00ZGIzLWE0YzgtY2MzYjYzODkwZmRjOjA4MjQ5MjQ";
+  
+//     const postData = new URLSearchParams({
+//       accessKey: accessKey,
+//       templateName: templateNameValue,
+//       outputName: outputName,
+//       data: JSON.stringify(formData),
+//     }).toString();
+  
+//     const requestOptions = {
+//       headers: {
+//         "Content-Type": "application/x-www-form-urlencoded",
+//         "Content-Length": String(new TextEncoder().encode(postData).length), // Convert to string
+//       },
+//     };
+  
+//     try {
+//       console.log(formData);
+//       const response = await axios.post(
+//         `https://eu.dws3.docmosis.com/api/render`,
+//         postData,
+//         requestOptions
+//       );
+  
+//       if (response.status === 200) {
+//         const pdfData = response.data; // Response data is already in Blob format
+//         const blob = new Blob([pdfData], { type: "application/pdf" });
+  
+//         // Enregistrez le fichier PDF sur le serveur
+//         const pdfPath = `./pdfs/${outputName}`;
+//         const pdfFile = fs.createWriteStream(pdfPath);
+//         blob.stream().pipe(pdfFile);
+  
+//         pdfFile.on("finish", () => {
+//           res.json({ message: "Fichier PDF sauvegardé avec succès." });
+//         });
+//       } else {
+//         console.log("Error response:", response.status, response.statusText);
+//         throw new Error("Network response was not ok.");
+//       }
+//     } catch (error) {
+//       console.error("Request error:", error);
+//       res
+//         .status(500)
+//         .json({ error: "Une erreur est survenue lors de la génération du PDF." });
+//     }
+//   };
 
 
 

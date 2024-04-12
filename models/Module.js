@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config').sequelize;
 
-const Permission = sequelize.define('Permission', {
+const Module = sequelize.define('Module', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -12,10 +12,6 @@ const Permission = sequelize.define('Permission', {
     allowNull: true
   },
   description: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  module_id: {
     type: DataTypes.STRING,
     allowNull: true
   },
@@ -35,11 +31,11 @@ const Permission = sequelize.define('Permission', {
   
   
 }, {
-  tableName: 'system_permissions',
+  tableName: 'modules',
   timestamps: true // Disable Sequelize's default timestamps
 });
 
-module.exports = Permission;
+module.exports = Module;
 
 
 

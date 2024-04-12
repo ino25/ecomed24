@@ -1,206 +1,204 @@
 {
-    "index":"Bienvenue sur notre API!",
-    "common":{
-        "nodatafound":"Aucune donnée disponible",
-        "errormessage":"Une erreur est survenue, veuillez essayer à nouveau plus tard!!",
-        "servererror":"Le système ne fonctionne pas, veuillez contacter l'administrateur"
+    "index": "Bienvenue sur notre API!",
+    "common": {
+        "nodatafound": "Aucune donnée disponible",
+        "errormessage": "Une erreur est survenue, veuillez essayer à nouveau plus tard!!",
+        "servererror": "Le système ne fonctionne pas, veuillez contacter l'administrateur"
     },
     "patientModule": {
-        "patientAdd":"Patient ajouté avec succès!",
-        "patientUpdate":"Patient mis à jour avec succès!",
-        "patientStatus":"Statut patient a été mis à jour avec succès!",
-        "patientDeleted":"Patient supprimé avec succès!",
-        "patientListFetched":"Liste de patients récupérée!",
-        "patientGeneralInfo":"Informations générales du patient récupérée!",
-        "vital_sign":{
-            "add":"Signes vitaux enregistrés!",
-            "update":"Signes vitaux mis à jour!",
-            "status":"Statut des signes vitaux mis à jour!",
-            "deleted":"Signes vitaux supprimés!",
-            "list":"Liste des signes vitaux récupérée!",
-            "individual":"Détails des signes vitaux récupérés!",
-            "graph":"Détails des signes vitaux récupérés!"
+        "patientAdd": "Patient ajouté avec succès!",
+        "patientUpdate": "Patient mis à jour avec succès!",
+        "patientStatus": "Statut patient a été mis à jour avec succès!",
+        "patientDeleted": "Patient supprimé avec succès!",
+        "patientListFetched": "Liste de patients récupérée!",
+        "patientGeneralInfo": "Informations générales du patient récupérée!",
+        "vital_sign": {
+            "add": "Signes vitaux enregistrés!",
+            "update": "Signes vitaux mis à jour!",
+            "status": "Statut des signes vitaux mis à jour!",
+            "deleted": "Signes vitaux supprimés!",
+            "list": "Liste des signes vitaux récupérée!",
+            "individual": "Détails des signes vitaux récupérés!",
+            "graph": "Détails des signes vitaux récupérés!"
         },
-        "clinical_notes":{
-            "add":"Notes cliniques enregistrées!",
-            "update":"Notes cliniques mises à jour!",
-            "status":"Statut des notes cliniques mis à jour!",
-            "deleted":"Notes cliniques supprimées!",
-            "individual":"Détails des notes cliniques récupérés!",
-            "list":"Liste des notes cliniques récupérée!"
+        "clinical_notes": {
+            "add": "Notes cliniques enregistrées!",
+            "update": "Notes cliniques mises à jour!",
+            "status": "Statut des notes cliniques mis à jour!",
+            "deleted": "Notes cliniques supprimées!",
+            "individual": "Détails des notes cliniques récupérés!",
+            "list": "Liste des notes cliniques récupérée!"
         },
-        "confidentialnotes":{
-            "add":"Notes confidentielles du patient ajoutées avec succès!",
-            "update":"Notes confidentielles du patient mises à jour avec succès!",
-            "status":"Statut des notes confidentielles mis à jour avec succès!",
-            "deleted":"Notes confidentielles supprimées avec succès!",
-            "individual":"Détails des notes confidentielles récupérés!",
-            "list":"Liste des notes confidentielles récupérées!"
+        "confidentialnotes": {
+            "add": "Notes confidentielles du patient ajoutées avec succès!",
+            "update": "Notes confidentielles du patient mises à jour avec succès!",
+            "status": "Statut des notes confidentielles mis à jour avec succès!",
+            "deleted": "Notes confidentielles supprimées avec succès!",
+            "individual": "Détails des notes confidentielles récupérés!",
+            "list": "Liste des notes confidentielles récupérées!"
         },
-        "know_health_issue":{
-            "add":"Antécédants enregistrés!",
-            "update":"Antécédants mis à jour!",
-            "status":"Statut des antécédants mis à jour!",
-            "deleted":"Antécédants supprimés!",
-            "list":"Antécédants récupérés!",
-            "individual":"Détails de l'antécédant récupérés!",
-            "HealthIssueTypes":"Health Issue Types fetched.",
-            "HealthIssues":"Health Issue fetched."
+        "know_health_issue": {
+            "add": "Antécédants enregistrés!",
+            "update": "Antécédants mis à jour!",
+            "status": "Statut des antécédants mis à jour!",
+            "deleted": "Antécédants supprimés!",
+            "list": "Antécédants récupérés!",
+            "individual": "Détails de l'antécédant récupérés!",
+            "HealthIssueTypes": "Types d'antécédants récupérés.",
+            "HealthIssues": "Antécédant récupéré."
         },
-        "appointment":{
-            "add":"Rendez-vous enregistré!",
-            "update":"Rendez-vous mis à jour!",
-            "status":"Statut du rendez-vous mis à jour!",
-            "deleted":"Rendez-vous supprimé",
-            "list":"Liste des rendez-vous récupérée!",
-            "individual":"Détails du rendez-vous récupérés!",
-            "services":"Services de rendez-vous récupérés!",
-            "timeslots":"Plages horaires de rendez-vous récupérées!"
+        "appointment": {
+            "add": "Rendez-vous enregistré!",
+            "update": "Rendez-vous mis à jour!",
+            "status": "Statut du rendez-vous mis à jour!",
+            "deleted": "Rendez-vous supprimé",
+            "list": "Liste des rendez-vous récupérée!",
+            "individual": "Détails du rendez-vous récupérés!",
+            "services": "Services de rendez-vous récupérés!",
+            "timeslots": "Plages horaires de rendez-vous récupérées!"
         },
-        "payment":{
-            "add":"Paiement enregistré!",
-            "update":"Paiement mis à jour!",
-            "status":"Statut de paiement mis à jour!",
-            "deleted":"Paiement supprimé!",
-            "list":"Liste de paiements récupérée!",
-            "historyinfo":"Historique de paiements récupéré!",
-            "paymentreceipt":"Reçu de paiement récupéré!",
-            "services":"Services de paiement récupérés!",
-            "partnerorg":"Organisation partenaire récupérée!",
-            "lightorg":"Organisation récupérée!",
-            "paymentdetails":"Organisation Fetched!",
-            "paymentdepositlogs":"Journaux de dépôt de paiement récupérés!",
-            "deposit":{
-                "add":"Nouveau dépôt ajouté.",
-                "exceederror":"Vous ne pouvez pas déposer plus que le montant qui reste à payer!!"
+        "payment": {
+            "add": "Paiement enregistré!",
+            "update": "Paiement mis à jour!",
+            "status": "Statut de paiement mis à jour!",
+            "deleted": "Paiement supprimé!",
+            "list": "Liste de paiements récupérée!",
+            "historyinfo": "Historique de paiements récupéré!",
+            "paymentreceipt": "Reçu de paiement récupéré!",
+            "services": "Services de paiement récupérés!",
+            "partnerorg": "Organisation partenaire récupérée!",
+            "lightorg": "Organisation récupérée!",
+            "paymentdetails": "Informations de l'organisation disponobles!",
+            "paymentdepositlogs": "Journal de dépôt de paiement récupérés!",
+            "deposit": {
+                "add": "Nouveau dépôt ajouté.",
+                "exceederror": "Vous ne pouvez pas déposer plus que le montant qui reste à payer!!"
             }
         },
-        "assurance":{
-            "add":"Tiers-payant enregistré!",
-            "update":"Tiers-payant mis à jour!",
-            "status":"Statut du tiers-payant mis à jour!",
-            "deleted":"Tiers-payant supprimé!",
-            "individual":"Détails de l'assurance récupérés!",
-            "list":"Liste des assurances récupérée!",
-            "orglist":"Liste des assurances récupérée!"
+        "assurance": {
+            "add": "Tiers-payant enregistré!",
+            "update": "Tiers-payant mis à jour!",
+            "status": "Statut du tiers-payant mis à jour!",
+            "deleted": "Tiers-payant supprimé!",
+            "individual": "Détails du tiers-payant récupérés!",
+            "list": "Liste des tiers-payants récupérée!",
+            "orglist": "Liste des tiers-payants récupérée!"
         },
-        "dependent":{
-            "add":"Personne à charge enregistrée!",
-            "update":"Personne à charge mise à jour!",
-            "status":"Statut de la personne à charge mis à jour!",
-            "deleted":"Personne à charge supprimée!",
-            "individual":"Détails de la personne à charge récupérés!",
-            "list":"Liste des personnes à charge récupérée!"
+        "dependent": {
+            "add": "Personne à charge enregistrée!",
+            "update": "Information des personnes à charge mise à jour!",
+            "status": "Statut de la personne à charge mis à jour!",
+            "deleted": "Personne à charge supprimée!",
+            "individual": "Détails de la personne à charge récupérés!",
+            "list": "Liste des personnes à charge récupérée!"
         },
-        "documents":{
-            "add":"Document ajouté au dossier!",
-            "update":"Document mis à jour!",
-            "status":"Statut du document mis à jour!",
-            "deleted":"Document supprimé!",
-            "individual":"Détails du document récupérés!",
-            "list":"Documents patient récupérés!",
-            "typelist":"Documents patient récupérés!",
-            "missingattachment":"Aucun fichier joint. Veuillez joindre un fichier"
+        "documents": {
+            "add": "Document ajouté au dossier!",
+            "update": "Document mis à jour!",
+            "status": "Statut du document mis à jour!",
+            "deleted": "Document supprimé!",
+            "individual": "Détails du document récupérés!",
+            "list": "Documents patient récupérés!",
+            "typelist": "Documents patient récupérés!",
+            "missingattachment": "Aucun fichier joint. Veuillez joindre un fichier"
         },
-        "current_medication":{
-            "add":"Traitement enregistré!",
-            "update":"Traitement mis à jour!",
-            "status":"Statut de traitement mis à jour!",
-            "deleted":"Traitement supprimé!",
-            "list":"Liste de médication actuelle récupérée!",
-            "individual":"Détails du document récupérés!"
+        "current_medication": {
+            "add": "Traitement enregistré!",
+            "update": "Traitement mis à jour!",
+            "status": "Statut de traitement mis à jour!",
+            "deleted": "Traitement supprimé!",
+            "list": "Liste de médication actuelle récupérée!",
+            "individual": "Détails du document récupérés!"
         },
-        "death_record":{
-            "add":"Acte de décès du patient enregistré!",
-            "update":"Correction à l'acte de décès enregistrée!",
-            "status":"Statut de l'acte de décès mis à jour!",
-            "deleted":"Acte de décès supprimé!",
-            "individual":"Détails de l'acte de décès récupérés!"
+        "death_record": {
+            "add": "Acte de décès du patient enregistré!",
+            "update": "Correction à l'acte de décès enregistrée!",
+            "status": "Statut de l'acte de décès mis à jour!",
+            "deleted": "Acte de décès supprimé!",
+            "individual": "Détails de l'acte de décès récupérés!"
         },
-        "hospitalization":{
-            "add":"Demande d'hospitalisation enregistrée!",
-            "update":"Demande d'hospitalisation mise à jour!",
-            "status":"Statut de la demande d'hospitalisation mis à jour!",
-            "deleted":"Demande d'hospitalisation supprimée!",
-            "list":"Liste des hospitalisations récupérée!",
-            "individual":"Détails de la demande d'hospitalisation récupérés!"
+        "hospitalization": {
+            "add": "Demande d'hospitalisation enregistrée!",
+            "update": "Demande d'hospitalisation mise à jour!",
+            "status": "Statut de la demande d'hospitalisation mis à jour!",
+            "deleted": "Demande d'hospitalisation supprimée!",
+            "list": "Liste des hospitalisations récupérée!",
+            "individual": "Détails de la demande d'hospitalisation récupérés!"
         },
-        "precription":{
-            "add":"Ordonnance enregistrée",
-            "update":"Ordonnance mise à jour!",
-            "status":"Statut de l'ordonnance mis à jour!",
-            "deleted":"Ordonnance supprimée!",
-            "list":"Liste des ordonnances récupérée!",
-            "individual":"Détails de l'ordonnance récupérés!"
+        "precription": {
+            "add": "Ordonnance enregistrée",
+            "update": "Ordonnance mise à jour!",
+            "status": "Statut de l'ordonnance mis à jour!",
+            "deleted": "Ordonnance supprimée!",
+            "list": "Liste des ordonnances récupérée!",
+            "individual": "Détails de l'ordonnance récupérés!"
         },
-        "lab":{
-            "add":"Demande d'analyses médicales enregistrée!",
-            "update":"Demande d'analyses médicales mise à jour!",
-            "status":"Statut de la demande d'analyses médicales mis à jour!",
-            "deleted":"Demande d'analyses médicales supprimée!",
-            "list":"Liste des demandes d'analyses médicales récupérée!",
-            "individual":"Détails de la demande d'analyses médicales récupérés!",
-            "testlist":"Liste des demandes d'analyses médicales récupérée!"
+        "lab": {
+            "add": "Demande d'analyses médicales enregistrée!",
+            "update": "Demande d'analyses médicales mise à jour!",
+            "status": "Statut de la demande d'analyses médicales mis à jour!",
+            "deleted": "Demande d'analyses médicales supprimée!",
+            "list": "Liste des demandes d'analyses médicales récupérée!",
+            "individual": "Détails de la demande d'analyses médicales récupérés!",
+            "testlist": "Liste des demandes d'analyses médicales récupérée!"
         },
-        "imaging":{
-            "add":"Demande d'examen d'imagerie enregistrée!",
-            "update":"Demande d'examen d'imagerie mise à jour!",
-            "status":"Statut de la demande d'examen d'imagerie mis à jour!",
-            "deleted":"Demande d'examen d'imagerie supprimée!",
-            "list":"Liste des demandes d'imagerie récupérée!",
-            "individual":"Détails de la demande d'examen d'imagerie récupérés!",
-            "imaaginglist":"Liste des demandes d'examen d'imagerie récupérée!"
+        "imaging": {
+            "add": "Demande d'examen d'imagerie enregistrée!",
+            "update": "Demande d'examen d'imagerie mise à jour!",
+            "status": "Statut de la demande d'examen d'imagerie mis à jour!",
+            "deleted": "Demande d'examen d'imagerie supprimée!",
+            "list": "Liste des demandes d'imagerie récupérée!",
+            "individual": "Détails de la demande d'examen d'imagerie récupérés!",
+            "imaaginglist": "Liste des demandes d'examen d'imagerie récupérée!"
         },
-        "helper":{
-            "medicinlist":"Liste de médicaments récupérée!",
-            "deseaselist":"Liste des maladies récupérée",
-            "nosologiedeseaselist":"Nosologie Desease list fetched.",
-            "timeline":"Historique de patients récupéré!"
+        "helper": {
+            "medicinlist": "Liste de médicaments récupérée!",
+            "deseaselist": "Liste des maladies récupérée",
+            "nosologiedeseaselist": "Liste des affections Nosologie Morbidité récupérée.",
+            "timeline": "Historique de patients récupéré!"
         },
-        "medicalHistory":{
-            "logstypefetched":"Logs Type Fetched",
-            "logsType":{
-                "appointment":"Appointment",
-                "payment":"Payment",
-                "dependent":"Dependent",
-                "assurance":"Assurance",
-                "documents":"Documents",
-                "vital_sign":"Vital Sign",
-                "know_health_issue":"Known Health Issue",
-                "clinical_notes":"Clinical Notes",
-                "hospitalization":"Hospitalization",
-                "precription":"Prescription",
-                "imaging_request":"Imaging Request",
-                "lab":"Lab",
-                "death_record":"Death Record"
+        "medicalHistory": {
+            "logstypefetched": "Journal récupéré",
+            "logsType": {
+                "appointment": "Appointment",
+                "payment": "Payment",
+                "dependent": "Personne à charge",
+                "assurance": "Assurance",
+                "documents": "Documents",
+                "vital_sign": "Signe vital",
+                "know_health_issue": "Antécédants",
+                "clinical_notes": "Notes cliniques",
+                "hospitalization": "Hospitalisation",
+                "prescription": "Prescription",
+                "imaging_request": "Imagerie médicale",
+                "lab": "Analyses médicales",
+                "death_record": "Constat de décès"
             }
         }
     },
-    
     "organizationModule": {
-        "add":"New Organization has been added!",
-        "update":"Organization has been updated successfully!",
-        "status":"Status has been updated successfull!",
-        "deleted":"Organization has been deleted successfully!",
-        "list":"Organization list fetched",
-        "individual":"Organization details has been fetched!"
+        "add": "Nouvelle organisation ajoutée!",
+        "update": "Données de l'organisation mises à jour!",
+        "status": "État de l'organisation mis à jour!",
+        "deleted": "Organisation supprimée!",
+        "list": "Liste des organisations récupérée",
+        "individual": "Détails de l'organisation récupérés!"
     },
     "Roles": {
-        "add":"New Roles has been added.",
-        "update":"Role successfully updated.",
-        "status":"Status has been updated successfull!",
-        "deleted":"Role has been deleted successfully!",
-        "list":"Roles successfull fetched",
-        "individual":"Role details fetched"
+        "add": "Nouveaux rôles ajoutés.",
+        "update": "Rôle mis à jour.",
+        "status": "État du rôle mis à jour!",
+        "deleted": "Rôle supprimé!",
+        "list": "Tous les rôles récupérés",
+        "individual": "Détails du rôles récupérés avec succès!"
     },
     "Permissions": {
-        "add":"New Permissions has been added.",
-        "update":"Permissions successfully updated.",
-        "status":"Status has been updated successfull!",
-        "deleted":"Permissions has been deleted successfully!",
-        "list":"Permissions successfull fetched",
-        "individual":"Permissions details fetched",
-        "permissionassign":"Permission successfull assigned to Organization"
+        "add": "Nouvelle(s) permission(s) ajoutée(s).",
+        "update": "Permission(s) mise(s) à jour.",
+        "status": "Status mis à jour!",
+        "deleted": "Permission(s) supprimée(s)!",
+        "list": "Permission(s) récupérée(s)",
+        "individual": "Détail des permissions disponibles",
+        "permissionassign": "Permission(s) affectées a votre organisation"
     }
 }
-  

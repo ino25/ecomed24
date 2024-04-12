@@ -10,6 +10,7 @@ router.get('/get-org-byid/:org_id',VerifyToken, organizationController.getOrgani
 router.post('/add',VerifyToken, organizationController.addOrganization);
 router.post('/update/:org_id',VerifyToken, organizationController.updateOrganization);
 router.patch('/status/:id',VerifyToken, organizationController.statusOrganization);
+router.patch('/pricing/update/:id',VerifyToken, organizationController.updatePricing);
 
 
 // invoice and payments

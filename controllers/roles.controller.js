@@ -111,7 +111,7 @@ exports.update = async (req, res) => {
     if(RoleModal === null){
         res.json({ status: 0, message: langCommon.errormessage });
     }else{
-        RoleModal = await RolePermissionsMap.destroy({where: {role_id: req.params.id}});
+        MapModal = await RolePermissionsMap.destroy({where: {role_id: req.params.id}});
         permissions.forEach(async function(permissionid) {
             RolePermissionsMapModal = await RolePermissionsMap.create({ 
                 role_id: req.params.id,

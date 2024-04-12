@@ -135,20 +135,23 @@ exports.status = async (req, res) => {
 
 exports.AllowPermissionToOrg = async (req, res) => {
     try {
-    OrgPermissionModal = await OrgPermission.create({ 
-              sp_id: req.body.sp_id,
-              org_id: req.body.org_id,
-              start_date: req.body.start_date,
-              end_date: req.body.end_date,
-              status: req.body.status,
-              added_by: req.userId,
-      });
-      
-      if(OrgPermissionModal === null){
-          res.json({ status: 0, message: langCommon.errormessage });
-      }else{
+
+        let Systempermissions=req.body.sp_id;
+        Systempermissions.forEach(async function(permissionid) {
+                        OrgPermissionModal = await OrgPermission.create({ 
+                                sp_id: permissionid,
+                                org_id: req.body.org_id,
+                                start_date: req.body.start_date,
+                                end_date: req.body.end_date,
+                                status: req.body.status,
+                                added_by: req.userId,
+                        });
+        });
+    //   if(OrgPermissionModal === null){
+    //       res.json({ status: 0, message: langCommon.errormessage });
+    //   }else{
           res.json({ status: 1, message: langPermissionModule.permissionassign, data: '' });
-      }
+    //   }
       
     } catch (error) {
         throw error;

@@ -155,6 +155,18 @@ const Organisation = sequelize.define('Organisation', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  is_whatsapp: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  other_emails: {
+    type: DataTypes.JSON,
+    allowNull: true
+  },
+  pricing_category: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   status: {
     type: DataTypes.STRING,
     allowNull: false
@@ -168,16 +180,6 @@ const Organisation = sequelize.define('Organisation', {
     allowNull: true
   },
   
-//   created_at: {
-//     type: DataTypes.DATE,
-//     allowNull: false,
-//     defaultValue: DataTypes.NOW
-//   },
-//   updated_at: {
-//     type: DataTypes.DATE,
-//     allowNull: false,
-//     defaultValue: DataTypes.NOW
-//   }
 }, {
   tableName: 'organisation',
   timestamps: true // Disable Sequelize's default timestamps

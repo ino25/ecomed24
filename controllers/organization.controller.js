@@ -46,7 +46,7 @@ exports.getOrganizationList = async (req, res) => {
           datalimit = 5;
       }
       const { count, rows } = await Organisation.findAndCountAll();
-      OrganisationModal = await Organisation.findAll({attributes: ['id', 'code','nom','nom_commercial', 'email','portable_responsable_legal','type','adresse','est_active','is_light','status','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("Organisation.createdAt"),"%d/%m/%Y %H:%i"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("Organisation.updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt"]], 
+      OrganisationModal = await Organisation.findAll({attributes: ['id', 'code','nom','nom_commercial', 'email','portable_responsable_legal','type','adresse','est_active','is_light','other_emails','pricing_category','is_whatsapp','status','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("Organisation.createdAt"),"%d/%m/%Y %H:%i"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("Organisation.updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt"]], 
                                 order: [['id', 'DESC']],
                                 limit: datalimit,
                                 offset: offsetdata,
@@ -77,7 +77,7 @@ exports.getOrganizationList = async (req, res) => {
 exports.getOrganizationByID = async (req, res) => {
     try {
       
-      OrganisationModal = await Organisation.findAll({attributes: ['id', 'code','nom','nom_commercial', 'email','portable_responsable_legal','adresse','region','departement','type','est_active','is_light','status','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d/%m/%Y %H:%i"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt"]], 
+      OrganisationModal = await Organisation.findAll({attributes: ['id', 'code','nom','nom_commercial', 'email','portable_responsable_legal','adresse','region','departement','type','est_active','is_light','other_emails','pricing_category','is_whatsapp','status','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"),"%d/%m/%Y %H:%i"),"createdAt"],[Sequelize.fn("DATE_FORMAT", Sequelize.col("updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt"]], 
                                     where: { id: req.params.org_id },
                                 
                             });
@@ -98,8 +98,9 @@ exports.addOrganization = async (req, res) => {
                                 nom: req.body.name,
                                 type: req.body.type,
                                 portable_responsable_legal: req.body.phone,
+                                is_light: req.body.is_light,
                                 email: req.body.email,
-                                age: req.body.terrification,
+                                pricing_category: req.body.pricing_category,
                                 adresse: req.body.address,
                                 country: req.body.country,
                                 region: req.body.region,
@@ -125,8 +126,10 @@ exports.updateOrganization = async (req, res) => {
                                             nom: req.body.name,
                                             type: req.body.type,
                                             portable_responsable_legal: req.body.phone,
+                                            is_whatsapp: req.body.is_whatsapp,
+                                            is_light: req.body.is_light,
                                             email: req.body.email,
-                                            age: req.body.terrification,
+                                            other_emails: req.body.other_emails,
                                             adresse: req.body.address,
                                             pays: req.body.country,
                                             region: req.body.region,
@@ -159,7 +162,22 @@ exports.statusOrganization = async (req, res) => {
   } catch (error) {
       throw error;
   }
-  };
+};
+
+exports.updatePricing = async (req, res) => {
+    try {   
+        OrganisationModal = await Organisation.update({pricing_category: req.body.pricing_category}, {where: {id: req.params.id}});
+      if(OrganisationModal === null){
+          res.json({ status: 0, message: 'Something Went Wrong, Please Try Againg Later!!' });
+      }else{
+          
+          res.json({ status: 1, message: 'Organization status has been Updated.', data: '' });
+      }
+      
+  } catch (error) {
+      throw error;
+  }
+};
 exports.getPricingCategory = async (req, res) => {
     try {
       
@@ -197,8 +215,34 @@ exports.getOrganizationType = async (req, res) => {
 
 exports.getInvoicePaymentsByORG = async (req, res) => {
     try {
+
+        let offsetdata = parseInt(req.query.offset ? ((req.query.offset == undefined || req.query.offset == 1) ? 0 :req.query.offset) : 0);
+        if(isNaN(offsetdata)){
+            offsetdata = 0;
+        }
+        let datalimit = parseInt(req.query.limit ? ((req.query.limit == undefined) ? 5 :req.query.limit) : 5);
+        if(isNaN(datalimit)){
+            datalimit = 5;
+        }
         id_organisation = req.params.org_id;
-      OrganisationModal = await Database.query("select organisation.nom,(select organisation.nom from organisation where organisation.id = payment_pro.id_organisation_destinataire limit 1) as destinataire, payment_pro.* from payment_pro join organisation on organisation.id = payment_pro.id_organisation where payment_pro.id_organisation = "+id_organisation+" UNION ALL select organisation.nom, (select organisation.nom from organisation where organisation.id = payment_pro.id_organisation limit 1) as destinataire, payment_pro.* from payment_pro join organisation on organisation.id = payment_pro.id_organisation_destinataire where payment_pro.id_organisation_destinataire = "+id_organisation,{type: Database.QueryTypes.SELECT});
+      OrganisationModal = await Database.query(`SELECT 
+      payment_pro.idpro,
+      (select organisation.nom from organisation where organisation.id = payment_pro.id_organisation limit 1) as nom,
+      (select organisation.nom from organisation where organisation.id = payment_pro.id_organisation_destinataire limit 1) as destinataire,
+      payment_pro.statut,
+      payment_pro.codepro,
+      payment_pro.codefacture,
+      DATE_FORMAT(FROM_UNIXTIME(payment_pro.date), '%d/%m/%Y %H:%i') AS date,
+      DATE_FORMAT(FROM_UNIXTIME(payment_pro.dateDebut), '%d/%m/%Y %H:%i') AS dateDebut,
+      DATE_FORMAT(FROM_UNIXTIME(payment_pro.dateFin), '%d/%m/%Y %H:%i') AS dateFin,
+      payment_pro.amount,
+      payment_pro.users_valided,
+      DATE_FORMAT(FROM_UNIXTIME(payment_pro.date_paiement), '%d/%m/%Y %H:%i') AS date_paiement,
+      payment_pro.canal_paiement,
+      payment_pro.transfer,
+      payment_pro.reference
+      from payment_pro
+      where payment_pro.id_organisation_destinataire = ${id_organisation} ORDER BY payment_pro.idpro DESC LIMIT ${offsetdata}, ${datalimit}`,{type: Database.QueryTypes.SELECT});
         if(OrganisationModal === null){
             res.json({ status: 0, message: 'No Data Found' });
         }else{
@@ -227,7 +271,17 @@ exports.getPaymentDetails = async (req, res) => {
     let data = {};
     let payment_id = req.params.payment_id;
   data.settings = await Settings.findOne();
-  PaymentDetails = await Database.query("select payment_pro.idpro as id,(select organisation.nom from organisation where organisation.id = payment_pro.id_organisation_destinataire limit 1) as destinataire,payment_pro.codefacture,payment_pro.amount,(SELECT SUM(deposited_amount) AS total_deposited_amount FROM patient_deposit_invoice where payment_id=payment_pro.idpro) as total_deposited_amount,(payment_pro.amount - (SELECT SUM(deposited_amount) AS total_deposited_amount FROM patient_deposit_invoice where payment_id=payment_pro.idpro)) as total_due,payment_pro.id_organisation_destinataire from payment_pro where idpro="+payment_id,{type: Database.QueryTypes.SELECT});
+  PaymentDetails = await Database.query(`select payment_pro.idpro as id,
+                                        (select organisation.nom from organisation where organisation.id = payment_pro.id_organisation_destinataire limit 1) as destinataire,
+                                        payment_pro.codefacture,
+                                        payment_pro.dateDebut,
+                                        payment_pro.dateFin,
+                                        payment_pro.amount,
+                                        (SELECT SUM(deposited_amount) AS total_deposited_amount FROM patient_deposit_invoice where payment_id=payment_pro.idpro) as total_deposited_amount,
+                                        (payment_pro.amount - (SELECT SUM(deposited_amount) AS total_deposited_amount 
+                                        FROM patient_deposit_invoice where payment_id=payment_pro.idpro)) as total_due,
+                                        payment_pro.id_organisation_destinataire 
+                                        from payment_pro where idpro=${payment_id}`,{type: Database.QueryTypes.SELECT});
  
   //console.log(data.services);
 
@@ -236,8 +290,36 @@ exports.getPaymentDetails = async (req, res) => {
 
 exports.getDepositList = async (req, res) => {
     try {
+
+        let offsetdata = parseInt(req.query.offset ? ((req.query.offset == undefined || req.query.offset == 1) ? 0 :req.query.offset) : 0);
+        if(isNaN(offsetdata)){
+            offsetdata = 0;
+        }
+        let datalimit = parseInt(req.query.limit ? ((req.query.limit == undefined) ? 5 :req.query.limit) : 5);
+        if(isNaN(datalimit)){
+            datalimit = 5;
+        }
         let payment_id = req.params.payment_id;
-      Deposits =  await Database.query("select payment_pro.codefacture, patient_deposit_invoice.* from patient_deposit_invoice, payment_pro where payment_pro.idpro = patient_deposit_invoice.payment_id and patient_deposit_invoice.payment_id=" + payment_id +" order by id desc  ",{type: Database.QueryTypes.SELECT});
+      Deposits =  await Database.query(`select 
+      payment_pro.codefacture, 
+      patient_deposit_invoice.id,  
+      patient_deposit_invoice.id_organisation, 
+      patient_deposit_invoice.payment_id, 
+      DATE_FORMAT(FROM_UNIXTIME(patient_deposit_invoice.date), '%d/%m/%Y %H:%i') AS date,
+      DATE_FORMAT(FROM_UNIXTIME(payment_pro.dateDebut), '%d/%m/%Y %H:%i') AS start_date,
+      DATE_FORMAT(FROM_UNIXTIME(payment_pro.dateFin), '%d/%m/%Y %H:%i') AS end_date,
+      patient_deposit_invoice.deposited_amount, 
+      patient_deposit_invoice.amount_received_id, 
+      patient_deposit_invoice.deposit_type, 
+      patient_deposit_invoice.gateway, 
+      patient_deposit_invoice.id_transaction_externe, 
+      patient_deposit_invoice.user, 
+      patient_deposit_invoice.status, 
+      patient_deposit_invoice.added_by, 
+      patient_deposit_invoice.updated_by, 
+      patient_deposit_invoice.createdAt, 
+      patient_deposit_invoice.updatedAt 
+      from patient_deposit_invoice, payment_pro where payment_pro.idpro = patient_deposit_invoice.payment_id and patient_deposit_invoice.payment_id=${payment_id} ORDER BY patient_deposit_invoice.id DESC LIMIT  ${offsetdata}, ${datalimit}`,{type: Database.QueryTypes.SELECT});
         if(Deposits === null){
             res.json({ status: 0, message: 'No Data Found' });
         }else{

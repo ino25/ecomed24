@@ -361,8 +361,8 @@ exports.getGeneralInfo = async (req, res) => {
         } else {
             PatientModal.img_url = APP_URL+"/uploads/user-profile-placeholder.png";
         }
-        next_appointment = await Appointment.findOne({ attributes: ['id','patient', 'id_organisation','time_slot','s_time','e_time',[Sequelize.fn("DATE_FORMAT", Sequelize.col("appointment_date"),"%d/%m/%Y"),"appointment_date"]],where: { status: 'Confirmed',patient: req.params.patient_id,appointment_date:{[Op.gte]:moment().format('YYYY-MM-DD')} },order:[['appointment_date', 'ASC']]});
-        last_appointment = await Appointment.findOne({ attributes: ['id','patient', 'id_organisation','time_slot','s_time','e_time',[Sequelize.fn("DATE_FORMAT", Sequelize.col("appointment_date"),"%d/%m/%Y"),"appointment_date"]],where: { status: 'Treaty',patient: req.params.patient_id,appointment_date:{[Op.lte]:moment().format('YYYY-MM-DD')} },order:[['appointment_date', 'DESC']]});
+        next_appointment = await Appointment.findOne({ attributes: ['id','patient', 'id_organisation','time_slot','s_time','e_time',[Sequelize.fn("DATE_FORMAT", Sequelize.col("appointment_date"),"%d/%m/%Y"),"appointment_date"]],where: { status: 1,patient: req.params.patient_id,appointment_date:{[Op.gte]:moment().format('YYYY-MM-DD')} },order:[['appointment_date', 'ASC']]});
+        last_appointment = await Appointment.findOne({ attributes: ['id','patient', 'id_organisation','time_slot','s_time','e_time',[Sequelize.fn("DATE_FORMAT", Sequelize.col("appointment_date"),"%d/%m/%Y"),"appointment_date"]],where: { status: 2,patient: req.params.patient_id,appointment_date:{[Op.lte]:moment().format('YYYY-MM-DD')} },order:[['appointment_date', 'DESC']]});
         // console.log(PatientModal.dataValues);         
         res.json({ status: 1, message: langPatientModule.patientGeneralInfo, data: PatientModal,next_appointment: next_appointment,last_appointment:last_appointment});
     }
@@ -1043,7 +1043,7 @@ exports.getDependants = async (req, res) => {
             as:'parent_details'
         },{
             model: Patient,
-            attributes: ['id', ['id_organisation','org_id'],'name','last_name', 'sex','birthdate','age','phone','email','passport','address','region','estCivil','bloodgroup','birth_position','nom_contact','phone_contact','religion','matricule','grade'],
+            attributes: ['id', ['id_organisation','org_id'],'name','last_name', 'sex','birthdate','age','phone','email','passport','address','region','estCivil','bloodgroup','birth_position','nom_contact','phone_contact','religion','matricule','grade','country','region','district'],
             as:'dependant_details'
         },{
             model: User,
@@ -1082,7 +1082,7 @@ exports.getDependantByID = async (req, res) => {
             as:'parent_details'
         },{
             model: Patient,
-            attributes: ['id', ['id_organisation','org_id'],'name','last_name', 'sex','birthdate','age','phone','email','passport','address','region','estCivil','bloodgroup','birth_position','nom_contact','phone_contact','religion','matricule','grade'],
+            attributes: ['id', ['id_organisation','org_id'],'name','last_name', 'sex','birthdate','age','phone','email','passport','address','region','estCivil','bloodgroup','birth_position','nom_contact','phone_contact','religion','matricule','grade','country','region','district'],
             as:'dependant_details'
         },{
             model: User,
@@ -1121,8 +1121,10 @@ exports.addDependant = async (req, res) => {
                             phone: req.body.phone,
                             email: req.body.email,
                             passport: req.body.passport,
-                            address: req.body.address,
+                            country: req.body.country,
                             region: req.body.region,
+                            district: req.body.district,
+                            address: req.body.address,
                             estCivil: req.body.estCivil,
                             bloodgroup: req.body.bloodgroup,
                             birth_position: req.body.birth_position,
@@ -1187,8 +1189,10 @@ exports.updateDependant = async (req, res) => {
                                 phone: req.body.phone,
                                 email: req.body.email,
                                 passport: req.body.passport,
-                                address: req.body.address,
+                                country: req.body.country,
                                 region: req.body.region,
+                                district: req.body.district,
+                                address: req.body.address,
                                 estCivil: req.body.estCivil,
                                 bloodgroup: req.body.bloodgroup,
                                 birth_position: req.body.birth_position,
@@ -2220,6 +2224,7 @@ exports.getClinicalNotes = async (req, res) => {
     }
     const { count, rows } = await ClinicalNotes.findAndCountAll({where: { patient_id: req.params.patient_id }});
     ClinicalNotesModal = await ClinicalNotes.findAll({ 
+        attributes: ['id', 'patient_id','org_id',[Sequelize.fn("DATE_FORMAT", Sequelize.col("ClinicalNotes.date_time"),"%d/%m/%Y %H:%i"),"date_time",], 'channel','motive','known_health_issues','consultation','desease','desease_history','diagnostic','treatment','observation','documents','status','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("ClinicalNotes.createdAt"),"%d/%m/%Y %H:%i"),"createdAt",],[Sequelize.fn("DATE_FORMAT", Sequelize.col("ClinicalNotes.updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt",],'nosologie'],
         where: { patient_id: req.params.patient_id },
         order: [['id', 'desc']],
         limit: datalimit,
@@ -2250,7 +2255,10 @@ exports.getClinicalNotes = async (req, res) => {
 exports.getClinicalNotesByID = async (req, res) => {
   try {
     let getData = [], results;
-    ClinicalNotesModal = await ClinicalNotes.findOne({ where: { id: req.params.clinical_note_id } });
+    ClinicalNotesModal = await ClinicalNotes.findOne({
+        attributes: ['id', 'patient_id','org_id',[Sequelize.fn("DATE_FORMAT", Sequelize.col("ClinicalNotes.date_time"),"%d/%m/%Y %H:%i"),"date_time",], 'channel','motive','known_health_issues','consultation','desease','desease_history','diagnostic','treatment','observation','documents','status','added_by','updated_by',[Sequelize.fn("DATE_FORMAT", Sequelize.col("ClinicalNotes.createdAt"),"%d/%m/%Y %H:%i"),"createdAt",],[Sequelize.fn("DATE_FORMAT", Sequelize.col("ClinicalNotes.updatedAt"),"%d/%m/%Y %H:%i"),"updatedAt",],'nosologie'],
+        where: { id: req.params.clinical_note_id }
+    });
     if(ClinicalNotesModal === null){
         res.json({ status: 0, message: langCommon.nodatafound });
     }else{
@@ -3319,7 +3327,7 @@ exports.logsType = async (req, res) => {
             {'type':'know_health_issue','name':langPatientModule.medicalHistory.logsType.know_health_issue},
             {'type':'clinical_notes','name':langPatientModule.medicalHistory.logsType.clinical_notes},
             {'type':'hospitalization','name':langPatientModule.medicalHistory.logsType.hospitalization},
-            {'type':'precription','name':langPatientModule.medicalHistory.logsType.precription},
+            {'type':'prescription','name':langPatientModule.medicalHistory.logsType.prescription},
             {'type':'imaging_request','name':langPatientModule.medicalHistory.logsType.imaging_request},
             {'type':'lab','name':langPatientModule.medicalHistory.logsType.lab},
             {'type':'death_record','name':langPatientModule.medicalHistory.logsType.death_record},
