@@ -1,1 +1,0 @@
-const flux = "auto auto";

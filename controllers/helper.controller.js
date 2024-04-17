@@ -3,7 +3,6 @@ const Database = require('../config').sequelize;
 const Op = Sequelize.Op;
 const moment = require("moment");
 moment.locale('en');
-const fs = require("fs");
 const path = require('path');
 const nodemailer = require("nodemailer");
 const axios = require("axios");
