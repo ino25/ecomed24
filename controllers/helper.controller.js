@@ -118,59 +118,59 @@ exports.getOrganizationPermission = async (req, res) => {
 };
 
 
-// exports.savePDFdf = async (req, res) => {
-//     const { formData } = req.body;
-//     const templateNameValue =
-//       "ecoMed24.dev/ecomed-templates/ecomed_MasterLabTemplate.docx";
-//     const outputName = `lab-report--00${formData?.id_acte}.pdf`;
-//     const accessKey =
-//       "ODBiYzNkNzItYWE2Ni00ZGIzLWE0YzgtY2MzYjYzODkwZmRjOjA4MjQ5MjQ";
+exports.savePDFdf = async (req, res) => {
+    const { formData } = req.body;
+    const templateNameValue =
+      "ecoMed24.dev/ecomed-templates/ecomed_MasterLabTemplate.docx";
+    const outputName = `lab-report--00${formData?.id_acte}.pdf`;
+    const accessKey =
+      "ODBiYzNkNzItYWE2Ni00ZGIzLWE0YzgtY2MzYjYzODkwZmRjOjA4MjQ5MjQ";
   
-//     const postData = new URLSearchParams({
-//       accessKey: accessKey,
-//       templateName: templateNameValue,
-//       outputName: outputName,
-//       data: JSON.stringify(formData),
-//     }).toString();
+    const postData = new URLSearchParams({
+      accessKey: accessKey,
+      templateName: templateNameValue,
+      outputName: outputName,
+      data: JSON.stringify(formData),
+    }).toString();
   
-//     const requestOptions = {
-//       headers: {
-//         "Content-Type": "application/x-www-form-urlencoded",
-//         "Content-Length": String(new TextEncoder().encode(postData).length), // Convert to string
-//       },
-//     };
+    const requestOptions = {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Length": String(new TextEncoder().encode(postData).length), // Convert to string
+      },
+    };
   
-//     try {
-//       console.log(formData);
-//       const response = await axios.post(
-//         `https://eu.dws3.docmosis.com/api/render`,
-//         postData,
-//         requestOptions
-//       );
+    try {
+      console.log(formData);
+      const response = await axios.post(
+        `https://eu.dws3.docmosis.com/api/render`,
+        postData,
+        requestOptions
+      );
   
-//       if (response.status === 200) {
-//         const pdfData = response.data; // Response data is already in Blob format
-//         const blob = new Blob([pdfData], { type: "application/pdf" });
+      if (response.status === 200) {
+        const pdfData = response.data; // Response data is already in Blob format
+        const blob = new Blob([pdfData], { type: "application/pdf" });
   
-//         // Enregistrez le fichier PDF sur le serveur
-//         const pdfPath = `./pdfs/${outputName}`;
-//         const pdfFile = fs.createWriteStream(pdfPath);
-//         blob.stream().pipe(pdfFile);
+        // Enregistrez le fichier PDF sur le serveur
+        const pdfPath = `./pdfs/${outputName}`;
+        const pdfFile = fs.createWriteStream(pdfPath);
+        blob.stream().pipe(pdfFile);
   
-//         pdfFile.on("finish", () => {
-//           res.json({ message: "Fichier PDF sauvegardé avec succès." });
-//         });
-//       } else {
-//         console.log("Error response:", response.status, response.statusText);
-//         throw new Error("Network response was not ok.");
-//       }
-//     } catch (error) {
-//       console.error("Request error:", error);
-//       res
-//         .status(500)
-//         .json({ error: "Une erreur est survenue lors de la génération du PDF." });
-//     }
-//   };
+        pdfFile.on("finish", () => {
+          res.json({ message: "Fichier PDF sauvegardé avec succès." });
+        });
+      } else {
+        console.log("Error response:", response.status, response.statusText);
+        throw new Error("Network response was not ok.");
+      }
+    } catch (error) {
+      console.error("Request error:", error);
+      res
+        .status(500)
+        .json({ error: "Une erreur est survenue lors de la génération du PDF." });
+    }
+  };
 
 
 
