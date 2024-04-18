@@ -3,9 +3,6 @@ const router = express.Router();
 const VerifyToken = require('./VerifyToken');
 const labController = require("../controllers/lab.controller");
 
-const support = require('../multer/pdf')
-
-
 
 router.get("/labs",VerifyToken, labController.getAllLabs);
 router.post("/listactes",VerifyToken, labController.getActeDemande);

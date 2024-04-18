@@ -3,7 +3,7 @@ const cookieParser = require("cookie-parser");
 const morgan = require("morgan");
 const helmet = require("helmet");
 const cors = require("cors");
-const i18n = require('i18n');
+const i18n = require("i18n");
 const bodyParser = require("body-parser");
 const path = require("path");
 require("dotenv/config");
@@ -36,9 +36,9 @@ let app = express();
 
 // Configure i18n
 i18n.configure({
-  locales: ['en', 'fr', 'es'], // Add more locales as needed
-  defaultLocale: 'fr',
-  directory: __dirname + '/locales', // Folder where translation files are stored
+  locales: ["en", "fr", "es"], // Add more locales as needed
+  defaultLocale: "fr",
+  directory: __dirname + "/locales", // Folder where translation files are stored
   objectNotation: true, // Use dot notation for nested keys
   updateFiles: false, // Do not write to files
 });
@@ -51,15 +51,15 @@ app.use(i18n.init);
 
 // Set up a middleware to set the user's locale based on a fixed variable
 app.use((req, res, next) => {
-  const fixedLocale = 'fr'; // Set the fixed language/locale here
+  const fixedLocale = "fr"; // Set the fixed language/locale here
   req.setLocale(fixedLocale);
   res.locals.currentLocale = fixedLocale;
   next();
 });
 
 let server = http.Server(options, app);
-app.use("/pdfs", express.static("pdfs"));
-app.use('/uploads', express.static('uploads'));
+app.use("/uploads/invoicefile", express.static("uploads/invoicefile"));
+app.use("/uploads", express.static("uploads"));
 const limitInBytes = 50 * 1024 * 1024 * 1024;
 app.use(
   bodyParser.raw({ type: "application/octet-stream", limit: limitInBytes })
@@ -99,7 +99,7 @@ app.use(function (req, res, next) {
 });
 
 app.get("/", (req, res) => {
-  const welcomeMessage = res.__('index');
+  const welcomeMessage = res.__("index");
   // res.send(welcomeMessage);
   res.json(welcomeMessage);
 });

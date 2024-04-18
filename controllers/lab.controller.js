@@ -1,5 +1,5 @@
 const { Sequelize } = require("sequelize");
-const sequelize = require('../config').sequelize;
+const sequelize = require("../config").sequelize;
 const moment = require("moment");
 const fs = require("fs");
 const path = require("path");
@@ -7,6 +7,8 @@ const Client = require("ssh2-sftp-client");
 const nodemailer = require("nodemailer");
 const axios = require("axios");
 const https = require("https");
+const mailer = require("../helpers/LabMailer");
+
 const { URLSearchParams } = require("url");
 exports.getAllLabs = async (req, res) => {
   try {
@@ -29,152 +31,163 @@ exports.getActeDemande = async (req, res) => {
   const id_organisation = req.body.id_organisation;
 
   try {
+    // Fetching initial payment data
     const paymentData = await sequelize.query(
-      `SELECT payment.id, payment.code, payment.category_name, payment.motifVoyage, payment.date_string, payment.patient_name, payment.id_organisation, payment.patient, payment.doctor_name, payment.doctor, payment.amount,payment.renseignementClinique
-       FROM payment
-       WHERE payment.id_organisation = ${sequelize.escape(id_organisation)}
-       ORDER BY payment.date_string DESC`,
+      `SELECT * FROM payment WHERE id_organisation = ${sequelize.escape(
+        id_organisation
+      )} ORDER BY date_string DESC`,
       { type: sequelize.QueryTypes.SELECT }
     );
 
+    let categoryIds = new Set();
+    paymentData.forEach((payment) => {
+      if (payment.category_name) {
+        payment.category_name.split(",").forEach((category) => {
+          const [categoryId] = category.split("*");
+          categoryIds.add(categoryId);
+        });
+      }
+    });
+
+    // Fetching all needed data in parallel
+    const [
+      categoriesData,
+      servicesData,
+      specialitesData,
+      prestationsData,
+      patientsData,
+      labsData,
+      allLabData,
+    ] = await Promise.all([
+      sequelize.query(
+        `SELECT * FROM payment_category WHERE id IN (${[...categoryIds]
+          .map((id) => sequelize.escape(id))
+          .join(", ")})`,
+        { type: sequelize.QueryTypes.SELECT }
+      ),
+      sequelize.query(`SELECT * FROM setting_service`, {
+        type: sequelize.QueryTypes.SELECT,
+      }),
+      sequelize.query(`SELECT * FROM setting_service_specialite`, {
+        type: sequelize.QueryTypes.SELECT,
+      }),
+      sequelize.query(
+        `SELECT * FROM payment_category_parametre WHERE id_prestation IN (${[
+          ...categoryIds,
+        ]
+          .map((id) => sequelize.escape(id))
+          .join(", ")})`,
+        { type: sequelize.QueryTypes.SELECT }
+      ),
+      sequelize.query(
+        `SELECT * FROM patient WHERE id IN (${paymentData
+          .map((p) => sequelize.escape(p.patient))
+          .join(", ")})`,
+        { type: sequelize.QueryTypes.SELECT }
+      ),
+      sequelize.query(
+        `SELECT * FROM lab WHERE payment IN (${paymentData
+          .map((p) => sequelize.escape(p.id))
+          .join(", ")})`,
+        { type: sequelize.QueryTypes.SELECT }
+      ),
+      sequelize.query(
+        `SELECT * FROM lab_data WHERE id_payment IN (${paymentData
+          .map((p) => sequelize.escape(p.id))
+          .join(", ")})`,
+        { type: sequelize.QueryTypes.SELECT }
+      ),
+    ]);
+
+    // Creating maps for quick lookup
+    const serviceMap = servicesData.reduce((map, service) => {
+      map[service.idservice] = service;
+      return map;
+    }, {});
+
+    const specialiteMap = specialitesData.reduce((map, specialite) => {
+      map[specialite.idspe] = specialite;
+      return map;
+    }, {});
+
+    const patientMap = patientsData.reduce((map, patient) => {
+      map[patient.id] = patient;
+      return map;
+    }, {});
+
+    const labMap = labsData.reduce((map, lab) => {
+      map[lab.payment] = lab;
+      return map;
+    }, {});
+
+    const labDataMap = allLabData.reduce((map, labData) => {
+      const key = `${labData.id_para}-${labData.id_payment}`;
+      map[key] = labData;
+      return map;
+    }, {});
+
+    // Building the final labData array
     let labData = [];
-    for (let payment of paymentData) {
-      let category_ids = payment.category_name
+    paymentData.forEach((payment) => {
+      const paymentCategories = payment.category_name
         ? payment.category_name.split(",")
         : [];
-      for (let category_id of category_ids) {
-        let splitString = category_id.split("*");
-        category_id = splitString[0];
-        const status_number = splitString[4];
-        let status;
-        if (status_number === "1") status = "EN COURS";
-        else if (status_number === "2") status = "EFFECTUÉ";
-        else if (status_number === "3") status = "VALIDÉ";
-        else status = "UNKNOWN";
-
-        const categoryData = await sequelize.query(
-          `SELECT id, prestation, id_service,	id_spe  FROM payment_category WHERE id = ${sequelize.escape(
-            category_id
-          )}`,
-          { type: sequelize.QueryTypes.SELECT }
+      paymentCategories.forEach((categoryString) => {
+        const [categoryId, , , , status_number] = categoryString.split("*");
+        const category = categoriesData.find(
+          (cat) => cat.id.toString() === categoryId
         );
-
-        if (categoryData[0]) {
-          // Get name_service
-          const serviceData = await sequelize.query(
-            `SELECT name_service FROM setting_service WHERE idservice = ${sequelize.escape(
-              categoryData[0].id_service
-            )}`,
-            { type: sequelize.QueryTypes.SELECT }
-          );
-          // Get name_specialite
-          const specialiteData = await sequelize.query(
-            `SELECT name_specialite, code_specialite FROM setting_service_specialite WHERE idspe = ${sequelize.escape(
-              categoryData[0].id_spe
-            )}`,
-            { type: sequelize.QueryTypes.SELECT }
-          );
-
-          // Get specialite_param data
-          const prestationParamData = await sequelize.query(
-            `SELECT * FROM payment_category_parametre WHERE id_prestation = ${sequelize.escape(
-              categoryData[0].id
-            )}`,
-            { type: sequelize.QueryTypes.SELECT }
-          );
-
-          let prestationParam = await Promise.all(
-            prestationParamData.map(async (param) => {
-              // Get prestationSaisie data
-              const prestationSaisieData = await sequelize.query(
-                `SELECT * FROM lab_data WHERE id_para = ${sequelize.escape(
-                  param.idpara
-                )} AND id_payment = ${sequelize.escape(payment.id)}`,
-                { type: sequelize.QueryTypes.SELECT }
-              );
-
+        if (category) {
+          const service = serviceMap[category.id_service];
+          const specialite = specialiteMap[category.id_spe];
+          const patient = patientMap[payment.patient];
+          const lab = labMap[payment.id];
+          const prestationParams = prestationsData
+            .filter((p) => p.id_prestation === category.id)
+            .map((p) => {
+              const labKey = `${p.idpara}-${payment.id}`;
               return {
-                id: param.idpara,
-                idprestation: param.id_prestation,
-                idspecialite: param.id_specialite,
-                nomparametre: param.nom_parametre,
-                unite: param.unite,
-                valeurs: param.unite,
-                ref_low: param.ref_low,
-                ref_high: param.ref_high,
-                type: param.type,
-                set_of_code: param.set_of_code,
-                prestationSaisie: prestationSaisieData[0]
-                  ? prestationSaisieData[0]
+                ...p,
+                prestationSaisie: labDataMap[labKey]
+                  ? labDataMap[labKey]
                   : null,
-                // add other fields that you want to include
               };
-            })
-          );
-
-          const patientData = await sequelize.query(
-            `SELECT * FROM patient WHERE id = ${sequelize.escape(
-              payment.patient
-            )}`,
-            { type: sequelize.QueryTypes.SELECT }
-          );
-
-          let labDataPrelevement = await sequelize.query(
-            `SELECT date_prelevement FROM lab WHERE payment = ${sequelize.escape(
-              payment.id
-            )}`,
-            { type: sequelize.QueryTypes.SELECT }
-          );
-          let date_prelevement = labDataPrelevement[0]
-            ? labDataPrelevement[0].date_prelevement
-            : null;
-
-          const lab = await sequelize.query(
-            `SELECT * FROM lab WHERE payment = ${sequelize.escape(payment.id)}`,
-            { type: sequelize.QueryTypes.SELECT }
-          );
+            });
 
           labData.push({
             id_payment: payment.id,
             payment_code: payment.code,
             amount: payment.amount,
-            code: payment.code + categoryData[0].id,
+            code: payment.code + category.id,
             date_string: payment.date_string,
             patient_name: payment.patient_name,
-            id_service: categoryData[0].id_service,
-            name_service: serviceData[0] ? serviceData[0].name_service : null,
-            id_specialite: categoryData[0].id_spe,
-            name_specialite: specialiteData[0]
-              ? specialiteData[0].name_specialite
-              : null,
-            code_specialite: specialiteData[0]
-              ? specialiteData[0].code_specialite
-              : null,
-            id_prestation: categoryData[0].id,
-            prestation: categoryData[0].prestation,
+            id_service: category.id_service,
+            name_service: service ? service.name_service : null,
+            id_specialite: category.id_spe,
+            name_specialite: specialite ? specialite.name_specialite : null,
+            code_specialite: specialite ? specialite.code_specialite : null,
+            id_prestation: category.id,
+            prestation: category.prestation,
             id_organisation: payment.id_organisation,
             id_doctor: payment.doctor,
             doctor_name: payment.doctor_name,
             status_number: status_number,
-            status: status,
-            date_prelevement: date_prelevement,
+            status:
+              ["UNKNOWN", "EN COURS", "EFFECTUÉ", "VALIDÉ"][status_number] ||
+              "UNKNOWN",
+            date_prelevement: lab ? lab.date_prelevement : null,
             clinique: payment.renseignementClinique,
-            patient_data: patientData[0] ? patientData[0] : null,
-            prestationDetails: prestationParam, // add specialiteParam array
-            lab: lab[0],
+            patient_data: patient,
+            prestationDetails: prestationParams,
+            lab: lab,
             motifVoyage: payment.motifVoyage,
           });
         }
-      }
-    }
-
-    // Sort labData by date_string in descending order
-    labData.sort((a, b) => {
-      const dateA = moment(a.date_string, "DD/MM/YYYY HH:mm");
-      const dateB = moment(b.date_string, "DD/MM/YYYY HH:mm");
-      return dateB - dateA;
+      });
     });
 
+    // Sorting and sending response
+    labData.sort((a, b) => new Date(b.date_string) - new Date(a.date_string));
     if (labData.length > 0) {
       res.json(labData);
     } else {
@@ -705,11 +718,9 @@ exports.getUserById = async (req, res) => {
     res.status(200).send(result);
   } catch (error) {
     console.error(`[Error in controller] ${error}`);
-    return res
-      .status(500)
-      .send({
-        error: "Une erreur s'est produite lors de la récupération des données",
-      });
+    return res.status(500).send({
+      error: "Une erreur s'est produite lors de la récupération des données",
+    });
   }
 };
 
@@ -773,7 +784,7 @@ exports.savePDFdf = async (req, res) => {
       const blob = new Blob([pdfData], { type: "application/pdf" });
 
       // Enregistrez le fichier PDF sur le serveur
-      const pdfPath = `./pdfs/${outputName}`;
+      const pdfPath = `./uploads/invoicefile/${outputName}`;
       const pdfFile = fs.createWriteStream(pdfPath);
       blob.stream().pipe(pdfFile);
 
@@ -792,63 +803,49 @@ exports.savePDFdf = async (req, res) => {
   }
 };
 
-const transporter = nodemailer.createTransport({
-  host: "ssl0.ovh.net",
-  port: 587,
-  secure: false,
-  auth: {
-    user: "no-reply@senpharma.org", // Remplacez par votre adresse e-mail
-    pass: "SenPharma2023",
-  },
-});
-
 exports.envoiPdf = async (req, res) => {
   const { email, pdfFilePath } = req.body;
-  try {
-    const response = await axios.get(pdfFilePath, {
-      responseType: "arraybuffer",
-    });
-    const pdfStream = Buffer.from(response.data, "binary");
-    const urlParts = pdfFilePath.split("/");
 
-    const fileName = urlParts[urlParts.length - 1];
-    const filePath = path.join(__dirname, "../pdfs", fileName);
+  const fileName = path.basename(pdfFilePath);
+  const filePath = pdfFilePath;
 
-    // Enregistrez le fichier PDF localement
-    fs.writeFile(filePath, pdfStream, (err) => {
-      if (err) {
-        console.error("Error writing PDF file:", err);
-        res.status(500).send({ message: "Error writing PDF file." });
-      } else {
-        console.log("PDF file saved:", fileName);
-      }
-    });
+  fs.access(filePath, fs.constants.F_OK, async (err) => {
+    if (err) {
+      console.error("Fichier PDF introuvable:", err);
+      return res.status(404).send({ message: "Fichier PDF introuvable." });
+    }
 
     const mailOptions = {
-      from: "no-reply@senpharma.org",
+      from: "contact@pathfinderacademy.in",
       to: email,
       subject: "Votre fichier PDF",
-      text: "Voici votre fichier PDF en pièce jointe.",
+      html: "Voici votre fichier PDF en pièce jointe.",
       attachments: [
         {
           filename: fileName,
-          content: pdfStream,
+          path: filePath,
         },
       ],
     };
 
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error("Erreur lors de l'envoi de l'e-mail :", error);
-        res.status(500).send("Erreur lors de l'envoi de l'e-mail.");
-      } else {
-        console.log("E-mail envoyé :", info.response);
+    // Utilisez la fonction mailer pour envoyer l'e-mail
+    try {
+      const emailSent = await mailer(
+        email,
+        mailOptions.from,
+        mailOptions.subject,
+        mailOptions.html,
+        mailOptions.attachments
+      );
+      if (emailSent) {
+        console.log("E-mail envoyé avec succès.");
         res.status(200).send("E-mail envoyé avec succès.");
+      } else {
+        throw new Error("Failed to send email");
       }
-    });
-  } catch (error) {
-    res
-      .status(500)
-      .send("Une erreur est survenue lors de l'envoi de l'e-mail.");
-  }
+    } catch (error) {
+      console.error("Erreur lors de l'envoi de l'e-mail :", error);
+      res.status(500).send("Erreur lors de l'envoi de l'e-mail.");
+    }
+  });
 };
