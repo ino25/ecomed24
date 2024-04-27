@@ -17,6 +17,9 @@ router.get('/get-district-list/:region_id',VerifyToken, helperController.getDist
 router.get('/get-permissions',VerifyToken, helperController.getOrganizationPermission);
 
 
+router.post('/generate-pdf',VerifyToken, helperController.generatePDF);
+
+
 
 
 
