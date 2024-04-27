@@ -735,7 +735,7 @@ exports.savePDF = async (req, res) => {
       return res.status(400).json({ error: "Aucun fichier n'a été envoyé." });
     }
 
-    const pdfPath = path.join(__dirname, "../pdfs", outputName);
+    const pdfPath = path.join(__dirname, "../uploads/invoicefile", outputName);
 
     fs.writeFileSync(pdfPath, pdfData); // Write the PDF data to a file
 
