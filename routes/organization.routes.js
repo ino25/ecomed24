@@ -24,4 +24,17 @@ router.post('/invoice-payments/payment/deposit/add',VerifyToken, organizationCon
 router.get('/get-organization-types',VerifyToken, organizationController.getOrganizationType);
 router.get('/get-pricing-category',VerifyToken, organizationController.getPricingCategory);
 
+// Price Prestation
+router.post('/add-price-grid',VerifyToken, organizationController.addPriceGrids);
+router.post('/import-price-detail',VerifyToken, organizationController.importPriceGridDetails);
+router.get('/get-price-grids',VerifyToken, organizationController.getPriceGridsAll);
+router.get('/get-price-grid/:gridID',VerifyToken, organizationController.getPriceGridByID);
+router.get('/get-price-grid-details',VerifyToken, organizationController.getPriceGridDetailsAll);
+// router.get('/get-price-grid-detail/:gridDetailsID',VerifyToken, organizationController.getPriceGridDetailByID);
+// router.get('/get-price-grid-by/:gridID',VerifyToken, organizationController.getPriceGridDetailByGridID);
+// router.get('/update-price-detail-by/:detailID',VerifyToken, organizationController.updatePriceGridDetails);
+// router.get('/update-bulk-price-grid-by/:gridID',VerifyToken, organizationController.updatePriceGridDetails);
+
+
 module.exports = router;
+

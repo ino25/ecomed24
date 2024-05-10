@@ -5,6 +5,7 @@ const moment = require("moment");
 moment.locale('en');
 const path = require('path');
 const nodemailer = require("nodemailer");
+const { parseAndValidateExcelPrice } = require("../taks/excel.taks");
 
 var User = require('../models/User');
 var Patient = require('../models/Patient');
@@ -20,6 +21,11 @@ var PaymentCategory = require('../models/PaymentCategory');
 const multer  = require('multer');
 const fs = require('fs');
 
+var SettingServiceSpecialite = require('../models/SettingServiceSpecialite');
+var PaymentCategoryOrganisation = require('../models/PaymentCategoryOrganisation');
+var PriceGrids = require('../models/PriceGrids');
+var PriceGridDetails = require('../models/PriceGridDetails');
+
 
 // Attachments
 
@@ -28,11 +34,22 @@ Organisation.belongsTo(User, {as: 'updatedby_details',foreignKey: 'updated_by'})
 Organisation.belongsTo(OrganisationType, {as: 'type_details',foreignKey: 'type'});
 // Organisation.belongsTo(DocumentTypes, {as: 'doctypes_details',foreignKey: 'category'});
 
+// Price Grids 
+PaymentCategoryOrganisation.belongsTo(PaymentCategory, {
+  foreignKey: "id_presta",
+});
+PaymentCategory.hasMany(PaymentCategoryOrganisation, { foreignKey: "id" });
+
+PaymentCategory.belongsTo(SettingServiceSpecialite, { foreignKey: "id_spe" });
+SettingServiceSpecialite.hasMany(PaymentCategory, { foreignKey: "idspe" });
+
 
 // Patient Deposit invoice
 PatientDepositInvoice.belongsTo(User, {as: 'addedby_details',foreignKey: 'added_by'});
 PatientDepositInvoice.belongsTo(User, {as: 'updatedby_details',foreignKey: 'updated_by'});
 PatientDepositInvoice.belongsTo(Organisation, {as: 'org_details',foreignKey: 'id_organisation'});
+
+//
 //////Modal Relationship
 
 exports.getOrganizationList = async (req, res) => {
@@ -360,6 +377,381 @@ exports.addDeposit = async (req, res) => {
         throw error;
     }
 }
+
+exports.getOrganisationPrestation = async (req, res) => {
+  try {
+    if (req.params.type_id == "1") {
+      const PaymentCategoryOrganisationModal =
+        await PaymentCategoryOrganisation.findAll({
+          attributes: [
+            "idpco",
+            [
+              Sequelize.fn(
+                "ROUND",
+                Sequelize.col(
+                  "PaymentCategoryOrganisation.tarif_professionnel"
+                ),
+                0
+              ),
+              "tarif_arrondi",
+            ], // Arrondi à l'entier le plus proche
+          ],
+          include: [
+            {
+              model: PaymentCategory,
+              attributes: ["prestation"],
+              include: [
+                {
+                  model: SettingServiceSpecialite,
+                  attributes: ["name_specialite"],
+                },
+              ],
+            },
+          ],
+          where: { id_organisation: req.params.org_id },
+        });
+      if (PaymentCategoryOrganisationModal === null) {
+        res.json({ status: 0, message: "Not Data Found" });
+      } else {
+        res.json({
+          status: 1,
+          message: "Payment Category Organisation List",
+          data: PaymentCategoryOrganisationModal,
+        });
+      }
+    } else if (req.params.type_id == "2") {
+      PaymentCategoryOrganisationModal =
+        await PaymentCategoryOrganisation.findAll({
+          attributes: [
+            "idpco",
+            [
+              Sequelize.fn(
+                "ROUND",
+                Sequelize.col("PaymentCategoryOrganisation.prix_public"),
+                0
+              ),
+              "tarif_arrondi",
+            ],
+          ], // Sélection des attributs nécessaires du modèle principal
+          include: [
+            {
+              model: PaymentCategory,
+              attributes: ["prestation"], // Sélection des attributs nécessaires du modèle associé
+              include: [
+                {
+                  model: SettingServiceSpecialite,
+                  attributes: ["name_specialite"], // Sélection des attributs du modèle inclus de manière imbriquée
+                },
+              ],
+            },
+          ],
+          where: { id_organisation: req.params.org_id },
+        });
+      if (PaymentCategoryOrganisationModal === null) {
+        res.json({ status: 0, message: "Not Data Found" });
+      } else {
+        res.json({
+          status: 1,
+          message: "Payment Category Organisation List",
+          data: PaymentCategoryOrganisationModal,
+        });
+      }
+    } else {
+      res.json({ status: 0, message: "Not Data Found" });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+exports.addPriceGrids = async (req, res) => {
+  try {
+    console.log(req.body);
+    const priceGridsModel = await PriceGrids.create({
+      organizationID: req.body.organizationID,
+      gridName: req.body.gridName,
+      description: req.body.description,
+      effectiveDate: req.body.effectiveDate,
+      expiryDate: req.body.expiryDate,
+      lastModifiedDate: req.body.lastModifiedDate,
+      lastModifiedBy: req.body.lastModifiedBy,
+    });
+
+    // Si aucun modèle n'est renvoyé, cela indique généralement une erreur non gérée.
+    if (priceGridsModel === null) {
+      res.json({
+        status: 0,
+        message: "Something went wrong, please try again later.",
+      });
+    } else {
+      res.json({
+        status: 1,
+        message: "New PriceGrid has been added.",
+        data: priceGridsModel,
+      });
+    }
+  } catch (error) {
+    // Intercepter spécifiquement les erreurs de violation de contrainte d'unicité
+    if (error.name === "SequelizeUniqueConstraintError") {
+      res.json({
+        status: 0,
+        message: "This grid name already exists. Please use a different name.",
+      });
+    } else {
+      res.json({
+        status: 0,
+        message: "Server error, please try again later.",
+        error: error.message, // Fournir plus de détails sur l'erreur
+      });
+    }
+  }
+};
+
+exports.importPriceGridDetails = async (req, res) => {
+  const form = new formidable.IncomingForm();
+  form.multiples = true;
+  form.parse(req, async (err, fields, files) => {
+    if (err) {
+      res.status(500).json({ wsMessage: "Error parsing the form data." });
+      return;
+    }
+
+    // Normalisation des champs pour éviter des erreurs de type avec Sequelize
+    const organizationID = Array.isArray(fields.organizationID)
+      ? fields.organizationID[0]
+      : fields.organizationID;
+    const gridName = Array.isArray(fields.gridName)
+      ? fields.gridName[0]
+      : fields.gridName;
+    const description = Array.isArray(fields.description)
+      ? fields.description[0]
+      : fields.description;
+    const lastModifiedBy = Array.isArray(fields.lastModifiedBy)
+      ? fields.lastModifiedBy[0]
+      : fields.lastModifiedBy;
+    const adjustmentType = Array.isArray(fields.adjustmentType)
+      ? fields.adjustmentType[0]
+      : fields.adjustmentType;
+    const adjustmentValue = Array.isArray(fields.adjustmentValue)
+      ? fields.adjustmentValue[0]
+      : fields.adjustmentValue;
+
+    // Création du modèle
+    let priceGridsModel;
+    try {
+      priceGridsModel = await PriceGrids.create({
+        organizationID,
+        gridName,
+        description,
+        effectiveDate: fields.effectiveDate, // Supposons que ces dates sont correctement formatées
+        expiryDate: fields.expiryDate,
+        lastModifiedDate: fields.lastModifiedDate,
+        adjustmentType,
+        adjustmentValue,
+        lastModifiedBy,
+      });
+    } catch (error) {
+      console.error("Error creating PriceGrids model:", error);
+      if (error.name === "SequelizeUniqueConstraintError") {
+        res.json({
+          status: 0,
+          message:
+            "This grid name already exists. Please use a different name.",
+        });
+      } else {
+        res
+          .status(500)
+          .json({ wsMessage: "Database error, unable to create price grid." });
+        return;
+      }
+    }
+
+    // Traitement des fichiers, si le modèle est correctement créé
+    if (
+      !files.priceGrid ||
+      !files.priceGrid.length ||
+      !files.priceGrid[0].filepath
+    ) {
+      res
+        .status(400)
+        .json({ wsMessage: "No file uploaded or file path missing." });
+      return;
+    }
+
+    const filepath = files.priceGrid[0].filepath;
+    console.log("File path:", filepath);
+
+    const result = await parseAndValidateExcelPrice(filepath);
+    if (typeof result == "string") {
+      res.status(400).json({ wsMessage: result });
+      return;
+    } else {
+      console.log("Price grid details:", result);
+      let gridDetails = result.map((elt) => ({
+        productID: elt.ID,
+        adjustedPrice: elt.Prix,
+        effectiveDate: priceGridsModel.effectiveDate,
+        expiryDate: priceGridsModel.expiryDate,
+      }));
+      try {
+        const insertedGridDetails = await PriceGridDetails.bulkCreate(
+          gridDetails
+        );
+        res.json({
+          status: 1,
+          message: "New PriceGrid Details List.",
+          data: insertedGridDetails,
+        });
+      } catch (error) {
+        console.error("Error inserting grid details:", error);
+        res.status(500).json({
+          status: 0,
+          message: "Failed to insert price grid details.",
+          error: error.toString(),
+        });
+      }
+      // Traiter et sauvegarder les données ici
+    }
+  });
+};
+
+exports.getPriceGridsAll = async (req, res) => {
+  try {
+    PriceGridsAll = await PriceGrids.findAll({
+      attributes: [
+        "gridID",
+        "organizationID",
+        "description",
+        "effectiveDate",
+        "expiryDate",
+        "lastModifiedDate",
+        "lastModifiedBy",
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("effectiveDate"),
+            "%d-%m-%Y %H:%i:%s"
+          ),
+          "effectiveDate",
+        ],
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("lastModifiedDate"),
+            "%d-%m-%Y %H:%i:%s"
+          ),
+          "lastModifiedDate",
+        ],
+      ],
+      order: [["gridID", "DESC"]],
+    });
+    if (PriceGridsAll === null) {
+      res.json({ status: 0, message: "No Data Found" });
+    } else {
+      res.json({
+        status: 1,
+        message: "Price Grid List",
+        data: PriceGridsAll,
+      });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+exports.getPriceGridByID = async (req, res) => {
+  try {
+    const PriceGrid = await PriceGrids.findOne({  // Utilisation de findOne pour récupérer un seul enregistrement
+      where: {
+        gridID: req.params.gridID  // Condition où gridID est égal à req.params.gridID
+      },
+      attributes: [
+        "gridID",
+        "organizationID",
+        "description",
+        "effectiveDate",
+        "expiryDate",
+        "lastModifiedDate",
+        "lastModifiedBy",
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("effectiveDate"),
+            "%d-%m-%Y %H:%i:%s"
+          ),
+          "effectiveDate",
+        ],
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("lastModifiedDate"),
+            "%d-%m-%Y %H:%i:%s"
+          ),
+          "lastModifiedDate",
+        ],
+      ],
+      order: [["gridID", "DESC"]],
+    });
+
+    if (PriceGrid === null) {
+      res.json({ status: 0, message: "No Data Found" });
+    } else {
+      res.json({
+        status: 1,
+        message: "Price Grid Details",
+        data: PriceGrid
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ status: 0, message: "Error retrieving data", error: error.message });
+  }
+};
+
+exports.getPriceGridDetailsAll = async (req, res) => {
+  try {
+    PriceGridDetailsAll = await PriceGridDetails.findAll({
+      attributes: [
+        "detailID",
+        "gridID",
+        "productID",
+        "adjustedPrice",
+        "adjustmentType",
+        "adjustmentValue",
+        "effectiveDate",
+        "expiryDate",
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("effectiveDate"),
+            "%d-%m-%Y %H:%i:%s"
+          ),
+          "effectiveDate",
+        ],
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("expiryDate"),
+            "%d-%m-%Y %H:%i:%s"
+          ),
+          "expiryDate",
+        ],
+      ],
+      order: [["detailID", "DESC"]],
+    });
+    if (PriceGridDetailsAll === null) {
+      res.json({ status: 0, message: "No Data Found" });
+    } else {
+      res.json({
+        status: 1,
+        message: "Price Grid Details List",
+        data: PriceGridDetailsAll,
+      });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
 
 
 
