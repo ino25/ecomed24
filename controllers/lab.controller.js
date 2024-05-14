@@ -6,7 +6,6 @@ const path = require("path");
 const Client = require("ssh2-sftp-client");
 const nodemailer = require("nodemailer");
 const axios = require("axios");
-const https = require("https");
 const mailer = require("../helpers/LabMailer");
 
 const { URLSearchParams } = require("url");

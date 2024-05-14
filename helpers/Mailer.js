@@ -1,25 +1,29 @@
-const mail = require('../config').mailConfig;
-const nodemailer = require('nodemailer');
+const mail = require("../config").mailConfig;
+const nodemailer = require("nodemailer");
 
 // Send Mail
-async function mailer(to, from, subject, html) {
-    try {
-        let transporter = nodemailer.createTransport(mail);
-        await transporter.sendMail({
-            to: to,
-            from: from,
-            subject: subject,
-            html: html
-        }, (error, info) => {
-            if (error) {
-                return false;
-            }
-            return true;
-        });
-
-    } catch (error) {
-        throw error;
-    }
+async function Mailer(to, from, subject, html) {
+  try {
+    let transporter = nodemailer.createTransport(mail);
+    await transporter.sendMail(
+      {
+        to: to,
+        from: process.env.MFROM,
+        subject: subject,
+        html: html,
+      },
+      (error, info) => {
+        if (error) {
+          return false;
+        }
+        return true;
+      }
+    );
+  } catch (error) {
+    throw error;
+  }
 }
 
-module.exports = mailer;
+module.exports = {
+  Mailer,
+};

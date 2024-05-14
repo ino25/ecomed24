@@ -1,52 +1,55 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config').sequelize;
+const { DataTypes } = require("sequelize");
+const sequelize = require("../config").sequelize;
 
-const TestRequests = sequelize.define('TestRequests', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
+const TestRequests = sequelize.define(
+  "TestRequests",
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    patient_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    org_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    reports: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
+    type: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    file: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    clinical_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    status: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    added_by: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    updated_by: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
   },
-  patient_id: {
-    type: DataTypes.INTEGER,
-    allowNull: true
-  },
-  org_id: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-  },
-  reports: {
-    type: DataTypes.JSON,
-    allowNull: true
-  },
-  type: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  clinical_id: {
-    type: DataTypes.INTEGER,
-    allowNull: true
-  },
-  status: {
-    type: DataTypes.INTEGER,
-    allowNull: true
-  },
-  added_by: {
-    type: DataTypes.INTEGER,
-    allowNull: true
-  },
-  updated_by: {
-    type: DataTypes.INTEGER,
-    allowNull: true
-  },
-  
-  
-}, {
-  tableName: 'test_requests',
-  timestamps: true // Disable Sequelize's default timestamps
-});
+  {
+    tableName: "test_requests",
+    timestamps: true, // Disable Sequelize's default timestamps
+  }
+);
 
 module.exports = TestRequests;
-
-
-
