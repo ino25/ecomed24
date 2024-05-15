@@ -411,13 +411,12 @@ exports.getDoctorSignature = async (req, res) => {
 exports.generatePDF = async (req, res) => {
   try {
     const data = await dataPrepare(
-      "lab_test_request",
+      req.body.type,
       req.org_id,
       req.body.signature,
       req.body.id,
       req.userId
     );
-    // console.log(data);
     Docmosis(req.body.type, req.body.id, data)
       .then(async (response) => {
         if (response.status) {

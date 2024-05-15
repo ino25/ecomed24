@@ -7,6 +7,7 @@ const Database = require("../config").sequelize;
 const Op = Sequelize.Op;
 const querystring = require("querystring");
 var TestRequests = require("../models/TestRequests");
+var Prescriptions = require("../models/Prescriptions");
 var Patient = require("../models/Patient");
 var Settings = require("../models/Settings");
 var User = require("../models/User");
@@ -25,7 +26,7 @@ async function Docmosis(type, id, data) {
       imaging_request:
         "ecoMed24.dev/requests/ecomed_MasterRequestTemplateV0.7.docx",
       prescription:
-        "ecoMed24.dev/requests/ecomed_MasterRequestTemplateV0.7.docx",
+        "/ecoMed24.dev/requests/ecomed_MasterRequestTemplateV0.7.docx",
     };
 
     const pathToStore = {
@@ -123,6 +124,7 @@ async function Docmosis(type, id, data) {
 
 async function dataPrepare(type, org_id, signature, id, userId) {
   try {
+    console.log(type);
     const preparedData = {};
     switch (type) {
       case "lab_test_request":
@@ -217,7 +219,7 @@ async function dataPrepare(type, org_id, signature, id, userId) {
           patientID: patientModel.unique_id,
           patientDOB: patientModel.birthdate,
           patientAge: patientModel.age,
-          patientGender: patientModel.sex,
+          patientGender: patientModel.sex === "Masculin" ? "M" : "F",
           receivedDate: moment(TestRequestsModal.createdAt).format(
             "DD/MM/YYYY HH:mm"
           ),
@@ -247,10 +249,73 @@ async function dataPrepare(type, org_id, signature, id, userId) {
           ),
           specialtyList: [
             {
+              specialtyID: "307",
+              specialtyName: "Biologie Moleculaire",
+              code_specialite: "BIOMOLEC",
+              testList: [
+                {
+                  id: "1095",
+                  id_spe: "307",
+                  testOrdered: "RECHERCHE ET QUANTITIFICATION DE L'ADN DU VHB",
+                  code_prestation: "BIOMED276",
+                },
+                {
+                  id: "1096",
+                  id_spe: "307",
+                  testOrdered: "AMPLIFICATION GENIQUE",
+                  code_prestation: "BIOMED277",
+                },
+              ],
+            },
+            {
+              specialtyID: "407",
+              specialtyName: "Biochimie",
+              code_specialite: "BIOCHIM",
+              testList: [
+                {
+                  id: "1099",
+                  id_spe: "407",
+                  testOrdered: "Glycémie",
+                  code_prestation: "BIOCHIM276",
+                },
+                {
+                  id: "2000",
+                  id_spe: "407",
+                  testOrdered: "Glycémie post prandiale",
+                  code_prestation: "BIOCHIM277",
+                },
+                {
+                  id: "2001",
+                  id_spe: "407",
+                  testOrdered: "Hémoglobine glyquée",
+                  code_prestation: "BIOCHIM278",
+                },
+                {
+                  id: "2003",
+                  id_spe: "408",
+                  testOrdered: "Hyperglycémie provoquée (HGPO)",
+                  code_prestation: "BIOCHIM279",
+                },
+              ],
+            },
+            {
               specialtyID: "507",
               specialtyName: "Hématologie",
               code_specialite: "HEMATO",
-              testList: TestRequestsModal.reports,
+              testList: [
+                {
+                  id: "3095",
+                  id_spe: "507",
+                  testOrdered: "NFS + FROTTIS SANGUIN + ",
+                  code_prestation: "HEMATO276",
+                },
+                {
+                  id: "3096",
+                  id_spe: "507",
+                  testOrdered: "Vitesse de sédimentation VS",
+                  code_prestation: "HEMATO277",
+                },
+              ],
             },
           ],
           "note cliniques": "noteCliniques",
@@ -340,7 +405,7 @@ async function dataPrepare(type, org_id, signature, id, userId) {
           patientID: patientModel.unique_id,
           patientDOB: patientModel.birthdate,
           patientAge: patientModel.age,
-          patientGender: patientModel.sex,
+          patientGender: patientModel.sex === "Masculin" ? "M" : "F",
           receivedDate: moment(TestRequestsModal.createdAt).format(
             "DD/MM/YYYY HH:mm"
           ),
@@ -382,6 +447,18 @@ async function dataPrepare(type, org_id, signature, id, userId) {
         PrescriptionsModal = await Prescriptions.findOne({
           where: { id: id },
         });
+        medicinDbList = PrescriptionsModal.medicin;
+        const MedicinListData = medicinDbList.map((medicine) => {
+          return {
+            id: medicine.id,
+            dci: medicine.name,
+            dosage: medicine.dosage,
+            posologie: medicine.posologie,
+            notes: "",
+          };
+        });
+        console.log(MedicinListData);
+
         patientModel = await Patient.findOne({
           where: { id: PrescriptionsModal.patient_id },
         });
@@ -430,7 +507,8 @@ async function dataPrepare(type, org_id, signature, id, userId) {
             "image:base64:iVBORw0KGgoAAAANSUhEUgAABSgAAAUoAQMAAACVX6nLAAAABlBMVEX///8AAABVwtN+AAAACXBIWXMAAA7EAAAOxAGVKw4bAAAEUUlEQVR4nO3QSW7DQAxFwdz/0s4yQIOkPi1lAFJvJasHlvzxIUmSJEmSJEmSJEmSJEmSJEmSJOkP9LpuPjv/bN/tplFSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlKOypXjuHCeNP+MLZSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJTXypYQrB5bAmVwHyUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJeWDynbzaiYlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSXl7yvbE+kCJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUl5bco09WKMFPvTKOkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKQMlOnMZ56CaZSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSpMq1Cz++enE5JSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUl5PX01rnqqviZdoKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpLyjnN+1omp6O3P+1gsvJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUl5aiszlW3puh5RjqIkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSMlXOC6tvmFnBNEpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSsrbyldRy98r56+mpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkXCkrajs4xbQz5s2UlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUd5TtNV/vqi3BuFfRsa+9mZKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSknJWzufSE9XP+dPTaZSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSzMiVUk97c3CpjKiUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJWVhm6cfTylrv4+SkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpJypazOVTfsq86mXkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSspU2e6pvMe+9ud8op2RfDYlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSVlAWw3tvz21vlEJU+ipKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkvFt6fyo6/p2H5JSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlP9P2d56nEu/M72lWqCkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKR8UznPrKbPk45LqxkXLEpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSsq1snVUk2bRvLkF9mhKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkrKu8qKkCqrkcE/QUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSfmgMn1qrwpWKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKe8o999wLFT72tUVg5KSkpKSkpKSkpKSkpKSkpKSkpKSkpKSknJ2zLX3z8A331FSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlKulJIkSZIkSZIkSZIkSZIkSZIkSZJ+uE84LSfmdDBcVgAAAABJRU5ErkJggg==",
           request_type: "PHARMA",
           orderNumber: "F25713115-LAB-1095",
-          orderingDoctor: "Dr " + UserModel.first_name + +UserModel.last_name,
+          orderingDoctor:
+            "Dr " + UserModel.first_name + " " + UserModel.last_name,
           organisationAdress: OrganisationModal.adresse,
           orderingDoctorPhone: UserModel.phone,
           orderingDoctorMail: UserModel.email,
@@ -465,12 +543,14 @@ async function dataPrepare(type, org_id, signature, id, userId) {
             doc_id: DoctorSignatureModal.doc_id,
             sign_name: DoctorSignatureModal.sign_name,
             pin: DoctorSignatureModal.pin,
-            date_time: DoctorSignatureModal.date_time,
+            date_time: moment(DoctorSignatureModal.date_time).format(
+              "DD/MM/YYYY HH:mm"
+            ),
           },
           doctorSignature: ConvertToBase64(
             BASEPATH + DoctorSignatureModal.sign_name
           ),
-          medicineList: PrescriptionsModal.medicin,
+          medicineList: MedicinListData,
           remarks: PrescriptionsModal.advice,
         };
         return PreparedData;

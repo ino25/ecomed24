@@ -120,7 +120,7 @@ exports.getByID = async (req, res) => {
           "updatedAt",
         ],
       ],
-      where: { id: req.params.appointment_id },
+      where: { id: req.params.id },
     });
     if (RoleModal === null) {
       res.json({ status: 0, message: langCommon.nodatafound });
