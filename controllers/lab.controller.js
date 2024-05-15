@@ -735,7 +735,7 @@ exports.savePDF = async (req, res) => {
       return res.status(400).json({ error: "Aucun fichier n'a été envoyé." });
     }
 
-    const pdfPath = path.join(__dirname, "../uploads/invoicefile", outputName);
+    const pdfPath = path.join(__dirname, "../uploads", outputName);
 
     fs.writeFileSync(pdfPath, pdfData); // Write the PDF data to a file
 
@@ -783,7 +783,7 @@ exports.savePDFdf = async (req, res) => {
       const blob = new Blob([pdfData], { type: "application/pdf" });
 
       // Enregistrez le fichier PDF sur le serveur
-      const pdfPath = `./uploads/invoicefile/${outputName}`;
+      const pdfPath = `./uploads/${outputName}`;
       const pdfFile = fs.createWriteStream(pdfPath);
       blob.stream().pipe(pdfFile);
 
