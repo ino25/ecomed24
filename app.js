@@ -11,8 +11,8 @@ require("dotenv/config");
 const sequelize = require("./config").sequelize;
 let options = {};
 let http;
-const { emailSchedule } = require("./controllers/cron.controller");
-cron.schedule("*/5 * * * * *", emailSchedule);
+// const { emailSchedule } = require("./controllers/cron.controller");
+// cron.schedule("*/5 * * * * *", emailSchedule);
 if (process.env.NODE_ENV === "production") {
   http = require("http");
   // http = require('https');
