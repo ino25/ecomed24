@@ -61,10 +61,6 @@ app.use((req, res, next) => {
 
 let server = http.Server(options, app);
 app.use("/uploads", express.static("uploads"));
-const limitInBytes = 50 * 1024 * 1024 * 1024;
-app.use(
-  bodyParser.raw({ type: "application/octet-stream", limit: limitInBytes })
-);
 
 const authRouter = require("./routes/auth.routes");
 const helperRouter = require("./routes/helper.routes");
