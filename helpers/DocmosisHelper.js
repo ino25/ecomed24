@@ -13,6 +13,10 @@ var Settings = require("../models/Settings");
 var User = require("../models/User");
 var DoctorSignature = require("../models/DoctorSignature");
 var Organisation = require("../models/Organisation");
+var Organisation = require("../models/Organisation");
+var PaymentCategory = require("../models/PaymentCategory");
+var SettingServiceSpecialite = require("../models/SettingServiceSpecialite");
+var SettingService = require("../models/SettingService");
 // Docmosis
 const BASEURL = process.env.SITE_URL;
 const BASEPATH = process.env.BASE_PATH;
@@ -145,6 +149,56 @@ async function dataPrepare(type, org_id, signature, id, userId) {
           where: { doc_id: userId },
         });
 
+        TestDbList = TestRequestsModal.reports;
+
+        const TestListData = await Promise.all(
+          TestDbList.map(async (test) => {
+            let TestDetails = await PaymentCategory.findOne({
+              where: { id: test.id },
+            });
+            let TestCatDetails = await SettingServiceSpecialite.findOne({
+              where: { idspe: TestDetails.id_spe },
+            });
+            return {
+              id: TestDetails.id,
+              id_spe: TestDetails.id_spe,
+              testOrdered: TestDetails.prestation,
+              code_prestation: TestDetails.code_prestation,
+              name_specialite: TestCatDetails.name_specialite, // Add name_specialite here
+              code_specialite: TestCatDetails.code_specialite, // Add code_specialite here
+            };
+          })
+        );
+
+        const groupedData = {};
+
+        for (const item of TestListData) {
+          const {
+            id,
+            id_spe,
+            testOrdered,
+            code_prestation,
+            name_specialite,
+            code_specialite,
+          } = item;
+          if (!groupedData[id_spe]) {
+            groupedData[id_spe] = {
+              specialtyID: id_spe,
+              specialtyName: name_specialite, // You can set the specialty name and code_specialite later
+              code_specialite: code_specialite, // You can set the specialty name and code_specialite later
+              testList: [],
+            };
+          }
+          groupedData[id_spe].testList.push({
+            id: id,
+            id_spe,
+            testOrdered,
+            code_prestation,
+          });
+        }
+
+        const resultArray = Object.values(groupedData);
+
         PreparedData = {
           id_acte: id,
           id_organisation: org_id,
@@ -247,77 +301,7 @@ async function dataPrepare(type, org_id, signature, id, userId) {
           doctorSignature: ConvertToBase64(
             BASEPATH + DoctorSignatureModal.sign_name
           ),
-          specialtyList: [
-            {
-              specialtyID: "307",
-              specialtyName: "Biologie Moleculaire",
-              code_specialite: "BIOMOLEC",
-              testList: [
-                {
-                  id: "1095",
-                  id_spe: "307",
-                  testOrdered: "RECHERCHE ET QUANTITIFICATION DE L'ADN DU VHB",
-                  code_prestation: "BIOMED276",
-                },
-                {
-                  id: "1096",
-                  id_spe: "307",
-                  testOrdered: "AMPLIFICATION GENIQUE",
-                  code_prestation: "BIOMED277",
-                },
-              ],
-            },
-            {
-              specialtyID: "407",
-              specialtyName: "Biochimie",
-              code_specialite: "BIOCHIM",
-              testList: [
-                {
-                  id: "1099",
-                  id_spe: "407",
-                  testOrdered: "Glycémie",
-                  code_prestation: "BIOCHIM276",
-                },
-                {
-                  id: "2000",
-                  id_spe: "407",
-                  testOrdered: "Glycémie post prandiale",
-                  code_prestation: "BIOCHIM277",
-                },
-                {
-                  id: "2001",
-                  id_spe: "407",
-                  testOrdered: "Hémoglobine glyquée",
-                  code_prestation: "BIOCHIM278",
-                },
-                {
-                  id: "2003",
-                  id_spe: "408",
-                  testOrdered: "Hyperglycémie provoquée (HGPO)",
-                  code_prestation: "BIOCHIM279",
-                },
-              ],
-            },
-            {
-              specialtyID: "507",
-              specialtyName: "Hématologie",
-              code_specialite: "HEMATO",
-              testList: [
-                {
-                  id: "3095",
-                  id_spe: "507",
-                  testOrdered: "NFS + FROTTIS SANGUIN + ",
-                  code_prestation: "HEMATO276",
-                },
-                {
-                  id: "3096",
-                  id_spe: "507",
-                  testOrdered: "Vitesse de sédimentation VS",
-                  code_prestation: "HEMATO277",
-                },
-              ],
-            },
-          ],
+          specialtyList: resultArray,
           "note cliniques": "noteCliniques",
         };
         return PreparedData;
@@ -340,6 +324,62 @@ async function dataPrepare(type, org_id, signature, id, userId) {
           where: { doc_id: userId },
         });
 
+        TestDbList = TestRequestsModal.reports;
+
+        let TestListData2 = await Promise.all(
+          TestDbList.map(async (test) => {
+            let TestDetails = await SettingServiceSpecialite.findOne({
+              where: { idspe: test.id },
+            });
+            let TestCatDetails = await SettingService.findOne({
+              where: { idservice: TestDetails.id_service },
+            });
+            return {
+              id: TestDetails.idspe,
+              id_spe: TestDetails.id_service,
+              testOrdered: TestDetails.name_specialite,
+              observations: "",
+              code_prestation: TestDetails.code_specialite,
+              resultats: [],
+              name_specialite: TestCatDetails.name_service, // Add name_specialite here
+              code_specialite: TestDetails.code_specialite, // Add code_specialite here
+            };
+          })
+        );
+
+        let groupedData2 = {};
+
+        for (const item of TestListData2) {
+          const {
+            id,
+            id_spe,
+            testOrdered,
+            observations,
+            code_prestation,
+            resultats,
+            name_specialite,
+            code_specialite,
+          } = item;
+          if (!groupedData2[id_spe]) {
+            groupedData2[id_spe] = {
+              specialtyID: id_spe,
+              specialtyName: name_specialite, // You can set the specialty name and code_specialite later
+              code_specialite: code_specialite, // You can set the specialty name and code_specialite later
+              testList: [],
+            };
+          }
+          groupedData2[id_spe].testList.push({
+            id: id,
+            id_spe,
+            testOrdered,
+            observations,
+            code_prestation,
+            resultats,
+          });
+        }
+
+        let resultArray2 = Object.values(groupedData2);
+        // console.log(resultArray2);
         PreparedData = {
           id_acte: id,
           id_organisation: org_id,
@@ -416,7 +456,8 @@ async function dataPrepare(type, org_id, signature, id, userId) {
           collectedTime: "",
           reportedDate: null,
           reportedTime: "",
-          orderingDoctor: "Dr " + UserModel.first_name + +UserModel.last_name,
+          orderingDoctor:
+            "Dr " + UserModel.first_name + " " + UserModel.last_name,
           orderingOrganisationID: org_id,
           orderingOrganisationName: OrganisationModal.nom,
           orderNumber: "",
@@ -432,14 +473,7 @@ async function dataPrepare(type, org_id, signature, id, userId) {
           doctorSignature: ConvertToBase64(
             BASEPATH + DoctorSignatureModal.sign_name
           ),
-          specialtyList: [
-            {
-              specialtyID: "362",
-              specialtyName: "Radiologie",
-              code_specialite: null,
-              testList: TestRequestsModal.reports,
-            },
-          ],
+          specialtyList: resultArray2,
         };
         return PreparedData;
         break;

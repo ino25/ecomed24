@@ -417,6 +417,7 @@ exports.generatePDF = async (req, res) => {
       req.body.id,
       req.userId
     );
+    console.log(data);
     Docmosis(req.body.type, req.body.id, data)
       .then(async (response) => {
         if (response.status) {
