@@ -7,8 +7,11 @@ const Client = require("ssh2-sftp-client");
 const nodemailer = require("nodemailer");
 const axios = require("axios");
 const mailer = require("../helpers/LabMailer");
+const multer = require("multer");
 
 const { URLSearchParams } = require("url");
+
+const upload = multer({ dest: "uploads/" });
 exports.getAllLabs = async (req, res) => {
   try {
     const labs = await sequelize.query("SELECT * FROM lab_data", {
@@ -725,19 +728,19 @@ exports.getUserById = async (req, res) => {
 
 // Endpoint pour sauvegarder le fichier PDF
 
-exports.savePDF = async (req, res) => {
+exports.savePDF = (req, res) => {
   try {
-    const formData = req.body;
     const outputName = req.headers["output-name"];
-    const pdfData = formData;
+    const pdfData = req.file;
 
     if (!pdfData) {
       return res.status(400).json({ error: "Aucun fichier n'a été envoyé." });
     }
 
-    const pdfPath = path.join(__dirname, "../uploads", outputName);
+    const pdfPath = path.join("/var/www/html/uploads", outputName);
 
-    fs.writeFileSync(pdfPath, pdfData); // Write the PDF data to a file
+    // Rename the temporary file to the desired file name
+    fs.renameSync(pdfData.path, pdfPath);
 
     res.json({ message: "Fichier PDF sauvegardé avec succès." });
   } catch (error) {
@@ -745,60 +748,6 @@ exports.savePDF = async (req, res) => {
     res
       .status(500)
       .json({ error: "Une erreur est survenue lors de la sauvegarde du PDF." });
-  }
-};
-
-exports.savePDFdf = async (req, res) => {
-  const { formData } = req.body;
-  const templateNameValue =
-    "ecoMed24.dev/ecomed-templates/ecomed_MasterLabTemplate.docx";
-  const outputName = `lab-report--00${formData?.id_acte}.pdf`;
-  const accessKey =
-    "ODBiYzNkNzItYWE2Ni00ZGIzLWE0YzgtY2MzYjYzODkwZmRjOjA4MjQ5MjQ";
-
-  const postData = new URLSearchParams({
-    accessKey: accessKey,
-    templateName: templateNameValue,
-    outputName: outputName,
-    data: JSON.stringify(formData),
-  }).toString();
-
-  const requestOptions = {
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      "Content-Length": String(new TextEncoder().encode(postData).length), // Convert to string
-    },
-  };
-
-  try {
-    console.log(formData);
-    const response = await axios.post(
-      `https://eu.dws3.docmosis.com/api/render`,
-      postData,
-      requestOptions
-    );
-
-    if (response.status === 200) {
-      const pdfData = response.data; // Response data is already in Blob format
-      const blob = new Blob([pdfData], { type: "application/pdf" });
-
-      // Enregistrez le fichier PDF sur le serveur
-      const pdfPath = `./uploads/${outputName}`;
-      const pdfFile = fs.createWriteStream(pdfPath);
-      blob.stream().pipe(pdfFile);
-
-      pdfFile.on("finish", () => {
-        res.json({ message: "Fichier PDF sauvegardé avec succès." });
-      });
-    } else {
-      console.log("Error response:", response.status, response.statusText);
-      throw new Error("Network response was not ok.");
-    }
-  } catch (error) {
-    console.error("Request error:", error);
-    res
-      .status(500)
-      .json({ error: "Une erreur est survenue lors de la génération du PDF." });
   }
 };
 
