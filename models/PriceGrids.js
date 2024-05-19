@@ -20,13 +20,14 @@ const PriceGrids = sequelize.define('PriceGrids', {
     unique: true  // Ajoute une contrainte d'unicité pour le gridName
   },
   adjustmentType: {
-    type: DataTypes.STRING,
+    type: DataTypes.ENUM('increasePercent', 'decreasePercent', 'increaseAbsolute', 'decreaseAbsolute'),
     allowNull: false
   },
   adjustmentValue: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: true  // adjustmentValue peut être null
   },
+  
   description: {
     type: DataTypes.TEXT,
     allowNull: true
