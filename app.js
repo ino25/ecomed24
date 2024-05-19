@@ -6,17 +6,19 @@ const cors = require("cors");
 const i18n = require("i18n");
 const bodyParser = require("body-parser");
 const path = require("path");
+const cron = require("node-cron");
 require("dotenv/config");
 const sequelize = require("./config").sequelize;
 let options = {};
 let http;
-
+// const { emailSchedule } = require("./controllers/cron.controller");
+// cron.schedule("*/5 * * * * *", emailSchedule);
 if (process.env.NODE_ENV === "production") {
   http = require("http");
   // http = require('https');
   // options = {
-  // 	key: fs.readFileSync('/etc/letsencrypt/live/sukritinfotech.com/privkey.pem', 'utf8'),
-  // 	cert: fs.readFileSync('/etc/letsencrypt/live/sukritinfotech.com/cert.pem', 'utf8')
+  // 	key: fs.readFileSync('/etc/letsencrypt/live/staging.justbuysell.com/privkey.pem', 'utf8'),
+  // 	cert: fs.readFileSync('/etc/letsencrypt/live/staging.justbuysell.com/cert.pem', 'utf8')
   // }
 } else {
   http = require("http");
@@ -58,14 +60,7 @@ app.use((req, res, next) => {
 });
 
 let server = http.Server(options, app);
-app.use("/uploads/invoicefile", express.static("uploads/invoicefile"));
 app.use("/uploads", express.static("uploads"));
-const limitInBytes = 50 * 1024 * 1024 * 1024;
-app.use(
-  bodyParser.raw({ type: "application/octet-stream", limit: limitInBytes })
-);
-const documentsPath = path.join(__dirname, "pdfs");
-app.use("/documents", express.static(documentsPath));
 
 const authRouter = require("./routes/auth.routes");
 const helperRouter = require("./routes/helper.routes");
@@ -112,4 +107,5 @@ app.use("/billing", billingRoutes);
 app.use("/organization", organizationRoutes);
 app.use("/roles", rolesRoutes);
 app.use("/permissions", permisssionRoutes);
+
 module.exports = { app: app, server: server };

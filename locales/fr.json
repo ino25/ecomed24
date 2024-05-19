@@ -1,5 +1,14 @@
 {
     "index": "Bienvenue sur notre API!",
+    "auth":{
+        "badrequest": "Aucune donnée disponible",
+        "login":{
+            "optsent":"Vous devez vérifier votre identité. Un code de vérification valide pour 15 minutes vous a été envoyé par SMS au {phone} et par email à l'adresse {email}.",
+            "usernotexist":"User does not exists please please check your login credentials.",
+            "otpnotvalid":"Please Enter Valid OTP",
+            "loginsuccess":"Successfully Logged-In!!"
+        }
+    },
     "common": {
         "nodatafound": "Aucune donnée disponible",
         "errormessage": "Une erreur est survenue, veuillez essayer à nouveau plus tard!!",
@@ -169,7 +178,7 @@
                 "know_health_issue": "Antécédants",
                 "clinical_notes": "Notes cliniques",
                 "hospitalization": "Hospitalisation",
-                "prescription": "Prescription",
+                "prescription": "Ordonnance",
                 "imaging_request": "Imagerie médicale",
                 "lab": "Analyses médicales",
                 "death_record": "Constat de décès"

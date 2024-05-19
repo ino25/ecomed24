@@ -4,17 +4,20 @@ const Database = require("../config").sequelize;
 const Op = Sequelize.Op;
 const moment = require("moment");
 moment.locale("en");
-const Docmosis = require("../helpers/Docmosis");
+const { Docmosis, dataPrepare } = require("../helpers/DocmosisHelper");
 var Country = require("../models/Country");
 var Region = require("../models/Region");
 var District = require("../models/District");
-
+var DoctorSignature = require("../models/DoctorSignature");
 const multer = require("multer");
 const fs = require("fs");
 var Doctor = require("../models/Doctor");
 var SettingService = require("../models/SettingService");
+var TestRequests = require("../models/TestRequests");
+var Prescriptions = require("../models/Prescriptions");
 var OrgPermission = require("../models/OrgPermission");
-
+var crypto = require("crypto");
+const BASEURL = process.env.SITE_URL;
 exports.getDoctorsList = async (req, res) => {
   try {
     let getData = [];
@@ -191,14 +194,277 @@ exports.getOrganizationPermission = async (req, res) => {
     throw error;
   }
 };
+const SHA1 = (msg) => {
+  function rotate_left(n, s) {
+    return (n << s) | (n >>> (32 - s));
+  }
+
+  function lsb_hex(val) {
+    let str = "";
+    for (let i = 0; i <= 6; i += 2) {
+      const vh = (val >>> (i * 4 + 4)) & 0x0f;
+      const vl = (val >>> (i * 4)) & 0x0f;
+      str += vh.toString(16) + vl.toString(16);
+    }
+    return str;
+  }
+
+  function cvt_hex(val) {
+    let str = "";
+    for (let i = 7; i >= 0; i--) {
+      const v = (val >>> (i * 4)) & 0x0f;
+      str += v.toString(16);
+    }
+    return str;
+  }
+
+  function Utf8Encode(string) {
+    string = string.replace(/\r\n/g, "\n");
+    let utftext = "";
+    for (let n = 0; n < string.length; n++) {
+      const c = string.charCodeAt(n);
+      if (c < 128) {
+        utftext += String.fromCharCode(c);
+      } else if (c > 127 && c < 2048) {
+        utftext += String.fromCharCode((c >> 6) | 192);
+        utftext += String.fromCharCode((c & 63) | 128);
+      } else {
+        utftext += String.fromCharCode((c >> 12) | 224);
+        utftext += String.fromCharCode(((c >> 6) & 63) | 128);
+        utftext += String.fromCharCode((c & 63) | 128);
+      }
+    }
+    return utftext;
+  }
+
+  let word_array = [];
+  msg = Utf8Encode(msg);
+  let msg_len = msg.length;
+
+  for (let i = 0; i < msg_len - 3; i += 4) {
+    const j =
+      (msg.charCodeAt(i) << 24) |
+      (msg.charCodeAt(i + 1) << 16) |
+      (msg.charCodeAt(i + 2) << 8) |
+      msg.charCodeAt(i + 3);
+    word_array.push(j);
+  }
+
+  switch (msg_len % 4) {
+    case 0:
+      word_array.push(0x080000000);
+      break;
+    case 1:
+      word_array.push((msg.charCodeAt(msg_len - 1) << 24) | 0x0800000);
+      break;
+    case 2:
+      word_array.push(
+        (msg.charCodeAt(msg_len - 2) << 24) |
+          (msg.charCodeAt(msg_len - 1) << 16) |
+          0x08000
+      );
+
+      break;
+    case 3:
+      word_array.push(
+        (msg.charCodeAt(msg_len - 3) << 24) |
+          (msg.charCodeAt(msg_len - 2) << 16) |
+          (msg.charCodeAt(msg_len - 1) << 8) |
+          0x80
+      );
+
+      break;
+    default:
+  }
+
+  while (word_array.length % 16 !== 14) word_array.push(0);
+  word_array.push(msg_len >>> 29);
+  word_array.push((msg_len << 3) & 0x0ffffffff);
+
+  let H0 = 0x67452301;
+  let H1 = 0xefcdab89;
+  let H2 = 0x98badcfe;
+  let H3 = 0x10325476;
+  let H4 = 0xc3d2e1f0;
+  let A, B, C, D, E;
+  let temp;
+
+  for (let blockstart = 0; blockstart < word_array.length; blockstart += 16) {
+    let W = [];
+    for (let i = 0; i < 16; i++) W.push(word_array[blockstart + i]);
+    for (let i = 16; i <= 79; i++)
+      W.push(rotate_left(W[i - 3] ^ W[i - 8] ^ W[i - 14] ^ W[i - 16], 1));
+
+    A = H0;
+    B = H1;
+    C = H2;
+    D = H3;
+    E = H4;
+
+    // Les quatre tours de l'algorithme SHA1
+    // Premier tour
+    for (let i = 0; i <= 19; i++) {
+      temp =
+        (rotate_left(A, 5) + ((B & C) | (~B & D)) + E + W[i] + 0x5a827999) &
+        0x0ffffffff;
+      E = D;
+      D = C;
+      C = rotate_left(B, 30);
+      B = A;
+      A = temp;
+    }
+    // Deuxième tour
+    for (let i = 20; i <= 39; i++) {
+      temp =
+        (rotate_left(A, 5) + (B ^ C ^ D) + E + W[i] + 0x6ed9eba1) & 0x0ffffffff;
+      E = D;
+      D = C;
+      C = rotate_left(B, 30);
+      B = A;
+      A = temp;
+    }
+    // Troisième tour
+    for (let i = 40; i <= 59; i++) {
+      temp =
+        (rotate_left(A, 5) +
+          ((B & C) | (B & D) | (C & D)) +
+          E +
+          W[i] +
+          0x8f1bbcdc) &
+        0x0ffffffff;
+      E = D;
+      D = C;
+      C = rotate_left(B, 30);
+      B = A;
+      A = temp;
+    }
+    // Quatrième tour
+    for (let i = 60; i <= 79; i++) {
+      temp =
+        (rotate_left(A, 5) + (B ^ C ^ D) + E + W[i] + 0xca62c1d6) & 0x0ffffffff;
+      E = D;
+      D = C;
+      C = rotate_left(B, 30);
+      B = A;
+      A = temp;
+    }
+
+    H0 = (H0 + A) & 0x0ffffffff;
+    H1 = (H1 + B) & 0x0ffffffff;
+    H2 = (H2 + C) & 0x0ffffffff;
+    H3 = (H3 + D) & 0x0ffffffff;
+    H4 = (H4 + E) & 0x0ffffffff;
+  }
+
+  return (
+    cvt_hex(H0) +
+    cvt_hex(H1) +
+    cvt_hex(H2) +
+    cvt_hex(H3) +
+    cvt_hex(H4).toLowerCase()
+  );
+};
+exports.getDoctorSignature = async (req, res) => {
+  try {
+    DoctorSignatureModal = await DoctorSignature.findOne({
+      attributes: [
+        "doc_id",
+        [
+          Sequelize.fn("CONCAT", BASEURL + "/", Sequelize.col(`sign_name`)),
+          "sign_name",
+        ],
+        "pin",
+      ],
+      where: { doc_id: req.userId },
+    });
+    console.log(DoctorSignatureModal.pin);
+    // let hash = crypto
+    //   .createHash("sha1")
+    //   .update(req.body.password)
+    //   .digest("hex");
+    let hash1 = SHA1(req.body.password);
+    hash = SHA1(hash1);
+    console.log(hash);
+    console.log(DoctorSignatureModal.pin);
+    if (DoctorSignatureModal === null) {
+      res.json({ status: 0, message: "No Signature Found" });
+    } else {
+      if (DoctorSignatureModal.pin === hash) {
+        res.json({
+          status: 1,
+          message: "Signature Verified Successfully",
+          data: DoctorSignatureModal,
+        });
+      } else {
+        res.json({
+          status: 0,
+          message: "Please Enter valid signature PIN",
+          data: "",
+        });
+      }
+    }
+  } catch (error) {
+    throw error;
+  }
+};
 
 exports.generatePDF = async (req, res) => {
   try {
-    const pathToStore = "./../../uploads/invoicefile/";
-    Docmosis(req.body.type, req.body.id, pathToStore, req.body.data)
-      .then((response) => {
-        res.json(response);
-        console.log("Response:", response);
+    const data = await dataPrepare(
+      req.body.type,
+      req.org_id,
+      req.body.signature,
+      req.body.id,
+      req.userId
+    );
+    console.log(data);
+    Docmosis(req.body.type, req.body.id, data)
+      .then(async (response) => {
+        if (response.status) {
+          fileName = response.filename;
+          switch (req.body.type) {
+            case "lab_test_request":
+              console.log(req.body.type, req.body.id);
+              TestRequestsModal = await TestRequests.update(
+                { file: fileName, updated_by: req.userId },
+                { where: { id: req.body.id } }
+              );
+
+              break;
+            case "imaging_request":
+              TestRequestsModal = await TestRequests.update(
+                { file: fileName, updated_by: req.userId },
+                { where: { id: req.body.id } }
+              );
+
+              break;
+            case "prescription":
+              PrescriptionsModal = await Prescriptions.update(
+                { file: fileName, updated_by: req.userId },
+                { where: { id: req.body.id } }
+              );
+
+              break;
+            default:
+              // show error response (details)
+              res.json({
+                status: 0,
+                message: "Type not defined!!",
+              });
+          }
+          res.json({
+            status: 1,
+            message: response.message,
+            pdfpath: response.pdfPath,
+          });
+        } else {
+          res.json({
+            status: 0,
+            message: "Server Error, Please Try Againg Later!!",
+          });
+        }
+
+        console.log("Response:", response, req.body.type);
       })
       .catch((error) => {
         console.error("Error:", error);

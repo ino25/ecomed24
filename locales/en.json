@@ -1,5 +1,14 @@
 {
     "index":"Bienvenue sur notre API!",
+    "auth":{
+        "badrequest": "Aucune donnée disponible",
+        "login":{
+            "optsent":"You must verify your identity. A verification code valid for 15 minutes has been sent to you by SMS to {phone} and by email to {email}.",
+            "usernotexist":"User does not exists please please check your login credentials.",
+            "otpnotvalid":"Please Enter Valid OTP",
+            "loginsuccess":"Successfully Logged-In!!"
+        }
+    },
     "common":{
         "nodatafound":"No data Found",
         "errormessage":"Something Went Wrong, Please Try Againg Later!!",
