@@ -5058,11 +5058,11 @@ exports.getImagingRequest = async (req, res) => {
     if (isNaN(datalimit)) {
       datalimit = 5;
     }
-    const { count, rows } = await ImagingRequests.findAndCountAll({
+    const { count, rows } = await TestRequests.findAndCountAll({
       where: { patient_id: req.params.patient_id, type: "imaging" },
     });
 
-    ImagingRequestsModal = await ImagingRequests.findAll({
+    ImagingRequestsModal = await TestRequests.findAll({
       where: { patient_id: req.params.patient_id, type: "imaging" },
       limit: datalimit,
       offset: offsetdata,
