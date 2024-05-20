@@ -2,7 +2,8 @@ const express = require("express");
 const router = express.Router();
 const VerifyToken = require("./VerifyToken");
 const labController = require("../controllers/lab.controller");
-
+const multer = require("multer");
+const upload = multer({ dest: "uploads/" });
 router.get("/labs", VerifyToken, labController.getAllLabs);
 router.post("/listactes", VerifyToken, labController.getActeDemande);
 router.post("/statistiques", VerifyToken, labController.getStats);

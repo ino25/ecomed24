@@ -24,7 +24,6 @@ async function Docmosis(type, id, data) {
   return new Promise((resolve, reject) => {
     const formData = data;
     const templateNameValue = {
-      lab: "ecoMed24.dev/requests/ecomed_MasterRequestTemplateV0.7.docx",
       lab_test_request:
         "ecoMed24.dev/requests/ecomed_MasterRequestTemplateV0.7.docx",
       imaging_request:
@@ -34,7 +33,6 @@ async function Docmosis(type, id, data) {
     };
 
     const pathToStore = {
-      lab: BASEPATH + "uploads/invoicefile/",
       lab_test_request: BASEPATH + "uploads/invoicefile/",
       imaging_request: BASEPATH + "uploads/invoicefile/",
       prescription: BASEPATH + "uploads/invoicefile/",
@@ -290,7 +288,7 @@ async function dataPrepare(type, org_id, signature, id, userId) {
           reportedTime: "",
           orderingOrganisationID: "",
           orderingOrganisationName: OrganisationModal.nom,
-          clinicalNotes: "Clinical notes are here",
+          clinicalNotes: TestRequestsModal.advice,
           signature: {
             id: DoctorSignatureModal.id,
             doc_id: DoctorSignatureModal.doc_id,
@@ -461,7 +459,7 @@ async function dataPrepare(type, org_id, signature, id, userId) {
           orderingOrganisationID: org_id,
           orderingOrganisationName: OrganisationModal.nom,
           orderNumber: "",
-          clinicalNotes: "",
+          clinicalNotes: TestRequestsModal.advice,
           request_type: "RADIO",
           signature: {
             id: DoctorSignatureModal.id,
@@ -487,8 +485,8 @@ async function dataPrepare(type, org_id, signature, id, userId) {
             id: medicine.id,
             dci: medicine.name,
             dosage: medicine.dosage,
-            posologie: medicine.posologie,
-            notes: "",
+            posologie: medicine.posology,
+            notes: medicine.advice,
           };
         });
         console.log(MedicinListData);
