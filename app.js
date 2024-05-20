@@ -61,6 +61,7 @@ app.use((req, res, next) => {
 
 let server = http.Server(options, app);
 app.use("/uploads", express.static("uploads"));
+app.use("/uploads/invoicefile", express.static("uploads/invoicefile"));
 
 const authRouter = require("./routes/auth.routes");
 const helperRouter = require("./routes/helper.routes");

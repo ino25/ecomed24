@@ -12,11 +12,6 @@ router.post("/reprendre", VerifyToken, labController.Reprendre);
 router.post("/validation", VerifyToken, labController.Validation);
 router.post("/resultatbyid", VerifyToken, labController.getResultatById);
 router.get("/user/:id", VerifyToken, labController.getUserById);
-router.post(
-  "/save-pdf",
-  upload.single("pdfData"),
-  VerifyToken,
-  labController.savePDF
-);
+router.post("/save-pdf", VerifyToken, labController.savePDF);
 router.post("/envoyer-pdf", VerifyToken, labController.envoiPdf);
 module.exports = router;

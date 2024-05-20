@@ -596,6 +596,110 @@ async function dataPrepare(type, org_id, signature, id, userId) {
   }
 }
 
+async function DocmosisTestLab(type, outputName, data) {
+  return new Promise((resolve, reject) => {
+    const formData = data;
+    const templateNameValue = {
+      lab_test_request:
+        "ecoMed24.dev/requests/ecomed_MasterRequestTemplateV0.7.docx",
+      imaging_request:
+        "ecoMed24.dev/requests/ecomed_MasterRequestTemplateV0.7.docx",
+      prescription:
+        "/ecoMed24.dev/requests/ecomed_MasterRequestTemplateV0.7.docx",
+    };
+
+    const pathToStore = {
+      lab_test_request: BASEPATH + "uploads/invoicefile/",
+      imaging_request: BASEPATH + "uploads/invoicefile/",
+      prescription: BASEPATH + "uploads/invoicefile/",
+    };
+    const outputName = outputName;
+    const accessKey = process.env.DOCMOSIS_ACCESSKEY;
+
+    const postData = querystring.stringify({
+      accessKey: accessKey,
+      templateName: templateNameValue[type],
+      outputName: outputName,
+      data: JSON.stringify(formData),
+    });
+
+    const options = {
+      hostname: "eu.dws3.docmosis.com",
+      port: 443,
+      path: "/api/render",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Length": Buffer.byteLength(postData),
+      },
+    };
+
+    const ReqPromise = new Promise((resolve, reject) => {
+      const ReqResponse = https.request(options, (resp) => {
+        switch (resp.statusCode) {
+          case 200:
+            const pdfPath = `${pathToStore[type]}${outputName}`;
+            console.log(pdfPath);
+            const file = fs.createWriteStream(pdfPath);
+
+            // feed response into file
+            resp.pipe(file);
+            file.on("finish", () => {
+              file.close();
+
+              console.log(pdfPath, "created");
+              // Resolve with success JSON
+              const successResponse = {
+                status: true,
+                message: "PDF created successfully",
+                pdfPath: BASEURL + "/uploads/invoicefile/" + outputName,
+                filename: outputName,
+              };
+              resolve(successResponse);
+            });
+            break;
+          default:
+            // show error response (details)
+            console.log("Error response:", resp.statusCode, resp.statusMessage);
+            let errorResponse = "";
+            resp.on("data", (data) => {
+              errorResponse += data;
+            });
+            resp.on("end", () => {
+              console.log(errorResponse);
+              // Resolve with error JSON
+              const errorResponseObj = {
+                status: 0,
+                message: `Error: ${resp.statusCode} ${resp.statusMessage}`,
+                details: errorResponse,
+              };
+              resolve(errorResponseObj);
+            });
+        }
+      });
+
+      ReqResponse.on("error", (e) => {
+        console.error("Request error:", JSON.stringify(e, null, 4));
+        reject(e);
+      });
+
+      // write data to request body
+      ReqResponse.write(postData);
+      ReqResponse.end();
+    });
+
+    ReqPromise.then((response) => {
+      resolve(response);
+    }).catch((error) => {
+      console.error("Server Error:", error);
+      reject({
+        status: 0,
+        message: "Unable to generate PDF at the moment.",
+      });
+    });
+  });
+}
+
 function ConvertToBase64(imagePath) {
   // Check if the file exists
   if (fs.existsSync(imagePath)) {
@@ -616,4 +720,5 @@ module.exports = {
   Docmosis,
   dataPrepare,
   ConvertToBase64,
+  DocmosisTestLab,
 };
