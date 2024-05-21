@@ -41,13 +41,12 @@ Organisation.belongsTo(OrganisationType, {
 // Organisation.belongsTo(DocumentTypes, {as: 'doctypes_details',foreignKey: 'category'});
 
 // Price Grids
-PaymentCategoryOrganisation.belongsTo(PaymentCategory, {
-  foreignKey: "id_presta",
-});
-PaymentCategory.hasMany(PaymentCategoryOrganisation, { foreignKey: "id" });
 
-PaymentCategory.belongsTo(SettingServiceSpecialite, { foreignKey: "id_spe" });
 SettingServiceSpecialite.hasMany(PaymentCategory, { foreignKey: "idspe" });
+
+PaymentCategoryOrganisation.belongsTo(PaymentCategory, { foreignKey: 'id_presta' });
+PaymentCategory.belongsTo(SettingServiceSpecialite, { foreignKey: 'id_spe' });
+
 
 // Patient Deposit invoice
 PatientDepositInvoice.belongsTo(User, {
@@ -62,6 +61,12 @@ PatientDepositInvoice.belongsTo(Organisation, {
   as: "org_details",
   foreignKey: "id_organisation",
 });
+
+PriceGridDetails.belongsTo(PriceGrids, {
+  as: 'grid',
+  foreignKey: 'gridID'
+});
+
 
 //
 //////Modal Relationship
@@ -787,26 +792,17 @@ exports.importPriceGridDetails = async (req, res) => {
       if (error.name === "SequelizeUniqueConstraintError") {
         res.json({
           status: 0,
-          message:
-            "This grid name already exists. Please use a different name.",
+          message: "This grid name already exists. Please use a different name.",
         });
       } else {
-        res
-          .status(500)
-          .json({ wsMessage: "Database error, unable to create price grid." });
+        res.status(500).json({ wsMessage: "Database error, unable to create price grid." });
         return;
       }
     }
 
     // Traitement des fichiers, si le modèle est correctement créé
-    if (
-      !files.priceGrid ||
-      !files.priceGrid.length ||
-      !files.priceGrid[0].filepath
-    ) {
-      res
-        .status(400)
-        .json({ wsMessage: "No file uploaded or file path missing." });
+    if (!files.priceGrid || !files.priceGrid.length || !files.priceGrid[0].filepath) {
+      res.status(400).json({ wsMessage: "No file uploaded or file path missing." });
       return;
     }
 
@@ -814,39 +810,72 @@ exports.importPriceGridDetails = async (req, res) => {
     console.log("File path:", filepath);
 
     const result = await parseAndValidateExcelPrice(filepath);
-    if (typeof result == "string") {
+    if (typeof result === "string") {
       res.status(400).json({ wsMessage: result });
       return;
     } else {
       console.log("Price grid details:", result);
-      let gridDetails = result.map((elt) => ({
-        gridID: priceGridsModel.gridID,
-        productID: elt.ID,
-        adjustedPrice: elt.Prix,
-        effectiveDate: priceGridsModel.effectiveDate,
-        expiryDate: priceGridsModel.expiryDate,
-      }));
-      try {
-        const insertedGridDetails = await PriceGridDetails.bulkCreate(
-          gridDetails
-        );
-        res.json({
-          status: 1,
-          message: "New PriceGrid Details List.",
-          data: insertedGridDetails,
+
+      // Vérification des ID avant insertion
+      const validGridDetails = [];
+      for (const elt of result) {
+        const paymentCategoryOrg = await PaymentCategoryOrganisation.findOne({
+          where: { idpco: elt.ID },
+          include: [
+            {
+              model: PaymentCategory,
+              attributes: [
+                'id', 'code_prestation', 'prestation', 'cotation', 'coefficient',
+                'description', 'keywords', 'tarif_public', 'tarif_professionnel',
+                'tarif_assurance', 'tarif_ipm', 'id_service', 'id_spe', 'nomenclature_prestation'
+              ],
+              required: true
+            }
+          ]
         });
-      } catch (error) {
-        console.error("Error inserting grid details:", error);
-        res.status(500).json({
+
+        if (paymentCategoryOrg && paymentCategoryOrg.PaymentCategory) {
+          validGridDetails.push({
+            gridID: priceGridsModel.gridID,
+            productID: elt.ID,
+            adjustedPrice: elt.Prix,
+            effectiveDate: priceGridsModel.effectiveDate,
+            expiryDate: priceGridsModel.expiryDate,
+          });
+        }
+      }
+
+      if (validGridDetails.length > 0) {
+        try {
+          const insertedGridDetails = await PriceGridDetails.bulkCreate(validGridDetails);
+          res.json({
+            status: 1,
+            message: "New PriceGrid Details List.",
+            data: insertedGridDetails,
+          });
+        } catch (error) {
+          console.error("Error inserting grid details:", error);
+          res.status(500).json({
+            status: 0,
+            message: "Failed to insert price grid details.",
+            error: error.toString(),
+          });
+        }
+      } else {
+        res.json({
           status: 0,
-          message: "Failed to insert price grid details.",
-          error: error.toString(),
+          message: "No valid details found for the price grid.",
+          data: []
         });
       }
-      // Traiter et sauvegarder les données ici
     }
   });
 };
+
+
+
+
+
 
 exports.getPriceGridsAll = async (req, res) => {
   try {
@@ -1018,18 +1047,29 @@ const getOrCreatePriceGrid = async (gridName, tarifColumn, orgId, byID) => {
     const paymentCategoryOrganisation = await PaymentCategoryOrganisation.findAll({
       attributes: [
         "idpco",
+        "id_presta",
         tarifColumn,
         [Sequelize.fn("ROUND", Sequelize.col(`PaymentCategoryOrganisation.${tarifColumn}`), 0), "tarif_arrondi"]
       ],
       include: [
         {
           model: PaymentCategory,
-          attributes: ["prestation"],
+          attributes: ["id", "prestation"],
           include: [{ model: SettingServiceSpecialite, attributes: ["name_specialite"] }]
         }
       ],
       where: { id_organisation: orgId }
     });
+
+    const validPaymentCategoryOrganisation = paymentCategoryOrganisation.filter(elt => elt.PaymentCategory);
+
+    if (validPaymentCategoryOrganisation.length === 0) {
+      return {
+        status: 0,
+        message: `No valid details found for ${gridName}`,
+        data: []
+      };
+    }
 
     let priceGridsModel;
     try {
@@ -1051,7 +1091,7 @@ const getOrCreatePriceGrid = async (gridName, tarifColumn, orgId, byID) => {
       }
     }
 
-    const gridDetails = paymentCategoryOrganisation.map(elt => ({
+    const gridDetails = validPaymentCategoryOrganisation.map(elt => ({
       gridID: priceGridsModel.gridID,
       productID: elt.idpco,
       adjustedPrice: elt[tarifColumn],
@@ -1078,7 +1118,6 @@ const getOrCreatePriceGrid = async (gridName, tarifColumn, orgId, byID) => {
   }
 };
 
-
 exports.getPriceIpmAssurancePriceGrid = async (req, res) => {
   try {
     const orgId = req.params.org_id;
@@ -1103,4 +1142,115 @@ exports.getPriceIpmAssurancePriceGrid = async (req, res) => {
     });
   }
 };
+
+
+
+exports.getPriceGridsDetails = async (req, res) => {
+  try {
+    const organizationID = req.params.org_id;
+
+    // Récupérer les grilles de prix pour l'organisation
+    const grids = await PriceGrids.findAll({
+      where: { organizationID },
+      order: [['effectiveDate', 'DESC']],
+      limit: 5
+    });
+
+    if (grids.length === 0) {
+      return res.status(404).json({
+        status: 0,
+        message: "No price grids found for the organization"
+      });
+    }
+
+    const gridIds = grids.map(grid => grid.gridID);
+    const gridNames = grids.map(grid => grid.gridName);
+
+    // Récupérer les détails des grilles de prix
+    const priceDetails = await PriceGridDetails.findAll({
+      where: { gridID: gridIds },
+      include: [{
+        model: PriceGrids,
+        as: 'grid',
+        attributes: ['gridName'],
+        required: false // Faire une jointure LEFT JOIN
+      }]
+    });
+
+    // Récupérer les catégories de paiement et les spécialités associées
+    const paymentCategoryDetails = await PaymentCategoryOrganisation.findAll({
+      attributes: ["idpco", "id_presta"],
+      include: [
+        {
+          model: PaymentCategory,
+          required: true, // Assurer que seules les lignes où PaymentCategory existe sont incluses
+          attributes: ["id", "prestation", "id_spe"],
+          include: [
+            {
+              model: SettingServiceSpecialite,
+              required: true, // Assurer que seules les lignes où SettingServiceSpecialite existe sont incluses
+              attributes: ["idspe", "name_specialite"],
+            },
+          ],
+        },
+      ],
+      where: { id_organisation: req.params.org_id },
+    });
+    
+
+    // Mapper les catégories de paiement et les spécialités
+    const paymentCategoryMap = {};
+    paymentCategoryDetails.forEach(detail => {
+      if (detail.PaymentCategory) {
+        const { id, prestation, id_spe } = detail.PaymentCategory;
+        const { name_specialite } = detail.PaymentCategory.SettingServiceSpecialite;
+        paymentCategoryMap[detail.idpco] = { prestation, name_specialite };
+      }
+    });
+
+    // Construire le résultat final
+    const result = {};
+
+    priceDetails.forEach(detail => {
+      const paymentCategory = paymentCategoryMap[detail.productID];
+      if (!result[detail.productID]) {
+        result[detail.productID] = {
+          productID: detail.productID,
+          service: paymentCategory ? paymentCategory.name_specialite : "Unknown",
+          prestation: paymentCategory ? paymentCategory.prestation : "Unknown"
+        };
+        gridNames.forEach(name => {
+          result[detail.productID][name] = '0'; // Initialiser avec '0'
+        });
+      }
+      result[detail.productID][detail.grid.gridName] = detail.adjustedPrice;
+    });
+
+    // S'assurer que chaque produit a toutes les grilles avec au moins '0' si non présent
+    Object.values(result).forEach(product => {
+      gridNames.forEach(name => {
+        if (!product[name]) {
+          product[name] = '0';
+        }
+      });
+    });
+
+    const finalResult = Object.values(result);
+
+    res.json({
+      status: 1,
+      message: "Price Grids Retrieved",
+      data: finalResult
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 0,
+      message: "Error retrieving data",
+      error: error.message
+    });
+  }
+};
+
+
+
 

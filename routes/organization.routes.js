@@ -31,6 +31,8 @@ router.get('/get-price-grids',VerifyToken, organizationController.getPriceGridsA
 router.get('/get-price-grid/:gridID',VerifyToken, organizationController.getPriceGridByID);
 router.get('/get-price-grid-details',VerifyToken, organizationController.getPriceGridDetailsAll);
 router.get('/get-price-assurance-ipm/:org_id/:byID', organizationController.getPriceIpmAssurancePriceGrid);
+router.get('/get-price/:org_id', organizationController.getPriceGridsDetails);
+
 // router.get('/get-price-grid-detail/:gridDetailsID',VerifyToken, organizationController.getPriceGridDetailByID);
 // router.get('/get-price-grid-by/:gridID',VerifyToken, organizationController.getPriceGridDetailByGridID);
 // router.get('/update-price-detail-by/:detailID',VerifyToken, organizationController.updatePriceGridDetails);

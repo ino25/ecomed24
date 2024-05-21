@@ -51,7 +51,8 @@ const PriceGrids = sequelize.define('PriceGrids', {
   isActive: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
-  }
+  },
+  
 }, {
   tableName: 'priceGrids',
   timestamps: false
