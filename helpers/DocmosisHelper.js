@@ -601,7 +601,7 @@ async function DocmosisTestLab(type, outputName, data) {
     const formData = data;
     const templateNameValue = {
       lab_test_request:
-        "ecoMed24.dev/requests/ecomed_MasterRequestTemplateV0.7.docx",
+        "ecoMed24.dev/Laboratory/ecomed_MasterLabTemplateV1.0.1.docx",
       imaging_request:
         "ecoMed24.dev/requests/ecomed_MasterRequestTemplateV0.7.docx",
       prescription:
