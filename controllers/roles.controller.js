@@ -20,6 +20,7 @@ Role.belongsTo(User, { as: "addedby_details", foreignKey: "added_by" });
 Role.belongsTo(User, { as: "updatedby_details", foreignKey: "updated_by" });
 Role.belongsTo(Organisation, { as: "org_details", foreignKey: "org_id" });
 
+Role.hasMany(RolePermissionsMap, { as: "permissions", foreignKey: "role_id" });
 // Roles
 exports.getList = async (req, res) => {
   try {
@@ -106,7 +107,7 @@ exports.getByID = async (req, res) => {
         [
           Sequelize.fn(
             "DATE_FORMAT",
-            Sequelize.col("createdAt"),
+            Sequelize.col("Role.createdAt"),
             "%d/%m/%Y %H:%i"
           ),
           "createdAt",
@@ -114,13 +115,20 @@ exports.getByID = async (req, res) => {
         [
           Sequelize.fn(
             "DATE_FORMAT",
-            Sequelize.col("updatedAt"),
+            Sequelize.col("Role.updatedAt"),
             "%d/%m/%Y %H:%i"
           ),
           "updatedAt",
         ],
       ],
       where: { id: req.params.id },
+      include: [
+        {
+          model: RolePermissionsMap,
+          attributes: ["id", "role_id", "op_id", "org_id", "status"],
+          as: "permissions",
+        },
+      ],
     });
     if (RoleModal === null) {
       res.json({ status: 0, message: langCommon.nodatafound });
