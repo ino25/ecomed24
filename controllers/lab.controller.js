@@ -731,10 +731,10 @@ exports.getUserById = async (req, res) => {
 exports.savePDF = (req, res) => {
   try {
     const type = req.body.type;
-    const ouputName = req.body.ouputName;
+    const outputName = req.body.ouputName;
     const data = req.body.data;
 
-    DocmosisTestLab(type, ouputName, data)
+    DocmosisTestLab(type, outputName, data)
       .then(async (response) => {
         if (response.status) {
           res.json({
