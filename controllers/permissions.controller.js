@@ -23,6 +23,11 @@ Permission.belongsTo(User, {
   as: "updatedby_details",
   foreignKey: "updated_by",
 });
+
+OrganizationPermissions.hasMany(OrgPermissionItems, {
+  as: "permissions",
+  foreignKey: "org_permissionid",
+});
 // Permission.belongsTo(Organisation, { as: "org_details", foreignKey: "org_id" });
 
 // Permission
@@ -442,6 +447,13 @@ exports.getOrgPermissionByID = async (req, res) => {
         ],
       ],
       where: { id: req.params.id },
+      include: [
+        {
+          model: OrgPermissionItems,
+          attributes: ["id", "org_permissionid", "sp_id", "org_id", "status"],
+          as: "permissions",
+        },
+      ],
     });
     if (OrganizationPermissionsModal === null) {
       res.json({ status: 0, message: langCommon.nodatafound });
