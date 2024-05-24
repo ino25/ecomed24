@@ -15,7 +15,7 @@ var Doctor = require("../models/Doctor");
 var SettingService = require("../models/SettingService");
 var TestRequests = require("../models/TestRequests");
 var Prescriptions = require("../models/Prescriptions");
-var OrgPermission = require("../models/OrgPermission");
+var OrgPermissionItems = require("../models/OrgPermissionItems");
 var crypto = require("crypto");
 const BASEURL = process.env.SITE_URL;
 exports.getDoctorsList = async (req, res) => {
@@ -176,7 +176,7 @@ exports.getOrganizationPermission = async (req, res) => {
     // OrgPermissionModal = await OrgPermission.findAll({ attributes: ['id', 'sp_id'],where: { status_service: 1 } });
 
     OrgPermissionModal = await Database.query(
-      "SELECT op.id,sp.name,sp.description,sp.module_id FROM org_permissions as op  LEFT JOIN system_permissions as sp ON op.sp_id= sp.id where op.status=1 and op.org_id = " +
+      "SELECT op.id,sp.name,sp.description,sp.module_id FROM org_permission_items as op  LEFT JOIN system_permissions as sp ON op.sp_id= sp.id where op.status=1 and op.org_id = " +
         req.org_id +
         ";",
       { type: Database.QueryTypes.SELECT }

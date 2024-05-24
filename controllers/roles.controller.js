@@ -214,13 +214,14 @@ exports.delete = async (req, res) => {
     RoleModal = await RolePermissionsMap.destroy({
       where: { role_id: req.params.id },
     });
-    RoleModal = await Role.destroy({ where: { id: req.params.id } });
+
     if (RoleModal === null) {
       res.json({ status: 0, message: langCommon.errormessage });
     } else {
+      RoleModal = await Role.destroy({ where: { id: req.params.id } });
       res.json({
         status: 1,
-        message: langRoleModule.appointment.delete,
+        message: "Role Successfully deleted",
         data: "",
       });
     }
@@ -237,6 +238,10 @@ exports.status = async (req, res) => {
     if (RoleModal === null) {
       res.json({ status: 0, message: langCommon.errormessage });
     } else {
+      RolePermissionsMapModal = await RolePermissionsMap.update(
+        { status: req.body.status },
+        { where: { role_id: req.params.id } }
+      );
       res.json({
         status: 1,
         message: langRoleModule.appointment.status,
