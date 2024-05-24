@@ -596,7 +596,7 @@ async function dataPrepare(type, org_id, signature, id, userId) {
   }
 }
 
-async function DocmosisTestLab(type, outputName, data) {
+async function DocmosisTestLab(type, id_payment, data) {
   return new Promise((resolve, reject) => {
     const formData = data;
     const templateNameValue = {
@@ -613,7 +613,8 @@ async function DocmosisTestLab(type, outputName, data) {
       imaging_request: BASEPATH + "uploads/invoicefile/",
       prescription: BASEPATH + "uploads/invoicefile/",
     };
-    const outputName = outputName;
+    // lab-report--00
+    const outputName = `lab-report--00${id_payment}.pdf`;
     const accessKey = process.env.DOCMOSIS_ACCESSKEY;
 
     const postData = querystring.stringify({
@@ -699,7 +700,6 @@ async function DocmosisTestLab(type, outputName, data) {
     });
   });
 }
-
 function ConvertToBase64(imagePath) {
   // Check if the file exists
   if (fs.existsSync(imagePath)) {

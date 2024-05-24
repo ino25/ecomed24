@@ -731,11 +731,12 @@ exports.getUserById = async (req, res) => {
 exports.savePDF = (req, res) => {
   try {
     const type = req.body.type;
-    const outputName = req.body.ouputName;
+    const id_payment = req.body.id_payment;
     const data = req.body.data;
 
-    DocmosisTestLab(type, outputName, data)
+    DocmosisTestLab(type, id_payment, data)
       .then(async (response) => {
+        console.log(response);
         if (response.status) {
           res.json({
             status: 1,
@@ -748,13 +749,13 @@ exports.savePDF = (req, res) => {
             message: "Server Error, Please Try Againg Later!!",
           });
         }
-        console.log("Response:", response, req.body.type);
+        console.log("Response:", response, req.body.type, req.body.id_payment);
       })
       .catch((error) => {
         console.error("Error:", error);
         res.json({
           status: 0,
-          message: "Server Error, Please Try Againg Later!!",
+          message: "Server Error, Please Try Againg Later!!!",
         });
       });
   } catch (error) {
@@ -777,7 +778,7 @@ exports.envoiPdf = async (req, res) => {
     }
 
     const mailOptions = {
-      from: "contact@pathfinderacademy.in",
+      from: "plateforme@ussd.sn",
       to: email,
       subject: "Votre fichier PDF",
       html: "Voici votre fichier PDF en pièce jointe.",
