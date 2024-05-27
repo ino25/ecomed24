@@ -44,9 +44,10 @@ Organisation.belongsTo(OrganisationType, {
 
 SettingServiceSpecialite.hasMany(PaymentCategory, { foreignKey: "idspe" });
 
-PaymentCategoryOrganisation.belongsTo(PaymentCategory, { foreignKey: 'id_presta' });
-PaymentCategory.belongsTo(SettingServiceSpecialite, { foreignKey: 'id_spe' });
-
+PaymentCategoryOrganisation.belongsTo(PaymentCategory, {
+  foreignKey: "id_presta",
+});
+PaymentCategory.belongsTo(SettingServiceSpecialite, { foreignKey: "id_spe" });
 
 // Patient Deposit invoice
 PatientDepositInvoice.belongsTo(User, {
@@ -63,10 +64,9 @@ PatientDepositInvoice.belongsTo(Organisation, {
 });
 
 PriceGridDetails.belongsTo(PriceGrids, {
-  as: 'grid',
-  foreignKey: 'gridID'
+  as: "grid",
+  foreignKey: "gridID",
 });
-
 
 //
 //////Modal Relationship
@@ -792,17 +792,26 @@ exports.importPriceGridDetails = async (req, res) => {
       if (error.name === "SequelizeUniqueConstraintError") {
         res.json({
           status: 0,
-          message: "This grid name already exists. Please use a different name.",
+          message:
+            "This grid name already exists. Please use a different name.",
         });
       } else {
-        res.status(500).json({ wsMessage: "Database error, unable to create price grid." });
+        res
+          .status(500)
+          .json({ wsMessage: "Database error, unable to create price grid." });
         return;
       }
     }
 
     // Traitement des fichiers, si le modèle est correctement créé
-    if (!files.priceGrid || !files.priceGrid.length || !files.priceGrid[0].filepath) {
-      res.status(400).json({ wsMessage: "No file uploaded or file path missing." });
+    if (
+      !files.priceGrid ||
+      !files.priceGrid.length ||
+      !files.priceGrid[0].filepath
+    ) {
+      res
+        .status(400)
+        .json({ wsMessage: "No file uploaded or file path missing." });
       return;
     }
 
@@ -814,7 +823,6 @@ exports.importPriceGridDetails = async (req, res) => {
       res.status(400).json({ wsMessage: result });
       return;
     } else {
-      console.log("Price grid details:", result);
 
       // Vérification des ID avant insertion
       const validGridDetails = [];
@@ -825,13 +833,24 @@ exports.importPriceGridDetails = async (req, res) => {
             {
               model: PaymentCategory,
               attributes: [
-                'id', 'code_prestation', 'prestation', 'cotation', 'coefficient',
-                'description', 'keywords', 'tarif_public', 'tarif_professionnel',
-                'tarif_assurance', 'tarif_ipm', 'id_service', 'id_spe', 'nomenclature_prestation'
+                "id",
+                "code_prestation",
+                "prestation",
+                "cotation",
+                "coefficient",
+                "description",
+                "keywords",
+                "tarif_public",
+                "tarif_professionnel",
+                "tarif_assurance",
+                "tarif_ipm",
+                "id_service",
+                "id_spe",
+                "nomenclature_prestation",
               ],
-              required: true
-            }
-          ]
+              required: true,
+            },
+          ],
         });
 
         if (paymentCategoryOrg && paymentCategoryOrg.PaymentCategory) {
@@ -847,7 +866,12 @@ exports.importPriceGridDetails = async (req, res) => {
 
       if (validGridDetails.length > 0) {
         try {
-          const insertedGridDetails = await PriceGridDetails.bulkCreate(validGridDetails);
+          
+          console.log("Details prix :", validGridDetails);
+
+          const insertedGridDetails = await PriceGridDetails.bulkCreate(
+            validGridDetails
+          );
           res.json({
             status: 1,
             message: "New PriceGrid Details List.",
@@ -865,17 +889,12 @@ exports.importPriceGridDetails = async (req, res) => {
         res.json({
           status: 0,
           message: "No valid details found for the price grid.",
-          data: []
+          data: [],
         });
       }
     }
   });
 };
-
-
-
-
-
 
 exports.getPriceGridsAll = async (req, res) => {
   try {
@@ -1019,7 +1038,6 @@ exports.getPriceGridDetailsAll = async (req, res) => {
   }
 };
 
-
 const getOrCreatePriceGrid = async (gridName, tarifColumn, orgId, byID) => {
   const priceGrid = await PriceGrids.findOne({
     where: { gridName },
@@ -1032,42 +1050,65 @@ const getOrCreatePriceGrid = async (gridName, tarifColumn, orgId, byID) => {
       "lastModifiedDate",
       "lastModifiedBy",
       [
-        Sequelize.fn("DATE_FORMAT", Sequelize.col("effectiveDate"), "%d-%m-%Y %H:%i:%s"),
-        "effectiveDate"
+        Sequelize.fn(
+          "DATE_FORMAT",
+          Sequelize.col("effectiveDate"),
+          "%d-%m-%Y %H:%i:%s"
+        ),
+        "effectiveDate",
       ],
       [
-        Sequelize.fn("DATE_FORMAT", Sequelize.col("lastModifiedDate"), "%d-%m-%Y %H:%i:%s"),
-        "lastModifiedDate"
-      ]
+        Sequelize.fn(
+          "DATE_FORMAT",
+          Sequelize.col("lastModifiedDate"),
+          "%d-%m-%Y %H:%i:%s"
+        ),
+        "lastModifiedDate",
+      ],
     ],
-    order: [["gridID", "DESC"]]
+    order: [["gridID", "DESC"]],
   });
 
   if (priceGrid === null) {
-    const paymentCategoryOrganisation = await PaymentCategoryOrganisation.findAll({
-      attributes: [
-        "idpco",
-        "id_presta",
-        tarifColumn,
-        [Sequelize.fn("ROUND", Sequelize.col(`PaymentCategoryOrganisation.${tarifColumn}`), 0), "tarif_arrondi"]
-      ],
-      include: [
-        {
-          model: PaymentCategory,
-          attributes: ["id", "prestation"],
-          include: [{ model: SettingServiceSpecialite, attributes: ["name_specialite"] }]
-        }
-      ],
-      where: { id_organisation: orgId }
-    });
+    const paymentCategoryOrganisation =
+      await PaymentCategoryOrganisation.findAll({
+        attributes: [
+          "idpco",
+          "id_presta",
+          tarifColumn,
+          [
+            Sequelize.fn(
+              "ROUND",
+              Sequelize.col(`PaymentCategoryOrganisation.${tarifColumn}`),
+              0
+            ),
+            "tarif_arrondi",
+          ],
+        ],
+        include: [
+          {
+            model: PaymentCategory,
+            attributes: ["id", "prestation"],
+            include: [
+              {
+                model: SettingServiceSpecialite,
+                attributes: ["name_specialite"],
+              },
+            ],
+          },
+        ],
+        where: { id_organisation: orgId },
+      });
 
-    const validPaymentCategoryOrganisation = paymentCategoryOrganisation.filter(elt => elt.PaymentCategory);
+    const validPaymentCategoryOrganisation = paymentCategoryOrganisation.filter(
+      (elt) => elt.PaymentCategory
+    );
 
     if (validPaymentCategoryOrganisation.length === 0) {
       return {
         status: 0,
         message: `No valid details found for ${gridName}`,
-        data: []
+        data: [],
       };
     }
 
@@ -1080,22 +1121,24 @@ const getOrCreatePriceGrid = async (gridName, tarifColumn, orgId, byID) => {
         effectiveDate: moment().format("YYYY-MM-DD HH:mm:ss"),
         lastModifiedDate: moment().format("YYYY-MM-DD HH:mm:ss"),
         lastModifiedBy: byID,
-        adjustmentType: "increaseAbsolute"
+        adjustmentType: "increaseAbsolute",
       });
     } catch (error) {
       console.error("Error creating PriceGrids model:", error);
       if (error.name === "SequelizeUniqueConstraintError") {
-        throw new Error("This grid name already exists. Please use a different name.");
+        throw new Error(
+          "This grid name already exists. Please use a different name."
+        );
       } else {
         throw new Error("Database error, unable to create price grid.");
       }
     }
 
-    const gridDetails = validPaymentCategoryOrganisation.map(elt => ({
+    const gridDetails = validPaymentCategoryOrganisation.map((elt) => ({
       gridID: priceGridsModel.gridID,
       productID: elt.idpco,
       adjustedPrice: elt[tarifColumn],
-      effectiveDate: moment().format("YYYY-MM-DD HH:mm:ss")
+      effectiveDate: moment().format("YYYY-MM-DD HH:mm:ss"),
     }));
 
     try {
@@ -1103,7 +1146,7 @@ const getOrCreatePriceGrid = async (gridName, tarifColumn, orgId, byID) => {
       return {
         status: 1,
         message: `New PriceGrid Details List for ${gridName}`,
-        data: gridDetails
+        data: gridDetails,
       };
     } catch (error) {
       console.error("Error inserting grid details:", error);
@@ -1113,7 +1156,7 @@ const getOrCreatePriceGrid = async (gridName, tarifColumn, orgId, byID) => {
     return {
       status: 1,
       message: `Price Grid ${gridName} Details`,
-      data: priceGrid
+      data: priceGrid,
     };
   }
 };
@@ -1123,27 +1166,35 @@ exports.getPriceIpmAssurancePriceGrid = async (req, res) => {
     const orgId = req.params.org_id;
     const byID = req.params.byID;
 
-    const assuranceResult = await getOrCreatePriceGrid("Assurance", "tarif_assurance", orgId, byID);
-    const ipmResult = await getOrCreatePriceGrid("IPM", "tarif_ipm", orgId, byID);
+    const assuranceResult = await getOrCreatePriceGrid(
+      "Assurance",
+      "tarif_assurance",
+      orgId,
+      byID
+    );
+    const ipmResult = await getOrCreatePriceGrid(
+      "IPM",
+      "tarif_ipm",
+      orgId,
+      byID
+    );
 
     res.json({
       status: 1,
       message: "Price Grids Retrieved",
       data: {
         assurance: assuranceResult,
-        ipm: ipmResult
-      }
+        ipm: ipmResult,
+      },
     });
   } catch (error) {
     res.status(500).json({
       status: 0,
       message: "Error retrieving data",
-      error: error.message
+      error: error.message,
     });
   }
 };
-
-
 
 exports.getPriceGridsDetails = async (req, res) => {
   try {
@@ -1152,29 +1203,31 @@ exports.getPriceGridsDetails = async (req, res) => {
     // Récupérer les grilles de prix pour l'organisation
     const grids = await PriceGrids.findAll({
       where: { organizationID },
-      order: [['effectiveDate', 'DESC']],
-      limit: 5
+      order: [["gridID", "DESC"]],
+      limit: 5,
     });
 
     if (grids.length === 0) {
       return res.status(404).json({
         status: 0,
-        message: "No price grids found for the organization"
+        message: "No price grids found for the organization",
       });
     }
 
-    const gridIds = grids.map(grid => grid.gridID);
-    const gridNames = grids.map(grid => grid.gridName);
+    const gridIds = grids.map((grid) => grid.gridID);
+    const gridNames = grids.map((grid) => grid.gridName);
 
     // Récupérer les détails des grilles de prix
     const priceDetails = await PriceGridDetails.findAll({
       where: { gridID: gridIds },
-      include: [{
-        model: PriceGrids,
-        as: 'grid',
-        attributes: ['gridName'],
-        required: false // Faire une jointure LEFT JOIN
-      }]
+      include: [
+        {
+          model: PriceGrids,
+          as: "grid",
+          attributes: ["gridName"],
+          required: false, // Faire une jointure LEFT JOIN
+        },
+      ],
     });
 
     // Récupérer les catégories de paiement et les spécialités associées
@@ -1196,14 +1249,14 @@ exports.getPriceGridsDetails = async (req, res) => {
       ],
       where: { id_organisation: req.params.org_id },
     });
-    
 
     // Mapper les catégories de paiement et les spécialités
     const paymentCategoryMap = {};
-    paymentCategoryDetails.forEach(detail => {
+    paymentCategoryDetails.forEach((detail) => {
       if (detail.PaymentCategory) {
         const { id, prestation, id_spe } = detail.PaymentCategory;
-        const { name_specialite } = detail.PaymentCategory.SettingServiceSpecialite;
+        const { name_specialite } =
+          detail.PaymentCategory.SettingServiceSpecialite;
         paymentCategoryMap[detail.idpco] = { prestation, name_specialite };
       }
     });
@@ -1211,26 +1264,28 @@ exports.getPriceGridsDetails = async (req, res) => {
     // Construire le résultat final
     const result = {};
 
-    priceDetails.forEach(detail => {
+    priceDetails.forEach((detail) => {
       const paymentCategory = paymentCategoryMap[detail.productID];
       if (!result[detail.productID]) {
         result[detail.productID] = {
           productID: detail.productID,
-          service: paymentCategory ? paymentCategory.name_specialite : "Unknown",
-          prestation: paymentCategory ? paymentCategory.prestation : "Unknown"
+          service: paymentCategory
+            ? paymentCategory.name_specialite
+            : "Unknown",
+          prestation: paymentCategory ? paymentCategory.prestation : "Unknown",
         };
-        gridNames.forEach(name => {
-          result[detail.productID][name] = '0'; // Initialiser avec '0'
+        gridNames.forEach((name) => {
+          result[detail.productID][name] = "0"; // Initialiser avec '0'
         });
       }
       result[detail.productID][detail.grid.gridName] = detail.adjustedPrice;
     });
 
     // S'assurer que chaque produit a toutes les grilles avec au moins '0' si non présent
-    Object.values(result).forEach(product => {
-      gridNames.forEach(name => {
+    Object.values(result).forEach((product) => {
+      gridNames.forEach((name) => {
         if (!product[name]) {
-          product[name] = '0';
+          product[name] = "0";
         }
       });
     });
@@ -1240,13 +1295,13 @@ exports.getPriceGridsDetails = async (req, res) => {
     res.json({
       status: 1,
       message: "Price Grids Retrieved",
-      data: finalResult
+      data: finalResult,
     });
   } catch (error) {
     res.status(500).json({
       status: 0,
       message: "Error retrieving data",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -1258,32 +1313,33 @@ exports.getPriceGridProductID = async (req, res) => {
     // Récupérer les grilles de prix pour l'organisation et le produit
     const grids = await PriceGrids.findAll({
       where: { organizationID },
-      order: [['effectiveDate', 'DESC']],
-      limit: 5
+      order: [["effectiveDate", "DESC"]],
     });
 
     if (grids.length === 0) {
       return res.status(404).json({
         status: 0,
-        message: "No price grids found for the organization"
+        message: "No price grids found for the organization",
       });
     }
 
-    const gridIds = grids.map(grid => grid.gridID);
-    const gridNames = grids.map(grid => grid.gridName);
+    const gridIds = grids.map((grid) => grid.gridID);
+    const gridNames = grids.map((grid) => grid.gridName);
 
     // Récupérer les détails des grilles de prix pour le productID
     const priceDetails = await PriceGridDetails.findAll({
       where: {
         gridID: gridIds,
-        productID
+        productID,
       },
-      include: [{
-        model: PriceGrids,
-        as: 'grid',
-        attributes: ['gridID', 'gridName'],
-        required: false // Faire une jointure LEFT JOIN
-      }]
+      include: [
+        {
+          model: PriceGrids,
+          as: "grid",
+          attributes: ["gridID", "gridName"],
+          required: false, // Faire une jointure LEFT JOIN
+        },
+      ],
     });
 
     // Récupérer les catégories de paiement et les spécialités associées
@@ -1308,10 +1364,11 @@ exports.getPriceGridProductID = async (req, res) => {
 
     // Mapper les catégories de paiement et les spécialités
     const paymentCategoryMap = {};
-    paymentCategoryDetails.forEach(detail => {
+    paymentCategoryDetails.forEach((detail) => {
       if (detail.PaymentCategory) {
         const { id, prestation, id_spe } = detail.PaymentCategory;
-        const { name_specialite } = detail.PaymentCategory.SettingServiceSpecialite;
+        const { name_specialite } =
+          detail.PaymentCategory.SettingServiceSpecialite;
         paymentCategoryMap[detail.idpco] = { prestation, name_specialite };
       }
     });
@@ -1319,20 +1376,22 @@ exports.getPriceGridProductID = async (req, res) => {
     // Construire le résultat final
     const result = {};
 
-    priceDetails.forEach(detail => {
+    priceDetails.forEach((detail) => {
       if (!result[detail.productID]) {
         const paymentCategory = paymentCategoryMap[detail.productID];
         result[detail.productID] = {
           productID: detail.productID,
-          service: paymentCategory ? paymentCategory.name_specialite : "Unknown",
+          service: paymentCategory
+            ? paymentCategory.name_specialite
+            : "Unknown",
           prestation: paymentCategory ? paymentCategory.prestation : "Unknown",
-          Grids: []
+          Grids: [],
         };
       }
       result[detail.productID].Grids.push({
         gridID: detail.grid.gridID,
         gridName: detail.grid.gridName,
-        adjustedPrice: detail.adjustedPrice || '0'
+        adjustedPrice: detail.adjustedPrice || "0",
       });
     });
 
@@ -1341,13 +1400,13 @@ exports.getPriceGridProductID = async (req, res) => {
     res.json({
       status: 1,
       message: "Price Grids Retrieved",
-      data: finalResult
+      data: finalResult,
     });
   } catch (error) {
     res.status(500).json({
       status: 0,
       message: "Error retrieving data",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -1357,7 +1416,7 @@ exports.updatePriceGridDetailsByProductID = async (req, res) => {
     const { productID } = req.params;
     const { updates } = req.body;
 
-    const updatePromises = updates.map(update => 
+    const updatePromises = updates.map((update) =>
       PriceGridDetails.update(
         { adjustedPrice: update.adjustedPrice },
         { where: { gridID: update.gridID, productID } }
@@ -1368,13 +1427,90 @@ exports.updatePriceGridDetailsByProductID = async (req, res) => {
 
     res.json({
       status: 1,
-      message: "Price Grid Details updated successfully"
+      message: "Price Grid Details updated successfully",
     });
   } catch (error) {
     res.status(500).json({
       status: 0,
       message: "Error updating price grid details",
-      error: error.message
+      error: error.message,
     });
+  }
+};
+
+exports.getOrganisationPrestationsAll = async (req, res) => {
+  try {
+    const PaymentCategoryOrganisationModal = await PaymentCategoryOrganisation.findAll({
+      attributes: [
+        "idpco",
+        [
+          Sequelize.fn(
+            "ROUND",
+            Sequelize.col("PaymentCategoryOrganisation.tarif_professionnel"),
+            0
+          ),
+          "prive",
+        ], 
+        [
+          Sequelize.fn(
+            "ROUND",
+            Sequelize.col("PaymentCategoryOrganisation.prix_public"),
+            0
+          ),
+          "public",
+        ],
+        [
+          Sequelize.fn(
+            "ROUND",
+            Sequelize.col("PaymentCategoryOrganisation.tarif_public"),
+            0
+          ),
+          "paf",
+        ],
+        [
+          Sequelize.fn(
+            "ROUND",
+            Sequelize.col("PaymentCategoryOrganisation.tarif_assurance"),
+            0
+          ),
+          "assurance",
+        ],
+        [
+          Sequelize.fn(
+            "ROUND",
+            Sequelize.col("PaymentCategoryOrganisation.tarif_ipm"),
+            0
+          ),
+          "ipm",
+        ],// Arrondi à l'entier le plus proche
+      ],
+      include: [
+        {
+          model: PaymentCategory,
+          attributes: ["prestation"],
+          required: true, // Cette ligne assure que seulement les enregistrements avec PaymentCategory non null seront inclus
+          include: [
+            {
+              model: SettingServiceSpecialite,
+              attributes: ["name_specialite"],
+            },
+          ],
+        },
+      ],
+      where: { id_organisation: req.params.org_id },
+    });
+
+    if (PaymentCategoryOrganisationModal.length === 0) {
+      res.json({ status: 0, message: "Not Data Found" });
+    } else {
+      res.json({
+        status: 1,
+        message: "Payment Category Organisation List",
+        data: PaymentCategoryOrganisationModal,
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ status: 0, message: "Internal Server Error" });
   }
 };
