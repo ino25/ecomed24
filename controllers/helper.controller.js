@@ -5,10 +5,13 @@ const Op = Sequelize.Op;
 const moment = require("moment");
 moment.locale("en");
 const { Docmosis, dataPrepare } = require("../helpers/DocmosisHelper");
+const { replaceShortcodes } = require("../helpers/ShortcodesHelper");
 var Country = require("../models/Country");
 var Region = require("../models/Region");
 var District = require("../models/District");
 var DoctorSignature = require("../models/DoctorSignature");
+var Patient = require("../models/Patient");
+var Organisation = require("../models/Organisation");
 const multer = require("multer");
 const fs = require("fs");
 var Doctor = require("../models/Doctor");
@@ -17,7 +20,10 @@ var TestRequests = require("../models/TestRequests");
 var Prescriptions = require("../models/Prescriptions");
 var OrgPermissionItems = require("../models/OrgPermissionItems");
 var crypto = require("crypto");
+var Email = require("../models/Email");
+var AutoEmailTemplate = require("../models/AutoEmailTemplate");
 const BASEURL = process.env.SITE_URL;
+const BASEPATH = process.env.BASE_PATH;
 exports.getDoctorsList = async (req, res) => {
   try {
     let getData = [];
@@ -473,6 +479,133 @@ exports.generatePDF = async (req, res) => {
           message: "Server Error, Please Try Againg Later!!",
         });
       });
+  } catch (error) {
+    console.error("Error:", error);
+    res.json({ status: 0, message: "Server Error, Please Try Againg Later!!" });
+    // throw error;
+  }
+};
+
+exports.sendDocument = async (req, res) => {
+  try {
+    const pathToStore = {
+      lab_test_request: BASEPATH + "uploads/invoicefile/",
+      imaging_request: BASEPATH + "uploads/invoicefile/",
+      prescription: BASEPATH + "uploads/invoicefile/",
+    };
+    // console.log(data);
+    if (req.body.type === "lab_test_request") {
+      TemplateModal = await AutoEmailTemplate.findOne({
+        where: { type: "patient_lab_test_request" },
+      });
+      RequestsModal = await TestRequests.findOne({
+        where: { id: req.body.id, type: "lab" },
+      });
+      patientModel = await Patient.findOne({
+        where: { id: RequestsModal.patient_id },
+      });
+      OrganisationModal = await Organisation.findOne({
+        where: { id: req.org_id },
+      });
+      const SubjectShortCodes = {
+        patient_full_name: patientModel.name + " " + patientModel.last_name,
+        patient_id: patientModel.unique_id,
+      };
+      const BodyShortCodes = {
+        patient_full_name: patientModel.name + " " + patientModel.last_name,
+        nom_organisation: OrganisationModal.nom,
+      };
+      let Subject = replaceShortcodes(TemplateModal.name, SubjectShortCodes);
+      let Message = replaceShortcodes(TemplateModal.message, BodyShortCodes);
+
+      EmailModal = await Email.create({
+        is_sent: null,
+        subject: Subject,
+        date: moment().format("YYYY-MM-DD HH:mm:ss"),
+        message: Message,
+        reciepient: req.body.email,
+        attachment_path: pathToStore[req.body.type] + RequestsModal.file,
+        user: req.userId,
+      });
+    } else if (req.body.type === "imaging_request") {
+      TemplateModal = await AutoEmailTemplate.findOne({
+        where: { type: "patient_imaging_request" },
+      });
+      RequestsModal = await TestRequests.findOne({
+        where: { id: req.body.id, type: "imaging" },
+      });
+
+      patientModel = await Patient.findOne({
+        where: { id: RequestsModal.patient_id },
+      });
+      OrganisationModal = await Organisation.findOne({
+        where: { id: req.org_id },
+      });
+      const SubjectShortCodes = {
+        patient_full_name: patientModel.name + " " + patientModel.last_name,
+        patient_id: patientModel.unique_id,
+      };
+      const BodyShortCodes = {
+        patient_full_name: patientModel.name + " " + patientModel.last_name,
+        nom_organisation: OrganisationModal.nom,
+      };
+      let Subject = replaceShortcodes(TemplateModal.name, SubjectShortCodes);
+      let Message = replaceShortcodes(TemplateModal.message, BodyShortCodes);
+
+      EmailModal = await Email.create({
+        is_sent: null,
+        subject: Subject,
+        date: moment().format("YYYY-MM-DD HH:mm:ss"),
+        message: Message,
+        reciepient: req.body.email,
+        attachment_path: pathToStore[req.body.type] + RequestsModal.file,
+        user: req.userId,
+      });
+    } else if (req.body.type === "prescription") {
+      TemplateModal = await AutoEmailTemplate.findOne({
+        where: { type: "patient_prescription" },
+      });
+      RequestsModal = await Prescriptions.findOne({
+        where: { id: req.body.id },
+      });
+
+      patientModel = await Patient.findOne({
+        where: { id: RequestsModal.patient_id },
+      });
+      OrganisationModal = await Organisation.findOne({
+        where: { id: req.org_id },
+      });
+      const SubjectShortCodes = {
+        patient_full_name: patientModel.name + " " + patientModel.last_name,
+        patient_id: patientModel.unique_id,
+      };
+      const BodyShortCodes = {
+        patient_full_name: patientModel.name + " " + patientModel.last_name,
+        nom_organisation: OrganisationModal.nom,
+      };
+      let Subject = replaceShortcodes(TemplateModal.name, SubjectShortCodes);
+      let Message = replaceShortcodes(TemplateModal.message, BodyShortCodes);
+      EmailModal = await Email.create({
+        is_sent: null,
+        subject: Subject,
+        date: moment().format("YYYY-MM-DD HH:mm:ss"),
+        message: Message,
+        reciepient: req.body.email,
+        attachment_path: pathToStore[req.body.type] + RequestsModal.file,
+        user: req.userId,
+      });
+    } else {
+      res.json({
+        status: 0,
+        message: "Type not defined!!",
+      });
+    }
+
+    if (RequestsModal === null) {
+      res.json({ status: 0, message: langCommon.errormessage });
+    } else {
+      res.json({ status: 1, message: "Document Successfully sent.", data: "" });
+    }
   } catch (error) {
     console.error("Error:", error);
     res.json({ status: 0, message: "Server Error, Please Try Againg Later!!" });
