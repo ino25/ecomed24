@@ -13,7 +13,6 @@ var Settings = require("../models/Settings");
 var User = require("../models/User");
 var DoctorSignature = require("../models/DoctorSignature");
 var Organisation = require("../models/Organisation");
-var Organisation = require("../models/Organisation");
 var PaymentCategory = require("../models/PaymentCategory");
 var SettingServiceSpecialite = require("../models/SettingServiceSpecialite");
 var SettingService = require("../models/SettingService");

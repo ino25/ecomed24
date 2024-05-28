@@ -5,6 +5,8 @@ const moment = require("moment");
 moment.locale("en");
 const { Mailer } = require("../helpers/Mailer");
 var Email = require("../models/Email");
+
+const pathMod = require("path");
 // Permission
 const emailSchedule = async (req, res) => {
   try {
@@ -13,15 +15,30 @@ const emailSchedule = async (req, res) => {
       order: [["id", "DESC"]],
     });
 
-    if (Email === null) {
+    if (EmailModal === null) {
       res.json({ status: 0, message: "No data found" });
     } else {
       EmailModal.forEach(async (row) => {
+        let path = row.attachment_path;
+        let attachments;
+        if (path != null) {
+          const fileName = pathMod.basename(path);
+          attachments = [
+            {
+              filename: fileName,
+              path: path, // path to the file
+            },
+          ];
+        } else {
+          attachments = [];
+        }
+
         const status = await Mailer(
           row.reciepient,
           "",
           row.subject,
-          row.message
+          row.message,
+          attachments
         );
         // if (status) {
         EmailModal2 = await Email.update(
@@ -33,7 +50,7 @@ const emailSchedule = async (req, res) => {
       });
       res.json({
         status: 1,
-        message: "Fatched",
+        message: "Email Sent",
         data: EmailModal,
       });
     }

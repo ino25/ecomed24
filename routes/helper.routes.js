@@ -33,5 +33,5 @@ router.post(
   helperController.getDoctorSignature
 );
 router.post("/generate-pdf", VerifyToken, helperController.generatePDF);
-
+router.post("/send-document", VerifyToken, helperController.sendDocument);
 module.exports = router;

@@ -490,6 +490,7 @@ exports.OrgPermissionUpdate = async (req, res) => {
       MapModal = await OrgPermissionItems.destroy({
         where: { org_permissionid: req.params.id },
       });
+      Systempermissions = req.body.sp_id;
       Systempermissions.forEach(async function (permissionid) {
         OrgPermissionItemsModal = await OrgPermissionItems.create({
           org_permissionid: req.params.id,
