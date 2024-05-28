@@ -769,7 +769,7 @@ exports.envoiPdf = async (req, res) => {
   const { email, pdfFilePath } = req.body;
 
   const fileName = path.basename(pdfFilePath);
-  const filePath = pdfFilePath;
+  const filePath = path.join("..", "uploads", "invoicefile", fileName);
 
   fs.access(filePath, fs.constants.F_OK, async (err) => {
     if (err) {
@@ -778,7 +778,7 @@ exports.envoiPdf = async (req, res) => {
     }
 
     const mailOptions = {
-      from: "plateforme@ussd.sn",
+      from: "no-reply@ecomed24.com",
       to: email,
       subject: "Votre fichier PDF",
       html: "Voici votre fichier PDF en pièce jointe.",
