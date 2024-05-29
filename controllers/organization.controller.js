@@ -763,15 +763,24 @@ exports.importPriceGridDetails = async (req, res) => {
     const description = Array.isArray(fields.description)
       ? fields.description[0]
       : fields.description;
+    const effectiveDate = Array.isArray(fields.effectiveDate)
+      ? fields.effectiveDate[0]
+      : moment().format("YYYY-MM-DD HH:mm:ss");
+    const expiryDate = Array.isArray(fields.expiryDate)
+      ? fields.expiryDate[0]
+      : moment().format("YYYY-MM-DD HH:mm:ss");
+    const lastModifiedDate = Array.isArray(fields.lastModifiedDate)
+      ? fields.lastModifiedDate[0]
+      : moment().format("YYYY-MM-DD HH:mm:ss");
+    const adjustmentType = Array.isArray(fields.adjustmentType)
+      ? fields.adjustmentType[0]
+      : "increaseAbsolute";
+    const adjustmentValue = Array.isArray(fields.adjustmentValue)
+      ? fields.adjustmentValue[0]
+      : "0";
     const lastModifiedBy = Array.isArray(fields.lastModifiedBy)
       ? fields.lastModifiedBy[0]
       : fields.lastModifiedBy;
-    const adjustmentType = Array.isArray(fields.adjustmentType)
-      ? fields.adjustmentType[0]
-      : fields.adjustmentType;
-    const adjustmentValue = Array.isArray(fields.adjustmentValue)
-      ? fields.adjustmentValue[0]
-      : fields.adjustmentValue;
 
     // Création du modèle
     let priceGridsModel;
@@ -780,9 +789,9 @@ exports.importPriceGridDetails = async (req, res) => {
         organizationID,
         gridName,
         description,
-        effectiveDate: fields.effectiveDate, // Supposons que ces dates sont correctement formatées
-        expiryDate: fields.expiryDate,
-        lastModifiedDate: fields.lastModifiedDate,
+        effectiveDate, 
+        expiryDate,
+        lastModifiedDate,
         adjustmentType,
         adjustmentValue,
         lastModifiedBy,
@@ -793,13 +802,15 @@ exports.importPriceGridDetails = async (req, res) => {
         res.json({
           status: 0,
           message:
-            "This grid name already exists. Please use a different name.",
+            "Ce nom de grille existe déjà. Veuillez utiliser un nom différent.",
         });
       } else {
-        res
-          .status(500)
-          .json({ wsMessage: "Database error, unable to create price grid." });
-        return;
+        res.json({
+          status: 500,
+          message:
+            "Erreur de base de données, impossible de créer la grille tarifaire.",
+        });
+        
       }
     }
 
@@ -809,10 +820,11 @@ exports.importPriceGridDetails = async (req, res) => {
       !files.priceGrid.length ||
       !files.priceGrid[0].filepath
     ) {
-      res
-        .status(400)
-        .json({ wsMessage: "No file uploaded or file path missing." });
-      return;
+      res.json({
+        status: 400,
+        message:
+          "No file uploaded or file path missing.",
+      });
     }
 
     const filepath = files.priceGrid[0].filepath;
@@ -820,10 +832,11 @@ exports.importPriceGridDetails = async (req, res) => {
 
     const result = await parseAndValidateExcelPrice(filepath);
     if (typeof result === "string") {
-      res.status(400).json({ wsMessage: result });
-      return;
+      res.json({
+        status: 400,
+        message: result,
+      });
     } else {
-
       // Vérification des ID avant insertion
       const validGridDetails = [];
       for (const elt of result) {
@@ -866,7 +879,6 @@ exports.importPriceGridDetails = async (req, res) => {
 
       if (validGridDetails.length > 0) {
         try {
-          
           console.log("Details prix :", validGridDetails);
 
           const insertedGridDetails = await PriceGridDetails.bulkCreate(
@@ -1440,65 +1452,66 @@ exports.updatePriceGridDetailsByProductID = async (req, res) => {
 
 exports.getOrganisationPrestationsAll = async (req, res) => {
   try {
-    const PaymentCategoryOrganisationModal = await PaymentCategoryOrganisation.findAll({
-      attributes: [
-        "idpco",
-        [
-          Sequelize.fn(
-            "ROUND",
-            Sequelize.col("PaymentCategoryOrganisation.tarif_professionnel"),
-            0
-          ),
-          "prive",
-        ], 
-        [
-          Sequelize.fn(
-            "ROUND",
-            Sequelize.col("PaymentCategoryOrganisation.prix_public"),
-            0
-          ),
-          "public",
-        ],
-        [
-          Sequelize.fn(
-            "ROUND",
-            Sequelize.col("PaymentCategoryOrganisation.tarif_public"),
-            0
-          ),
-          "paf",
-        ],
-        [
-          Sequelize.fn(
-            "ROUND",
-            Sequelize.col("PaymentCategoryOrganisation.tarif_assurance"),
-            0
-          ),
-          "assurance",
-        ],
-        [
-          Sequelize.fn(
-            "ROUND",
-            Sequelize.col("PaymentCategoryOrganisation.tarif_ipm"),
-            0
-          ),
-          "ipm",
-        ],// Arrondi à l'entier le plus proche
-      ],
-      include: [
-        {
-          model: PaymentCategory,
-          attributes: ["prestation"],
-          required: true, // Cette ligne assure que seulement les enregistrements avec PaymentCategory non null seront inclus
-          include: [
-            {
-              model: SettingServiceSpecialite,
-              attributes: ["name_specialite"],
-            },
+    const PaymentCategoryOrganisationModal =
+      await PaymentCategoryOrganisation.findAll({
+        attributes: [
+          "idpco",
+          [
+            Sequelize.fn(
+              "ROUND",
+              Sequelize.col("PaymentCategoryOrganisation.tarif_professionnel"),
+              0
+            ),
+            "prive",
           ],
-        },
-      ],
-      where: { id_organisation: req.params.org_id },
-    });
+          [
+            Sequelize.fn(
+              "ROUND",
+              Sequelize.col("PaymentCategoryOrganisation.prix_public"),
+              0
+            ),
+            "public",
+          ],
+          [
+            Sequelize.fn(
+              "ROUND",
+              Sequelize.col("PaymentCategoryOrganisation.tarif_public"),
+              0
+            ),
+            "paf",
+          ],
+          [
+            Sequelize.fn(
+              "ROUND",
+              Sequelize.col("PaymentCategoryOrganisation.tarif_assurance"),
+              0
+            ),
+            "assurance",
+          ],
+          [
+            Sequelize.fn(
+              "ROUND",
+              Sequelize.col("PaymentCategoryOrganisation.tarif_ipm"),
+              0
+            ),
+            "ipm",
+          ], // Arrondi à l'entier le plus proche
+        ],
+        include: [
+          {
+            model: PaymentCategory,
+            attributes: ["prestation"],
+            required: true, // Cette ligne assure que seulement les enregistrements avec PaymentCategory non null seront inclus
+            include: [
+              {
+                model: SettingServiceSpecialite,
+                attributes: ["name_specialite"],
+              },
+            ],
+          },
+        ],
+        where: { id_organisation: req.params.org_id },
+      });
 
     if (PaymentCategoryOrganisationModal.length === 0) {
       res.json({ status: 0, message: "Not Data Found" });
