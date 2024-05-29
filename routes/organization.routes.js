@@ -27,7 +27,7 @@ router.get('/get-pricing-category',VerifyToken, organizationController.getPricin
 // Price Prestation
 router.post('/add-price-grid',VerifyToken, organizationController.addPriceGrids);
 router.post('/import-price-detail',VerifyToken, organizationController.importPriceGridDetails);
-router.get('/get-price-grids',VerifyToken, organizationController.getPriceGridsAll);
+router.get('/get-price-grids', organizationController.getPriceGridsAll);
 router.get('/get-price-grid/:gridID',VerifyToken, organizationController.getPriceGridByID);
 router.get('/get-price-grid-details',VerifyToken, organizationController.getPriceGridDetailsAll);
 router.get('/get-price-assurance-ipm/:org_id/:byID', organizationController.getPriceIpmAssurancePriceGrid);

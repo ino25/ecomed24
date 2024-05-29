@@ -913,6 +913,7 @@ exports.getPriceGridsAll = async (req, res) => {
     PriceGridsAll = await PriceGrids.findAll({
       attributes: [
         "gridID",
+        "gridName",
         "organizationID",
         "description",
         "effectiveDate",
