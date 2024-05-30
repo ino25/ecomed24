@@ -1528,3 +1528,25 @@ exports.getOrganisationPrestationsAll = async (req, res) => {
     res.status(500).json({ status: 0, message: "Internal Server Error" });
   }
 };
+
+exports.getPriceGridDetailByGridID = async (req, res) => {
+  try {
+    
+   const PriceGridDetailsAll = await Database.query(
+      `select pricegriddetails.detailID, idpco, setting_service_specialite.name_specialite, payment_category.prestation, pricegriddetails.adjustedPrice  from payment_category_organisation join payment_category on payment_category.id= payment_category_organisation.id_presta join setting_service_specialite on setting_service_specialite.idspe=id_spe join pricegriddetails on pricegriddetails.productID=payment_category_organisation.idpco
+      where pricegriddetails.gridID=${req.params.gridID} order by pricegriddetails.detailID DESC`,
+      { type: Database.QueryTypes.SELECT }
+    );
+    if (PriceGridDetailsAll === null) {
+      res.json({ status: 0, message: "No Data Found" });
+    } else {
+      res.json({
+        status: 1,
+        message: "Price Grid Details List",
+        data: PriceGridDetailsAll,
+      });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
