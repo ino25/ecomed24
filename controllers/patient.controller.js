@@ -12,6 +12,9 @@ const nodemailer = require("nodemailer");
 
 var User = require("../models/User");
 var Patient = require("../models/Patient");
+var Region = require("../models/Region");
+var District = require("../models/District");
+var Country = require("../models/Country");
 var Appointment = require("../models/Appointment");
 var SettingService = require("../models/SettingService");
 var SettingServiceSpecialiteOrganisation = require("../models/SettingServiceSpecialiteOrganisation");
@@ -48,6 +51,10 @@ const multer = require("multer");
 const fs = require("fs");
 const Docmosis = require("../helpers/DocmosisHelper");
 //////Modal Relationship
+
+Patient.belongsTo(Region, { as: "region_details", foreignKey: "region" });
+Patient.belongsTo(District, { as: "district_details", foreignKey: "district" });
+Patient.belongsTo(Country, { as: "country_details", foreignKey: "country" });
 
 // Current Medications
 CurrentMedications.belongsTo(User, {
@@ -638,6 +645,18 @@ exports.getGeneralInfo = async (req, res) => {
         ["phone_contact", "emergency_contact_no"],
       ],
       where: { id: req.params.patient_id },
+      include: [
+        {
+          model: Region,
+          attributes: ["id", "name"],
+          as: "region_details",
+        },
+        {
+          model: District,
+          attributes: ["id", "name"],
+          as: "district_details",
+        },
+      ],
     });
     // console.log(PatientModal.birthdate);
     // PatientModal.birthdate = moment(PatientModal.birthdate).format('d/m/Y')
