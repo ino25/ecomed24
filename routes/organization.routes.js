@@ -25,9 +25,10 @@ router.get('/get-organization-types',VerifyToken, organizationController.getOrga
 router.get('/get-pricing-category',VerifyToken, organizationController.getPricingCategory);
 
 // Price Prestation
+router.get("/prestation", organizationController.getPrestation);
 router.post('/add-price-grid',VerifyToken, organizationController.addPriceGrids);
 router.post('/import-price-detail',VerifyToken, organizationController.importPriceGridDetails);
-router.get('/get-price-grids', organizationController.getPriceGridsAll);
+router.get('/get-price-grids/:org_id', organizationController.getPriceGridsAll);
 router.get('/get-price-grid/:gridID',VerifyToken, organizationController.getPriceGridByID);
 router.get('/get-price-grid-details',VerifyToken, organizationController.getPriceGridDetailsAll);
 router.get('/get-price-assurance-ipm/:org_id/:byID', organizationController.getPriceIpmAssurancePriceGrid);
@@ -36,6 +37,9 @@ router.get('/get-price-product/:org_id/:product_id', organizationController.getP
 router.put('/update-price-details/:productID', VerifyToken, organizationController.updatePriceGridDetailsByProductID);
 router.get('/get-all-prestation/:org_id', VerifyToken, organizationController.getOrganisationPrestationsAll);
 router.get('/get-price-grid-detail-gridID/:gridID', organizationController.getPriceGridDetailByGridID);
+router.post("/add-price-grid-details", VerifyToken, organizationController.addPriceGridDetails);
+router.post('/create-price-grids', organizationController.createPriceGridsAndDetails);
+
 // router.get('/get-price-grid-by/:gridID',VerifyToken, organizationController.getPriceGridDetailByGridID);
 // router.get('/update-price-detail-by/:detailID',VerifyToken, organizationController.updatePriceGridDetails);
 // router.get('/update-bulk-price-grid-by/:gridID',VerifyToken, organizationController.updatePriceGridDetails);

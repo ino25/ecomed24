@@ -1,8 +1,5 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config').sequelize;
-var Organisation = require("../models/Organisation");
-var User = require("../models/User");
-
 
 const PriceGrids = sequelize.define('PriceGrids', {
   gridID: {
@@ -16,8 +13,7 @@ const PriceGrids = sequelize.define('PriceGrids', {
   },
   gridName: {
     type: DataTypes.STRING,
-    allowNull: false,
-    unique: true  // Ajoute une contrainte d'unicité pour le gridName
+    allowNull: false
   },
   adjustmentType: {
     type: DataTypes.ENUM('increasePercent', 'decreasePercent', 'increaseAbsolute', 'decreaseAbsolute'),
@@ -25,9 +21,8 @@ const PriceGrids = sequelize.define('PriceGrids', {
   },
   adjustmentValue: {
     type: DataTypes.DECIMAL(10, 2),
-    allowNull: true  // adjustmentValue peut être null
+    allowNull: true
   },
-  
   description: {
     type: DataTypes.TEXT,
     allowNull: true
@@ -51,8 +46,7 @@ const PriceGrids = sequelize.define('PriceGrids', {
   isActive: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
-  },
-  
+  }
 }, {
   tableName: 'priceGrids',
   timestamps: false
