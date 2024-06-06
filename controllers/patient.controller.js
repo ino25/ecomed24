@@ -2602,6 +2602,42 @@ exports.getAttachmentsByID = async (req, res) => {
         "date",
       ],
       where: { id: req.params.attachment_id },
+      include: [
+        {
+          model: User,
+          attributes: [
+            "id",
+            ["id_organisation", "org_id"],
+            "first_name",
+            "last_name",
+            "username",
+            "email",
+          ],
+          as: "addedby_details",
+        },
+        {
+          model: User,
+          attributes: [
+            "id",
+            ["id_organisation", "org_id"],
+            "first_name",
+            "last_name",
+            "username",
+            "email",
+          ],
+          as: "updatedby_details",
+        },
+        {
+          model: Organisation,
+          attributes: ["id", "nom", "email", "adresse"],
+          as: "org_details",
+        },
+        {
+          model: DocumentTypes,
+          attributes: ["id", "name"],
+          as: "doctypes_details",
+        },
+      ],
     });
     if (PatientMaterialModal === null) {
       res.json({ status: 0, message: langCommon.nodatafound });
@@ -3555,6 +3591,47 @@ exports.getKnownHealthIssuesByID = async (req, res) => {
         ],
       ],
       where: { id: req.params.pre_condition_id },
+      include: [
+        {
+          model: User,
+          attributes: [
+            "id",
+            ["id_organisation", "org_id"],
+            "first_name",
+            "last_name",
+            "username",
+            "email",
+          ],
+          as: "addedby_details",
+        },
+        {
+          model: User,
+          attributes: [
+            "id",
+            ["id_organisation", "org_id"],
+            "first_name",
+            "last_name",
+            "username",
+            "email",
+          ],
+          as: "updatedby_details",
+        },
+        {
+          model: Organisation,
+          attributes: ["id", "nom", "email", "adresse"],
+          as: "org_details",
+        },
+        {
+          model: HealthIssueType,
+          attributes: ["id", "name", "code"],
+          as: "type_details",
+        },
+        {
+          model: HealthIssue,
+          attributes: ["id", "name", "type_id"],
+          as: "issue_details",
+        },
+      ],
     });
     if (PreConditionsModal === null) {
       res.json({ status: 0, message: langCommon.nodatafound });

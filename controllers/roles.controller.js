@@ -127,6 +127,7 @@ exports.getByID = async (req, res) => {
           model: RolePermissionsMap,
           attributes: ["id", "role_id", "op_id", "org_id", "status"],
           as: "permissions",
+          where: { status: 1 },
         },
       ],
     });
@@ -176,6 +177,7 @@ exports.add = async (req, res) => {
 exports.update = async (req, res) => {
   try {
     let permissions = req.body.permissions;
+    let RoleInactivePermi = req.body.inactive_permissions;
     RoleModal = await Role.update(
       {
         name: req.body.name,
@@ -191,17 +193,66 @@ exports.update = async (req, res) => {
     if (RoleModal === null) {
       res.json({ status: 0, message: langCommon.errormessage });
     } else {
-      MapModal = await RolePermissionsMap.destroy({
-        where: { role_id: req.params.id },
-      });
+      // MapModal = await RolePermissionsMap.destroy({
+      //   where: { role_id: req.params.id },
+      // });
+
       permissions.forEach(async function (permissionid) {
-        RolePermissionsMapModal = await RolePermissionsMap.create({
-          role_id: req.params.id,
-          op_id: permissionid,
-          org_id: req.org_id,
-          status: req.body.status,
-          added_by: req.userId,
+        // Try to find the user first
+        const item = await RolePermissionsMap.findOne({
+          where: {
+            role_id: req.params.id,
+            op_id: permissionid,
+            org_id: req.org_id,
+          },
         });
+        if (item) {
+          await item.update({
+            status: 1,
+          });
+        } else {
+          // If OrgPermissionItems does not exist, create
+          RolePermissionsMapModal = await RolePermissionsMap.create({
+            role_id: req.params.id,
+            op_id: permissionid,
+            org_id: req.org_id,
+            status: req.body.status,
+            added_by: req.userId,
+          });
+        }
+
+        // RolePermissionsMapModal = await RolePermissionsMap.create({
+        //   role_id: req.params.id,
+        //   op_id: permissionid,
+        //   org_id: req.org_id,
+        //   status: req.body.status,
+        //   added_by: req.userId,
+        // });
+      });
+
+      RoleInactivePermi.forEach(async function (permissionid) {
+        // Try to find the user first
+        const item = await RolePermissionsMap.findOne({
+          where: {
+            role_id: req.params.id,
+            op_id: permissionid,
+            org_id: req.org_id,
+          },
+        });
+        if (item) {
+          await item.update({
+            status: 0,
+          });
+        } else {
+          // If OrgPermissionItems does not exist, create
+          // RolePermissionsMapModal = await RolePermissionsMap.create({
+          //   role_id: req.params.id,
+          //   op_id: permissionid,
+          //   org_id: req.org_id,
+          //   status: 0,
+          //   added_by: req.userId,
+          // });
+        }
       });
       res.json({ status: 1, message: langRoleModule.update, data: "" });
     }
