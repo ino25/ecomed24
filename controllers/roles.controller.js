@@ -146,29 +146,36 @@ exports.getByID = async (req, res) => {
 };
 exports.add = async (req, res) => {
   try {
-    let permissions = req.body.permissions;
-    RoleModal = await Role.create({
-      name: req.body.name,
-      description: req.body.description,
-      org_id: req.org_id,
-      status: req.body.status,
-      added_by: req.userId,
+    RoleModalExists = await Role.findOne({
+      where: { name: req.body.name, org_id: req.org_id },
     });
-
-    if (RoleModal === null) {
-      res.json({ status: 0, message: langCommon.errormessage });
-    } else {
-      permissions.forEach(async function (permissionid) {
-        RolePermissionsMapModal = await RolePermissionsMap.create({
-          role_id: RoleModal.id,
-          op_id: permissionid,
-          org_id: req.org_id,
-          status: req.body.status,
-          added_by: req.userId,
-        });
+    if (RoleModalExists === null) {
+      let permissions = req.body.permissions;
+      RoleModal = await Role.create({
+        name: req.body.name,
+        description: req.body.description,
+        org_id: req.org_id,
+        status: req.body.status,
+        added_by: req.userId,
       });
 
-      res.json({ status: 1, message: langRoleModule.add, data: "" });
+      if (RoleModal === null) {
+        res.json({ status: 0, message: langCommon.errormessage });
+      } else {
+        permissions.forEach(async function (permissionid) {
+          RolePermissionsMapModal = await RolePermissionsMap.create({
+            role_id: RoleModal.id,
+            op_id: permissionid,
+            org_id: req.org_id,
+            status: req.body.status,
+            added_by: req.userId,
+          });
+        });
+
+        res.json({ status: 1, message: langRoleModule.add, data: "" });
+      }
+    } else {
+      res.json({ status: 0, message: "Role Already Exists with same name" });
     }
   } catch (error) {
     throw error;

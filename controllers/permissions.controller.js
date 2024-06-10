@@ -347,7 +347,7 @@ exports.AllowPermissionToOrg = async (req, res) => {
 exports.getSystemPermissions = async (req, res) => {
   try {
     PermissionModal = await Permission.findAll({
-      attributes: ["id", "name"],
+      attributes: ["id", "name", "description"],
       order: [["id", "DESC"]],
       where: { status: 1 },
     });
