@@ -2510,6 +2510,7 @@ exports.getAttachments = async (req, res) => {
           "url",
         ],
         "category",
+        "prescriber",
         "id_organisation",
         "added_by",
         "updated_by",
@@ -2599,6 +2600,7 @@ exports.getAttachmentsByID = async (req, res) => {
           ),
           "url",
         ],
+        "prescriber",
         "date",
       ],
       where: { id: req.params.attachment_id },
@@ -2712,6 +2714,7 @@ exports.addAttachments = async (req, res) => {
       id_organisation: req.org_id,
       date: moment().unix(),
       title: req.body.title,
+      prescriber: req.body.prescriber,
       category: req.body.category,
       patient: req.body.uniqueID,
       patient_name: PatientModal.name + " " + PatientModal.last_name,
@@ -4741,6 +4744,37 @@ exports.getHospitalizationByID = async (req, res) => {
       results;
     PatientHospitalizationModal = await PatientHospitalization.findOne({
       where: { id: req.params.hospitalization_id },
+      include: [
+        {
+          model: User,
+          attributes: [
+            "id",
+            ["id_organisation", "org_id"],
+            "first_name",
+            "last_name",
+            "username",
+            "email",
+          ],
+          as: "addedby_details",
+        },
+        {
+          model: User,
+          attributes: [
+            "id",
+            ["id_organisation", "org_id"],
+            "first_name",
+            "last_name",
+            "username",
+            "email",
+          ],
+          as: "updatedby_details",
+        },
+        {
+          model: Organisation,
+          attributes: ["id", "nom", "email", "adresse"],
+          as: "org_details",
+        },
+      ],
     });
     if (PatientHospitalizationModal === null) {
       res.json({ status: 0, message: langCommon.nodatafound });
