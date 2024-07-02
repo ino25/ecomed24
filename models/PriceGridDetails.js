@@ -34,7 +34,15 @@ const PriceGridDetails = sequelize.define('PriceGridDetails', {
   expiryDate: {
     type: DataTypes.DATEONLY,
     allowNull: true
-  }
+  },
+  status: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  organizationID: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
 }, {
   tableName: 'pricegriddetails',
   timestamps: false // Assurez-vous d'ajuster cette option selon vos besoins, notamment si vous souhaitez inclure les champs createdAt et updatedAt automatiquement gérés par Sequelize.

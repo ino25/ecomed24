@@ -25,11 +25,11 @@ router.get('/get-organization-types',VerifyToken, organizationController.getOrga
 router.get('/get-pricing-category',VerifyToken, organizationController.getPricingCategory);
 
 // Price Prestation
-router.get("/prestation", organizationController.getPrestation);
+router.get('/prestation/:org_id', organizationController.getPrestation);
 router.post('/add-price-grid',VerifyToken, organizationController.addPriceGrids);
 router.post('/import-price-detail',VerifyToken, organizationController.importPriceGridDetails);
 router.get('/get-price-grids/:org_id', organizationController.getPriceGridsAll);
-router.get('/get-price-grid/:gridID',VerifyToken, organizationController.getPriceGridByID);
+router.get('/get-price-grid/:gridID', organizationController.getPriceGridByID);
 router.get('/get-price-grid-details',VerifyToken, organizationController.getPriceGridDetailsAll);
 router.get('/get-price-assurance-ipm/:org_id/:byID', organizationController.getPriceIpmAssurancePriceGrid);
 router.get('/get-price/:org_id', organizationController.getPriceGridsDetails);
@@ -38,7 +38,13 @@ router.put('/update-price-details/:productID', VerifyToken, organizationControll
 router.get('/get-all-prestation/:org_id', VerifyToken, organizationController.getOrganisationPrestationsAll);
 router.get('/get-price-grid-detail-gridID/:gridID', organizationController.getPriceGridDetailByGridID);
 router.post("/add-price-grid-details", VerifyToken, organizationController.addPriceGridDetails);
-router.post('/create-price-grids', organizationController.createPriceGridsAndDetails);
+router.post('/create-price-grids', organizationController.createOrUpdatePriceGridsAndDetails);
+router.put('/update-price-grid-details', VerifyToken, organizationController.updatePriceGridDetails);
+router.get('/prestation/imported/:org_id', VerifyToken, organizationController.getPrestationImported);
+router.put('/update-prestation-status/:organizationID/:productID', VerifyToken, organizationController.updatePrestationStatus);
+
+
+
 
 // router.get('/get-price-grid-by/:gridID',VerifyToken, organizationController.getPriceGridDetailByGridID);
 // router.get('/update-price-detail-by/:detailID',VerifyToken, organizationController.updatePriceGridDetails);

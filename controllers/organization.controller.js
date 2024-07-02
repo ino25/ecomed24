@@ -26,7 +26,7 @@ var SettingServiceSpecialite = require("../models/SettingServiceSpecialite");
 var PaymentCategoryOrganisation = require("../models/PaymentCategoryOrganisation");
 var PriceGrids = require("../models/PriceGrids");
 var PriceGridDetails = require("../models/PriceGridDetails");
-var TiersPayant = require("../models/TiersPayant")
+var TiersPayant = require("../models/TiersPayant");
 
 // Attachments
 
@@ -790,7 +790,7 @@ exports.importPriceGridDetails = async (req, res) => {
         organizationID,
         gridName,
         description,
-        effectiveDate, 
+        effectiveDate,
         expiryDate,
         lastModifiedDate,
         adjustmentType,
@@ -811,7 +811,6 @@ exports.importPriceGridDetails = async (req, res) => {
           message:
             "Erreur de base de données, impossible de créer la grille tarifaire.",
         });
-        
       }
     }
 
@@ -823,8 +822,7 @@ exports.importPriceGridDetails = async (req, res) => {
     ) {
       res.json({
         status: 400,
-        message:
-          "No file uploaded or file path missing.",
+        message: "No file uploaded or file path missing.",
       });
     }
 
@@ -964,12 +962,15 @@ exports.getPriceGridByID = async (req, res) => {
       },
       attributes: [
         "gridID",
+        "gridName",
         "organizationID",
         "description",
         "effectiveDate",
         "expiryDate",
         "lastModifiedDate",
         "lastModifiedBy",
+        "adjustmentType",
+        "adjustmentValue",
         [
           Sequelize.fn(
             "DATE_FORMAT",
@@ -1533,10 +1534,12 @@ exports.getOrganisationPrestationsAll = async (req, res) => {
 
 exports.getPriceGridDetailByGridID = async (req, res) => {
   try {
-    
-   const PriceGridDetailsAll = await Database.query(
-      `select pricegriddetails.detailID, idpco, setting_service_specialite.name_specialite, payment_category.prestation, pricegriddetails.adjustedPrice  from payment_category_organisation join payment_category on payment_category.id= payment_category_organisation.id_presta join setting_service_specialite on setting_service_specialite.idspe=id_spe join pricegriddetails on pricegriddetails.productID=payment_category_organisation.idpco
-      where pricegriddetails.gridID=${req.params.gridID} order by pricegriddetails.detailID DESC`,
+    const PriceGridDetailsAll = await Database.query(
+      `select pricegriddetails.detailID, id as idpco,setting_service_specialite.name_specialite,payment_category.prestation, pricegriddetails.adjustedPrice from pricegriddetails
+      join payment_category on payment_category.id=pricegriddetails.productID
+      join setting_service_specialite on setting_service_specialite.idspe = payment_category.id_spe
+      join setting_service on setting_service.idservice=setting_service_specialite.id_service
+      where pricegriddetails.gridID=${req.params.gridID} order by pricegriddetails.detailID desc`,
       { type: Database.QueryTypes.SELECT }
     );
     if (PriceGridDetailsAll === null) {
@@ -1564,31 +1567,37 @@ exports.addPriceGridDetails = async (req, res) => {
       adjustmentValue,
       details,
       organizationID,
-      lastModifiedBy
+      lastModifiedBy,
     } = req.body;
 
-    // Créer l'entrée dans la table PriceGrids
+    console.log("details .. ", details);
+
     const newPriceGrid = await PriceGrids.create({
-      gridName,
+      organizationID: organizationID,
+      gridName: gridName,
       description: gridReference,
-      effectiveDate: startDate ? startDate : moment().format("YYYY-MM-DD HH:mm:ss"),
-      expiryDate: endDate ? endDate : moment().format("YYYY-MM-DD HH:mm:ss"),
-      adjustmentType,
-      adjustmentValue,
-      organizationID,
-      lastModifiedBy
+      effectiveDate: startDate || new Date(),
+      expiryDate: endDate || new Date(),
+      lastModifiedDate: new Date(),
+      lastModifiedBy: lastModifiedBy,
+      isActive: true,
+      adjustmentType: adjustmentType || "increasePercent",
+      adjustmentValue: adjustmentValue || 0,
     });
+    console.log("le body envoyé ", newPriceGrid);
 
     // Créer les entrées dans la table PriceGridDetails
     const priceGridDetails = details.map((detail) => ({
       gridID: newPriceGrid.gridID,
       productID: detail.idpco,
-      adjustedPrice: detail.replaceValue,
+      adjustedPrice: detail.adjustedPrice,
       adjustmentType,
       adjustmentValue,
-      effectiveDate: startDate ? startDate : moment().format("YYYY-MM-DD HH:mm:ss"),
+      effectiveDate: startDate
+        ? startDate
+        : moment().format("YYYY-MM-DD HH:mm:ss"),
       expiryDate: endDate ? endDate : moment().format("YYYY-MM-DD HH:mm:ss"),
-      lastModifiedBy: detail. lastModifiedBy
+      lastModifiedBy: detail.lastModifiedBy,
     }));
 
     await PriceGridDetails.bulkCreate(priceGridDetails);
@@ -1608,9 +1617,17 @@ exports.addPriceGridDetails = async (req, res) => {
 
 exports.getPrestation = async (req, res) => {
   try {
-    
-   const Prestation = await Database.query(
-      `select id, name_service, name_specialite, prestation from payment_category join setting_service_specialite on setting_service_specialite.idspe = payment_category.id_spe join setting_service on setting_service_specialite.id_service = setting_service.idservice`,
+    const Prestation = await Database.query(
+      `select id, name_service, name_specialite, prestation
+from payment_category pc
+join setting_service_specialite on setting_service_specialite.idspe = pc.id_spe 
+join setting_service on setting_service_specialite.id_service = setting_service.idservice
+WHERE pc.id NOT IN (
+    SELECT pd.productID
+    FROM pricegriddetails pd
+    WHERE pd.organizationID = ${req.params.org_id}
+);
+`,
       { type: Database.QueryTypes.SELECT }
     );
     if (Prestation === null) {
@@ -1627,139 +1644,337 @@ exports.getPrestation = async (req, res) => {
   }
 };
 
-exports.createPriceGridsAndDetails = async (req, res) => {
+exports.createOrUpdatePriceGridsAndDetails = async (req, res) => {
   const { organizationID, lastModifiedBy, prestations } = req.body; // Extraction des paramètres de la requête
 
-  console.log('la requete organization ', organizationID);
-  console.log('tableau ', prestations);
+  console.log("la requete organization ", organizationID);
+  console.log("tableau ", prestations);
 
-  if (!organizationID || !Array.isArray(prestations) || prestations.length === 0) {
+  if (
+    !organizationID ||
+    !Array.isArray(prestations) ||
+    prestations.length === 0
+  ) {
     return res.status(400).json({
       status: 0,
-      message: 'Invalid input. Please provide organizationID and a list of IDs.'
+      message:
+        "Invalid input. Please provide organizationID and a list of IDs.",
     });
   }
 
   try {
     console.log("Checking if Assurance grid exists...");
     // Vérifier si un grid pour Assurance existe déjà
-    const existingAssuranceGrid = await PriceGrids.findOne({
+    let assuranceGrid = await PriceGrids.findOne({
       where: {
         organizationID: organizationID,
-        gridName: 'Assurance'
-      }
+        gridName: "Assurance",
+      },
     });
 
     console.log("Checking if IPM grid exists...");
     // Vérifier si un grid pour IPM existe déjà
-    const existingIPMGrid = await PriceGrids.findOne({
+    let ipmGrid = await PriceGrids.findOne({
       where: {
         organizationID: organizationID,
-        gridName: 'IPM'
-      }
+        gridName: "IPM",
+      },
     });
 
-    if (existingAssuranceGrid || existingIPMGrid) {
-      return res.status(400).json({
-        status: 0,
-        message: 'Le nom du grille tarifaire existe déjà au sein de l\'organisation'
+    if (!assuranceGrid) {
+      console.log("Creating Assurance grid...");
+      // Créer le price grid pour Assurance si non existant
+      assuranceGrid = await PriceGrids.create({
+        organizationID: organizationID,
+        gridName: "Assurance",
+        description: "Price grid for Assurance",
+        effectiveDate: new Date(),
+        expiryDate: null,
+        lastModifiedDate: new Date(),
+        lastModifiedBy: lastModifiedBy,
+        isActive: true,
+        adjustmentType: "increasePercent",
+        adjustmentValue: 0,
       });
     }
 
-    console.log("Creating Assurance grid...");
-    // Créer le price grid pour Assurance
-    const assuranceGrid = await PriceGrids.create({
-      organizationID: organizationID,
-      gridName: 'Assurance',
-      description: 'Price grid for Assurance',
-      effectiveDate: new Date(),
-      expiryDate: null,
-      lastModifiedDate: new Date(),
-      lastModifiedBy: lastModifiedBy,
-      isActive: true,
-      adjustmentType: 'increasePercent',
-      adjustmentValue: 0
-    });
-
-    console.log("Creating IPM grid...");
-    // Créer le price grid pour IPM
-    const ipmGrid = await PriceGrids.create({
-      organizationID: organizationID,
-      gridName: 'IPM',
-      description: 'Price grid for IPM',
-      effectiveDate: new Date(),
-      expiryDate: null,
-      lastModifiedDate: new Date(),
-      lastModifiedBy: lastModifiedBy,
-      isActive: true,
-      adjustmentType: 'increasePercent',
-      adjustmentValue: 0
-    });
+    if (!ipmGrid) {
+      console.log("Creating IPM grid...");
+      // Créer le price grid pour IPM si non existant
+      ipmGrid = await PriceGrids.create({
+        organizationID: organizationID,
+        gridName: "IPM",
+        description: "Price grid for IPM",
+        effectiveDate: new Date(),
+        expiryDate: null,
+        lastModifiedDate: new Date(),
+        lastModifiedBy: lastModifiedBy,
+        isActive: true,
+        adjustmentType: "increasePercent",
+        adjustmentValue: 0,
+      });
+    }
 
     console.log("Fetching payment categories...");
     // Récupérer les catégories de paiement basées sur les IDs fournis
-    const paymentCategoryIds = prestations.map(item => item.id);
+    const paymentCategoryIds = prestations.map((item) => item.id);
     const paymentCategories = await PaymentCategory.findAll({
       where: {
-        id: paymentCategoryIds
-      }
+        id: paymentCategoryIds,
+      },
     });
 
-    console.log("Creating price grid details...");
-    // Parcourir chaque catégorie de paiement pour créer les détails des price grids
+    console.log("Creating or updating price grid details...");
+    // Parcourir chaque catégorie de paiement pour créer ou mettre à jour les détails des price grids
     for (const category of paymentCategories) {
-      const tiersPayant = await TiersPayant.findOne({ where: { code: category.cotation } });
+      const tiersPayant = await TiersPayant.findOne({
+        where: { code: category.cotation },
+      });
 
       if (tiersPayant) {
         const coefficient = parseFloat(category.coefficient) || 0;
         const prixAssurance = parseFloat(tiersPayant.prix_assurance) || 0;
         const prixIPM = parseFloat(tiersPayant.prix_ipm) || 0;
-        const adjustedPriceAssurance = Math.round(coefficient * prixAssurance) || 0;
+        const adjustedPriceAssurance =
+          Math.round(coefficient * prixAssurance) || 0;
         const adjustedPriceIPM = Math.round(coefficient * prixIPM) || 0;
 
-        // Créer les détails pour le grid Assurance
-        await PriceGridDetails.create({
-          gridID: assuranceGrid.gridID,
-          productID: category.id,
-          adjustedPrice: adjustedPriceAssurance,
-          adjustmentType: 'increasePercent',
-          adjustmentValue: 0,
-          effectiveDate: new Date(),
-          expiryDate: null
+        // Vérifier et ajouter uniquement les nouveaux productID pour Assurance
+        const existingAssuranceDetail = await PriceGridDetails.findOne({
+          where: {
+            gridID: assuranceGrid.gridID,
+            productID: category.id,
+          },
         });
 
-        // Créer les détails pour le grid IPM
+        if (!existingAssuranceDetail) {
+          console.log(
+            `Creating new Assurance detail for productID: ${category.id} with status: actived`
+          );
+          await PriceGridDetails.create({
+            gridID: assuranceGrid.gridID,
+            productID: category.id,
+            adjustedPrice: adjustedPriceAssurance,
+            adjustmentType: "increasePercent",
+            adjustmentValue: 0,
+            effectiveDate: new Date(),
+            expiryDate: null,
+            status: "actived",
+            organizationID: organizationID,
+          });
+        }
+
+        // Vérifier et ajouter uniquement les nouveaux productID pour IPM
+        const existingIPMDetail = await PriceGridDetails.findOne({
+          where: {
+            gridID: ipmGrid.gridID,
+            productID: category.id,
+          },
+        });
+
+        if (!existingIPMDetail) {
+          console.log(
+            `Creating new IPM detail for productID: ${category.id} with status: actived`
+          );
+          await PriceGridDetails.create({
+            gridID: ipmGrid.gridID,
+            productID: category.id,
+            adjustedPrice: adjustedPriceIPM,
+            adjustmentType: "increasePercent",
+            adjustmentValue: 0,
+            effectiveDate: new Date(),
+            expiryDate: null,
+            status: "actived",
+            organizationID: organizationID, // Mettre à jour le statut à "actived"
+          });
+        }
+      }
+    }
+
+    res.json({
+      status: 1,
+      message: "Price grids and details created or updated successfully",
+      data: {
+        assuranceGrid,
+        ipmGrid,
+      },
+    });
+  } catch (error) {
+    if (error.name === "SequelizeUniqueConstraintError") {
+      res.status(400).json({
+        status: 0,
+        message:
+          "Erreur de saisie en double. Le nom du grille tarifaire existe déjà au sein de l'organisation",
+        error: error.message,
+      });
+    } else {
+      console.error(
+        "Error creating or updating price grids and details:",
+        error
+      );
+      res.status(500).json({
+        status: 0,
+        message:
+          "Erreur lors de la création ou de la mise à jour des grilles de prix et des détails",
+        error: error.message,
+      });
+    }
+  }
+};
+
+exports.updatePriceGridDetails = async (req, res) => {
+  try {
+    const {
+      gridID,
+      gridName,
+      gridReference,
+      startDate,
+      endDate,
+      adjustmentType,
+      adjustmentValue,
+      details,
+      organizationID,
+      lastModifiedBy,
+    } = req.body;
+
+    console.log("req body ", req.body);
+
+    // Mettre à jour la grille de prix existante
+    const updatedPriceGrid = await PriceGrids.update(
+      {
+        organizationID: organizationID,
+        gridName: gridName,
+        description: gridReference,
+        effectiveDate: startDate || new Date(),
+        expiryDate: endDate || new Date(),
+        lastModifiedDate: new Date(),
+        lastModifiedBy: lastModifiedBy,
+        isActive: true,
+        adjustmentType: adjustmentType || "increasePercent",
+        adjustmentValue: adjustmentValue || 0,
+      },
+      {
+        where: { gridID: gridID },
+      }
+    );
+
+    if (!updatedPriceGrid) {
+      return res.status(404).json({
+        status: 0,
+        message: "Price Grid not found",
+      });
+    }
+
+    // Mettre à jour les détails existants de PriceGridDetails
+    for (const detail of details) {
+      const [updated] = await PriceGridDetails.update(
+        {
+          adjustedPrice: detail.adjustedPrice,
+          adjustmentType,
+          adjustmentValue,
+          effectiveDate: startDate
+            ? startDate
+            : moment().format("YYYY-MM-DD HH:mm:ss"),
+          expiryDate: endDate
+            ? endDate
+            : moment().format("YYYY-MM-DD HH:mm:ss"),
+          lastModifiedBy: detail.lastModifiedBy,
+        },
+        {
+          where: { detailID: details.detailID },
+        }
+      );
+
+      if (!updated) {
+        // Si aucune ligne n'a été mise à jour, cela signifie que la ligne n'existe pas et doit être créée
         await PriceGridDetails.create({
-          gridID: ipmGrid.gridID,
-          productID: category.id,
-          adjustedPrice: adjustedPriceIPM,
-          adjustmentType: 'increasePercent',
-          adjustmentValue: 0,
-          effectiveDate: new Date(),
-          expiryDate: null
+          gridID: gridID,
+          productID: detail.idpco,
+          adjustedPrice: detail.adjustedPrice,
+          adjustmentType,
+          adjustmentValue,
+          effectiveDate: startDate
+            ? startDate
+            : moment().format("YYYY-MM-DD HH:mm:ss"),
+          expiryDate: endDate
+            ? endDate
+            : moment().format("YYYY-MM-DD HH:mm:ss"),
+          lastModifiedBy: detail.lastModifiedBy,
         });
       }
     }
 
     res.json({
       status: 1,
-      message: 'Price grids and details created successfully',
-      data: {
-        assuranceGrid,
-        ipmGrid
-      }
+      message: "Price Grid and Details updated successfully",
     });
   } catch (error) {
-    if (error.name === 'SequelizeUniqueConstraintError') {
-      res.status(400).json({
-        status: 0,
-        message: 'Erreur de saisie en double. Le nom du grille tarifaire existe déjà au sein de l\'organisation',
-        error: error.message
-      });
-    } else {
-      console.error('Error creating price grids and details:', error);
-      res.status(500).json({ status: 0, message: 'Erreur lors de la création des grilles de prix et des détails', error: error.message });
-    }
+    res.status(500).json({
+      status: 0,
+      message: "Error updating price grid and details",
+      error: error.message,
+    });
   }
 };
 
+exports.getPrestationImported = async (req, res) => {
+  console.log("la recuperation de limport ", req.params.org_id);
+  try {
+    const Prestation = await Database.query(
+      `select id, name_service, name_specialite, prestation, pricegriddetails.status from payment_category 
+join setting_service_specialite on setting_service_specialite.idspe = payment_category.id_spe
+ join setting_service on setting_service_specialite.id_service = setting_service.idservice
+ join pricegriddetails on  pricegriddetails.productID = payment_category.id
+ where pricegriddetails.organizationID=${req.params.org_id} group by pricegriddetails.productID  order by pricegriddetails.detailID DESC`,
+      { type: Database.QueryTypes.SELECT }
+    );
+    if (Prestation === null) {
+      res.json({ status: 0, message: "No Data Found" });
+    } else {
+      res.json({
+        status: 1,
+        message: "Prestation Importation List",
+        data: Prestation,
+      });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+exports.updatePrestationStatus = async (req, res) => {
+  try {
+    console.log("Request received:", req.params, req.body); // Add logging
+    const { organizationID, productID } = req.params;
+    const { status } = req.body;
+
+    const updated = await PriceGridDetails.update(
+      { status },
+      {
+        where: {
+          organizationID,
+          productID,
+        },
+      }
+    );
+
+    if (updated[0] === 0) {
+      return res.status(404).json({
+        status: 0,
+        message: "PriceGridDetails not found or no update made",
+      });
+    }
+
+    res.json({
+      status: 1,
+      message: "Status updated successfully",
+    });
+  } catch (error) {
+    console.error("Error updating status:", error); // Add logging
+    res.status(500).json({
+      status: 0,
+      message: "Error updating status",
+      error: error.message,
+    });
+  }
+};

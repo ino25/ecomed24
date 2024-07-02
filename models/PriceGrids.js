@@ -20,7 +20,7 @@ const PriceGrids = sequelize.define('PriceGrids', {
     allowNull: false
   },
   adjustmentValue: {
-    type: DataTypes.DECIMAL(10, 2),
+    type: DataTypes.STRING,
     allowNull: true
   },
   description: {
