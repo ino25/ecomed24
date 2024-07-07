@@ -1539,7 +1539,7 @@ exports.getPriceGridDetailByGridID = async (req, res) => {
       join payment_category on payment_category.id=pricegriddetails.productID
       join setting_service_specialite on setting_service_specialite.idspe = payment_category.id_spe
       join setting_service on setting_service.idservice=setting_service_specialite.id_service
-      where pricegriddetails.gridID=${req.params.gridID} order by pricegriddetails.detailID desc`,
+      where pricegriddetails.gridID=${req.params.gridID} and pricegriddetails.status = 'actived' order by pricegriddetails.detailID desc`,
       { type: Database.QueryTypes.SELECT }
     );
     if (PriceGridDetailsAll === null) {
@@ -1598,6 +1598,7 @@ exports.addPriceGridDetails = async (req, res) => {
         : moment().format("YYYY-MM-DD HH:mm:ss"),
       expiryDate: endDate ? endDate : moment().format("YYYY-MM-DD HH:mm:ss"),
       lastModifiedBy: detail.lastModifiedBy,
+      status: 'actived',
     }));
 
     await PriceGridDetails.bulkCreate(priceGridDetails);
@@ -1839,8 +1840,16 @@ exports.updatePriceGridDetails = async (req, res) => {
 
     console.log("req body ", req.body);
 
+    // Vérifiez que gridID est défini
+    if (!gridID) {
+      return res.status(400).json({
+        status: 0,
+        message: "Missing gridID",
+      });
+    }
+
     // Mettre à jour la grille de prix existante
-    const updatedPriceGrid = await PriceGrids.update(
+    const [updatedPriceGrid] = await PriceGrids.update(
       {
         organizationID: organizationID,
         gridName: gridName,
@@ -1881,7 +1890,7 @@ exports.updatePriceGridDetails = async (req, res) => {
           lastModifiedBy: detail.lastModifiedBy,
         },
         {
-          where: { detailID: details.detailID },
+          where: { detailID: detail.detailID },
         }
       );
 
