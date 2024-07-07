@@ -42,6 +42,9 @@ router.post('/create-price-grids', organizationController.createOrUpdatePriceGri
 router.put('/update-price-grid-details', VerifyToken, organizationController.updatePriceGridDetails);
 router.get('/prestation/imported/:org_id', VerifyToken, organizationController.getPrestationImported);
 router.put('/update-prestation-status/:organizationID/:productID', VerifyToken, organizationController.updatePrestationStatus);
+router.post('/create-price-grids-details', VerifyToken, organizationController.createPriceGridDetails);
+router.get('/prestation/add/:org_id/:gridID', organizationController.getPrestationPriceGrids);
+
 
 
 

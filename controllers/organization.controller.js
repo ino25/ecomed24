@@ -1598,7 +1598,8 @@ exports.addPriceGridDetails = async (req, res) => {
         : moment().format("YYYY-MM-DD HH:mm:ss"),
       expiryDate: endDate ? endDate : moment().format("YYYY-MM-DD HH:mm:ss"),
       lastModifiedBy: detail.lastModifiedBy,
-      status: 'actived',
+      status: "actived",
+      organizationID: organizationID,
     }));
 
     await PriceGridDetails.bulkCreate(priceGridDetails);
@@ -1985,5 +1986,82 @@ exports.updatePrestationStatus = async (req, res) => {
       message: "Error updating status",
       error: error.message,
     });
+  }
+};
+
+exports.createPriceGridDetails = async (req, res) => {
+  const {
+    organizationID,
+    gridID,
+    adjustmentType,
+    adjustmentValue,
+    effectiveDate,
+    status,
+    pricegriddetails,
+  } = req.body;
+
+  if (
+    !organizationID ||
+    !gridID ||
+    !Array.isArray(pricegriddetails) ||
+    pricegriddetails.length === 0
+  ) {
+    return res.status(400).json({
+      status: 0,
+      message:
+        "Invalid input. Please provide organizationID, gridID, adjustmentType, adjustmentValue, effectiveDate, status and a list of pricegriddetails.",
+    });
+  }
+
+  try {
+    // Parcourir chaque détail de price grid pour créer les nouveaux détails
+    for (const detail of pricegriddetails) {
+      const { productID, adjustedPrice } = detail;
+
+      // Créer un nouveau détail de price grid
+      await PriceGridDetails.create({
+        gridID: gridID,
+        productID: productID,
+        adjustedPrice: adjustedPrice,
+        adjustmentType: adjustmentType,
+        adjustmentValue: adjustmentValue,
+        effectiveDate: effectiveDate,
+        expiryDate: null,
+        status: status,
+        organizationID: organizationID,
+      });
+    }
+
+    res.json({
+      status: 1,
+      message: "Price grid details created successfully",
+    });
+  } catch (error) {
+    console.error("Error creating price grid details:", error);
+    res.status(500).json({
+      status: 0,
+      message: "Error creating price grid details",
+      error: error.message,
+    });
+  }
+};
+
+exports.getPrestationPriceGrids = async (req, res) => {
+  try {
+    const Prestation = await Database.query(
+      `SELECT payment_category.prestation,pricegriddetails.* FROM pricegriddetails join payment_category on payment_category.id=pricegriddetails.productID WHERE organizationID = ${req.params.org_id} AND gridID != ${req.params.gridID} group by productID`,
+      { type: Database.QueryTypes.SELECT }
+    );
+    if (Prestation === null) {
+      res.json({ status: 0, message: "No Data Found" });
+    } else {
+      res.json({
+        status: 1,
+        message: "Prestation List Grid",
+        data: Prestation,
+      });
+    }
+  } catch (error) {
+    throw error;
   }
 };
