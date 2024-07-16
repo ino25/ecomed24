@@ -46,7 +46,11 @@ const PriceGrids = sequelize.define('PriceGrids', {
   isActive: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
-  }
+  },
+  isShared: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
 }, {
   tableName: 'priceGrids',
   timestamps: false

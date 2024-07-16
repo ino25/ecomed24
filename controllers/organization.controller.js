@@ -971,6 +971,7 @@ exports.getPriceGridByID = async (req, res) => {
         "lastModifiedBy",
         "adjustmentType",
         "adjustmentValue",
+        "isShared",
         [
           Sequelize.fn(
             "DATE_FORMAT",
@@ -1568,6 +1569,7 @@ exports.addPriceGridDetails = async (req, res) => {
       details,
       organizationID,
       lastModifiedBy,
+      isShared, // Ajouter isShared
     } = req.body;
 
     console.log("details .. ", details);
@@ -1583,6 +1585,7 @@ exports.addPriceGridDetails = async (req, res) => {
       isActive: true,
       adjustmentType: adjustmentType || "increasePercent",
       adjustmentValue: adjustmentValue || 0,
+      isShared: isShared ? 1 : 0, // Définir isShared en fonction de la valeur reçue
     });
     console.log("le body envoyé ", newPriceGrid);
 
@@ -1616,6 +1619,7 @@ exports.addPriceGridDetails = async (req, res) => {
     });
   }
 };
+
 
 exports.getPrestation = async (req, res) => {
   try {
@@ -1837,6 +1841,7 @@ exports.updatePriceGridDetails = async (req, res) => {
       details,
       organizationID,
       lastModifiedBy,
+      isShared, // Ajouter isShared
     } = req.body;
 
     console.log("req body ", req.body);
@@ -1862,6 +1867,7 @@ exports.updatePriceGridDetails = async (req, res) => {
         isActive: true,
         adjustmentType: adjustmentType || "increasePercent",
         adjustmentValue: adjustmentValue || 0,
+        isShared: isShared ? 1 : 0, // Ajouter isShared
       },
       {
         where: { gridID: gridID },
@@ -1926,6 +1932,7 @@ exports.updatePriceGridDetails = async (req, res) => {
     });
   }
 };
+
 
 exports.getPrestationImported = async (req, res) => {
   console.log("la recuperation de limport ", req.params.org_id);
@@ -2049,7 +2056,29 @@ exports.createPriceGridDetails = async (req, res) => {
 exports.getPrestationPriceGrids = async (req, res) => {
   try {
     const Prestation = await Database.query(
-      `SELECT payment_category.prestation,pricegriddetails.* FROM pricegriddetails join payment_category on payment_category.id=pricegriddetails.productID WHERE organizationID = ${req.params.org_id} AND gridID != ${req.params.gridID} group by productID`,
+      `SELECT 
+    payment_category.prestation, 
+    pricegriddetails.*
+FROM 
+    pricegriddetails
+JOIN 
+    payment_category 
+ON 
+    payment_category.id = pricegriddetails.productID
+WHERE 
+    pricegriddetails.organizationID = ${req.params.org_id}
+    AND pricegriddetails.gridID != ${req.params.gridID} 
+    AND pricegriddetails.productID NOT IN (
+        SELECT 
+            productID 
+        FROM 
+            pricegriddetails 
+        WHERE 
+            gridID = ${req.params.gridID}
+    ) 
+    AND pricegriddetails.status = 'actived'
+GROUP BY 
+    pricegriddetails.productID`,
       { type: Database.QueryTypes.SELECT }
     );
     if (Prestation === null) {
@@ -2065,3 +2094,40 @@ exports.getPrestationPriceGrids = async (req, res) => {
     throw error;
   }
 };
+
+// controllers/priceGridsController.js
+exports.updateIsShared = async (req, res) => {
+  try {
+    const { gridID } = req.params;
+    const { isShared } = req.body;
+
+    const updated = await PriceGrids.update(
+      { isShared },
+      {
+        where: {
+          gridID,
+        },
+      }
+    );
+
+    if (updated[0] === 0) {
+      return res.status(404).json({
+        status: 0,
+        message: "PriceGrid not found or no update made",
+      });
+    }
+
+    res.json({
+      status: 1,
+      message: "isShared updated successfully",
+    });
+  } catch (error) {
+    console.error("Error updating isShared:", error);
+    res.status(500).json({
+      status: 0,
+      message: "Error updating isShared",
+      error: error.message,
+    });
+  }
+};
+
