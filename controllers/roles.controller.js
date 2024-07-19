@@ -127,7 +127,7 @@ exports.getByID = async (req, res) => {
           model: RolePermissionsMap,
           attributes: ["id", "role_id", "op_id", "org_id", "status"],
           as: "permissions",
-          where: { status: 1 },
+          // where: { status: 1 },
         },
       ],
     });
