@@ -513,7 +513,7 @@ exports.getOrgPermissionByID = async (req, res) => {
         {
           model: OrgPermissionItems,
           attributes: ["id", "org_permissionid", "sp_id", "org_id", "status"],
-          where: { status: 1 },
+          // where: { status: 1 },
           as: "permissions",
         },
       ],

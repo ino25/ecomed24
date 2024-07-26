@@ -4,8 +4,8 @@
     "author": "Ecomed24",
     "private": true,
     "scripts": {
-        "dev": "nodemon ./bin/www",
-        "start": "node ./bin/www"
+        "dev": "nodemon app.js",
+        "start": "node app.js"
     },
     "dependencies": {
         "@types/express": "^4.17.1",

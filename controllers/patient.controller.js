@@ -288,6 +288,7 @@ const BASEURL = process.env.SITE_URL;
 const APP_URL = process.env.APP_URL;
 exports.getAllPatients = async (req, res) => {
   try {
+    let search = req.query.search;
     let offsetdata = parseInt(
       req.query.offset
         ? req.query.offset == undefined || req.query.offset == 1
@@ -304,8 +305,33 @@ exports.getAllPatients = async (req, res) => {
     if (isNaN(datalimit)) {
       datalimit = 5;
     }
+
+    let whereClause = {
+      id_organisation: req.org_id,
+    };
+
+    if (search && search.trim() !== "") {
+      whereClause = {
+        ...whereClause,
+        [Op.or]: [
+          Sequelize.where(
+            Sequelize.fn('concat', Sequelize.col('name'), ' ', Sequelize.col('last_name')),
+            {
+              [Op.like]: `%${search}%`
+            }
+          ),
+          { email: { [Op.like]: `%${search}%` } },
+          { phone: { [Op.like]: `%${search}%` } },
+          { unique_id: { [Op.like]: `%${search}%` } },
+        ],
+      };
+    }
+    
     const { count, rows } = await Patient.findAndCountAll({
-      where: { id_organisation: req.org_id },
+      where: {
+        id_organisation: req.org_id,
+        
+      },
     });
     PatientModal = await Patient.findAll({
       attributes: [
@@ -344,7 +370,7 @@ exports.getAllPatients = async (req, res) => {
       order: [["id", "DESC"]],
       limit: datalimit,
       offset: offsetdata,
-      where: { id_organisation: req.org_id },
+      where: whereClause,
     });
     if (PatientModal === null) {
       res.json({ status: 0, message: langCommon.nodatafound });
@@ -363,7 +389,7 @@ exports.getAllPatients = async (req, res) => {
 
 exports.updateUniqueID = async (req, res) => {
   try {
-    PatientModal = await Patient.findAll({});
+    PatientModal = await Patient.findAll({unique_id:null});
     if (PatientModal === null) {
       res.json({ status: 0, message: langCommon.nodatafound });
     } else {
@@ -807,6 +833,27 @@ exports.getAppontments = async (req, res) => {
     const { count, rows } = await Appointment.findAndCountAll({
       where: { patient: req.params.patient_id },
     });
+
+    let whereClause = {
+      patient: req.params.patient_id
+    };
+
+    // if (search && search.trim() !== "") {
+    //   whereClause = {
+    //     ...whereClause,
+    //     [Op.or]: [
+    //       Sequelize.where(
+    //         Sequelize.fn('concat', Sequelize.col('name'), ' ', Sequelize.col('last_name')),
+    //         {
+    //           [Op.like]: `%${search}%`
+    //         }
+    //       ),
+    //       { email: { [Op.like]: `%${search}%` } },
+    //       { phone: { [Op.like]: `%${search}%` } },
+    //       { unique_id: { [Op.like]: `%${search}%` } },
+    //     ],
+    //   };
+    // }
     AppointmentModal = await Appointment.findAll({
       attributes: [
         "id",
