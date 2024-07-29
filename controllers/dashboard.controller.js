@@ -11,8 +11,9 @@ const nodemailer = require("nodemailer");
 
 var User = require("../models/User");
 var District = require("../models/District");
-var Organisation = require("../models/Organisation");
+var Appointment = require("../models/Appointment");
 var Patient = require("../models/Patient");
+var Payment = require("../models/Payment");
 
 //////Modal Relationship
 
@@ -80,8 +81,8 @@ exports.getTotals = async (req, res) => {
     // let startDate, endDate;
     if (date_type) {
       if (date_type == "date_range") {
-          const startDate = moment(from_date).format("YYYY-MM-DD 00:00:00");
-          const endDate = moment(to_date).format("YYYY-MM-DD 00:00:00");
+        const startDate = moment(from_date).format("YYYY-MM-DD 00:00:00");
+        const endDate = moment(to_date).format("YYYY-MM-DD 00:00:00");
         conditions.createdAt = {
           [Op.between]: [startDate, endDate],
         };
@@ -92,16 +93,29 @@ exports.getTotals = async (req, res) => {
           [Op.between]: [startDate, endDate],
         };
       }
+    } else { 
+      const { startDate, endDate } = getDateRange('this_month');
+        conditions.createdAt = {
+          [Op.between]: [startDate, endDate],
+        };
     }
     
     let data = {};
     
     data.total_patients = await Patient.count({ where: { status:1} });
     data.new_patients = await Patient.count({ where: conditions });
-    data.scheduled_appointment = await Patient.count({ where: conditions });
-    data.completed_appointment = await Patient.count({ where: conditions });
-    data.revenue = await Patient.count({ where: conditions });
-    data.outstanding_payments = await Patient.count({ where: conditions });
+    data.scheduled_appointment = await Appointment.count({ where: conditions });
+    data.completed_appointment = await Appointment.count({ where: {status:2,createdAt:conditions.createdAt} });
+    data.revenue = await Payment.sum('amount_received');
+
+    const outstanding = await Payment.findOne({
+            attributes: [
+                [Sequelize.fn('SUM', Sequelize.literal('(gross_total + frais_service) - amount_received')), 'outstanding_payments']
+            ],
+            raw: true
+    });
+    // console.log(totalExpression);
+    data.outstanding_payments = outstanding.outstanding_payments;
     if (data === null) {
       res.json({ status: 0, message: langCommon.nodatafound });
     } else {
