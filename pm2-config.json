@@ -23,9 +23,9 @@
                 "DOCMOSIS_RenderURL": "https://eu.dws3.docmosis.com/api/render",
                 "DOCMOSIS_ACCESSKEY": "ODBiYzNkNzItYWE2Ni00ZGIzLWE0YzgtY2MzYjYzODkwZmRjOjA4MjQ5MjQ",
                 "MFROM": "no-reply@ecomed24.com",
-                "MHOST": "smtp.domain.com",
-                "MUSER": "no-reply@ecomed24.com",
-                "MPASS": "ec0SYstem24@",
+                "MHOST": "email-smtp.us-east-1.amazonaws.com",
+                "MUSER": "AKIA3YNYOJUCTQI3WO5Z",
+                "MPASS": "BB7J5UtFSNzFyBJ5UwbloWNXadXn3uDAdkUJx38+UCUQ",
                 "MPORT": "587"
             }
         }
