@@ -35,12 +35,13 @@ const DocumentUpload = multer({ storage: Documentstorage });
 console.log(DocumentUpload);
 router.get('/',VerifyToken, patientController.getAllPatients);
 router.get('/update-unique-id',VerifyToken, patientController.updateUniqueID);
-
+router.get('/patient-all/:orgId', patientController.getPatient);
 
 const PProfileUpload = upload.fields([{ name: 'profile', maxCount: 1 }]);
 router.post('/add',[VerifyToken,PProfileUpload], patientController.addPatient);
 router.get('/general-info/:patient_id',VerifyToken, patientController.getGeneralInfo);
 router.post('/general-info-update/:patient_id',[VerifyToken,PProfileUpload], patientController.updateGeneralInfo);
+router.get('/general-details-patient/:id', patientController.getDetailsPatient);
 
 
 // Appointments
@@ -78,6 +79,7 @@ router.delete('/dependant/delete/:id',VerifyToken, patientController.deleteDepen
 // Assurance
 router.get('/get-assurance/:patient_id',VerifyToken, patientController.getAssurance);
 router.get('/get-assurance/by-id/:assurance_id',VerifyToken, patientController.getAssuranceByID);
+router.get('/get-assurance/by-infos/:assurance_id', patientController.getAssuranceByID);
 router.get('/assurance/organizations',VerifyToken, patientController.getAssuranceOrg);
 router.post('/assurance/add',VerifyToken, patientController.addAssurance);
 router.patch('/assurance/update/:id',VerifyToken, patientController.updateAssurance);

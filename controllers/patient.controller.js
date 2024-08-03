@@ -44,6 +44,7 @@ var TestRequests = require("../models/TestRequests");
 var Illness = require("../models/Illness");
 var NosologieIllness = require("../models/NosologieIllness");
 var IllnessConsultation = require("../models/IllnessConsultation");
+var PartenariatSanteAssurance = require("../models/PartenariatSanteAssurance");
 const multer = require("multer");
 const fs = require("fs");
 const Docmosis = require("../helpers/DocmosisHelper");
@@ -599,7 +600,19 @@ exports.addPatient = async (req, res) => {
         },
         { where: { id: PatientModal.id } }
       );
-      res.json({ status: 1, message: langPatientModule.patientAdd, data: "" });
+      res.json({
+        status: 1,
+        message: langPatientModule.patientAdd,
+        data: {
+          id: PatientModal.id,
+          name: PatientModal.name,
+          last_name: PatientModal.last_name,
+          unique_id: PatientModal.country +
+          "01" +
+          PatientModal.id_organisation +
+          PatientModal.id,
+        },
+      });
     }
   } catch (error) {
     throw error;
@@ -617,6 +630,7 @@ exports.getGeneralInfo = async (req, res) => {
         "last_name",
         ["patient_id", "code"],
         ["sex", "gender"],
+        "sex",
         "age",
         "email",
         "phone",
@@ -707,6 +721,66 @@ exports.getGeneralInfo = async (req, res) => {
         data: PatientModal,
         next_appointment: next_appointment,
         last_appointment: last_appointment,
+      });
+    }
+  } catch (error) {
+    res.json({ status: 0, message: error, data: "" });
+    // throw error;
+  }
+};
+
+exports.getDetailsPatient = async (req, res) => {
+  try {
+    let getData = {};
+    PatientModal = await Patient.findOne({
+      attributes: [
+        "id",
+        "unique_id",
+        "name",
+        "last_name",
+        ["patient_id", "code"],
+        ["sex", "gender"],
+        "age",
+        "email",
+        "phone",
+        "address",
+        "country",
+        "region",
+        "district",
+        ["registration_time", "register"],
+        "grade",
+        "estCivil",
+        "passport",
+        "matricule",
+        ["bloodgroup", "blood_type"],
+        "birthdate",
+        ["birth_position", "birth_place"],
+        "religion",
+        "img_url",
+        ["nom_contact", "emergency_contact_name"],
+        ["phone_contact", "emergency_contact_no"],
+      ],
+      where: { id: req.params.id },
+    });
+    // console.log(PatientModal.birthdate);
+    // PatientModal.birthdate = moment(PatientModal.birthdate).format('d/m/Y')
+    // console.log(PatientModal);
+    if (PatientModal === null) {
+      res.json({ status: 0, message: langCommon.nodatafound });
+    } else {
+      if (PatientModal.img_url) {
+        PatientModal.img_url =
+          APP_URL + "/uploads/imgUsers/" + PatientModal.img_url;
+      } else {
+        PatientModal.img_url =
+          APP_URL + "/uploads/user-profile-placeholder.png";
+      }
+
+      // console.log(PatientModal.dataValues);
+      res.json({
+        status: 1,
+        message: langPatientModule.patientGeneralInfo,
+        data: PatientModal,
       });
     }
   } catch (error) {
@@ -2266,6 +2340,7 @@ exports.getAssuranceByID = async (req, res) => {
   try {
     let getData = [];
     getData.push(req.params.assurance_id);
+    console.log("parametre id assurance", req.params.assurance_id);
     // PatientRelationModal = await PatientRelation.findAll({where: {id: req.params.id}});
     PatientMutuelleModal = await PatientMutuelle.findOne({
       attributes: [
@@ -5785,6 +5860,33 @@ exports.getPaymentDepositLogs = async (req, res) => {
         message: langPatientModule.payment.paymentdepositlogs,
         data: PatientDepositModal,
         total: count,
+      });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+exports.getPatient = async (req, res) => {
+  try {
+    patientAll = await Patient.findAll({
+      attributes: [
+        "id",
+        "name",
+        "last_name",
+        "phone",
+        "patient_id",
+        "unique_id",
+      ],
+      where: { id_organisation: req.params.orgId },
+      order: [["id", "DESC"]],
+    });
+    if (patientAll === null) {
+      res.json({ status: 0, message: "No Data Found" });
+    } else {
+      res.json({
+        status: 1,
+        message: "Patient List",
+        data: patientAll,
       });
     }
   } catch (error) {

@@ -45,6 +45,9 @@ router.put('/update-prestation-status/:organizationID/:productID', VerifyToken, 
 router.post('/create-price-grids-details', VerifyToken, organizationController.createPriceGridDetails);
 router.get('/prestation/add/:org_id/:gridID', organizationController.getPrestationPriceGrids);
 router.put('/update-prestation-isshared/:gridID', VerifyToken, organizationController.updateIsShared);
+router.get('/get-price-grids-shared/:orgId', organizationController.getPriceGridShareOrganisation);
+router.get('/get-assurance-by-organization/:orgId', organizationController.getAssuranceByOrganisation);
+
 
 
 

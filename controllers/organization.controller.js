@@ -21,7 +21,7 @@ var PaymentCategory = require("../models/PaymentCategory");
 const multer = require("multer");
 const fs = require("fs");
 const formidable = require("formidable");
-
+var PartenariatSanteAssurance = require("../models/PartenariatSanteAssurance.js");
 var SettingServiceSpecialite = require("../models/SettingServiceSpecialite");
 var PaymentCategoryOrganisation = require("../models/PaymentCategoryOrganisation");
 var PriceGrids = require("../models/PriceGrids");
@@ -1620,7 +1620,6 @@ exports.addPriceGridDetails = async (req, res) => {
   }
 };
 
-
 exports.getPrestation = async (req, res) => {
   try {
     const Prestation = await Database.query(
@@ -1933,7 +1932,6 @@ exports.updatePriceGridDetails = async (req, res) => {
   }
 };
 
-
 exports.getPrestationImported = async (req, res) => {
   console.log("la recuperation de limport ", req.params.org_id);
   try {
@@ -2128,6 +2126,66 @@ exports.updateIsShared = async (req, res) => {
       message: "Error updating isShared",
       error: error.message,
     });
+  }
+};
+exports.getPriceGridShareOrganisation = async (req, res) => {
+  try {
+    PriceGridsAll = await PriceGrids.findAll({
+      attributes: [
+        "gridID",
+        "gridName",
+        "isShared",
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("effectiveDate"),
+            "%d-%m-%Y %H:%i:%s"
+          ),
+          "effectiveDate",
+        ],
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("lastModifiedDate"),
+            "%d-%m-%Y %H:%i:%s"
+          ),
+          "lastModifiedDate",
+        ],
+      ],
+      where: { organizationID: req.params.orgId, isShared: "1" },
+      order: [["gridID", "DESC"]],
+    });
+    if (PriceGridsAll === null) {
+      res.json({ status: 0, message: "No Data Found" });
+    } else {
+      res.json({
+        status: 1,
+        message: "Price Grid List",
+        data: PriceGridsAll,
+      });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+exports.getAssuranceByOrganisation = async (req, res) => {
+  try {
+    const Assurance = await Database.query(
+      `select organisation.id, organisation.nom from partenariat_sante_assurance join organisation on organisation.id = partenariat_sante_assurance.id_organisation_assurance where partenariat_sante_assurance.id_organisation_sante = ${req.params.orgId}`,
+      { type: Database.QueryTypes.SELECT }
+    );
+    if (Assurance === null) {
+      res.json({ status: 0, message: "No Data Found" });
+    } else {
+      res.json({
+        status: 1,
+        message: "Assurance List Organisation",
+        data: Assurance,
+      });
+    }
+  } catch (error) {
+    throw error;
   }
 };
 
