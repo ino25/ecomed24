@@ -4287,7 +4287,7 @@ exports.addClinicalNotes = async (req, res) => {
         org_id: req.org_id,
         clinical_id: ClinicalNotesModal.id,
         disease_id: desease.id,
-        name: desease.name,
+        name: desease.desease_name,
         type: "dci",
         status: 1,
         added_by: req.userId,
@@ -4300,7 +4300,7 @@ exports.addClinicalNotes = async (req, res) => {
         org_id: req.org_id,
         clinical_id: ClinicalNotesModal.id,
         disease_id: desease.id,
-        name: desease.name,
+        name: desease.desease_name,
         type: "nosologie",
         status: 1,
         added_by: req.userId,
@@ -5102,7 +5102,7 @@ exports.addPrescription = async (req, res) => {
     PatientModal = await Patient.findOne({
       where: { id: req.body.patient_id },
     });
-    const medicins = req.body.medicin;
+    const medicins = JSON.parse(req.body.medicin);
     PrescriptionsModal = await Prescriptions.create({
       patient_id: req.body.patient_id,
       org_id: req.org_id,
@@ -5113,7 +5113,7 @@ exports.addPrescription = async (req, res) => {
       patient_dob: PatientModal.birthdate,
 
       advice: req.body.advice,
-      medicin: req.body.medicin,
+      medicin: JSON.parse(req.body.medicin),
 
       status: 1,
       added_by: req.userId,
@@ -5278,7 +5278,7 @@ exports.addLabTest = async (req, res) => {
   try {
     let getData = [],
       results;
-    const reports = req.body.reports;
+    const reports = JSON.parse(req.body.reports);
     PatientModal = await Patient.findOne({
       where: { id: req.body.patient_id },
     });
@@ -5446,13 +5446,13 @@ exports.addImagingRequest = async (req, res) => {
     PatientModal = await Patient.findOne({
       where: { id: req.body.patient_id },
     });
-    const reports = req.body.reports;
+    const reports = JSON.parse(req.body.reports);
     TestRequestsModal = await TestRequests.create({
       patient_id: req.body.patient_id,
       org_id: req.org_id,
       type: "imaging",
       advice: req.body.advice,
-      reports: req.body.reports,
+      reports: JSON.parse(req.body.reports),
       status: 0,
       added_by: req.userId,
     });

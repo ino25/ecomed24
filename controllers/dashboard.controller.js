@@ -246,7 +246,8 @@ exports.getNosologieReport = async (req, res) => {
             COUNT(CASE WHEN p.age >= 60 AND p.sex = 'Masculin' THEN 1 END) AS '60 ans & + M',
             COUNT(CASE WHEN p.age >= 60 AND p.sex = 'Feminin' THEN 1 END) AS '60 ans & + F',
             COUNT(CASE WHEN p.age IS NULL AND p.sex = 'Masculin' THEN 1 END) AS 'Age ND M',
-            COUNT(CASE WHEN p.age IS NULL AND p.sex = 'Feminin' THEN 1 END) AS 'Age ND F'
+            COUNT(CASE WHEN p.age IS NULL AND p.sex = 'Feminin' THEN 1 END) AS 'Age ND F',
+            COUNT(*) AS 'TOTAL'
         FROM (
             SELECT
                 name,
