@@ -478,7 +478,8 @@ async function dataPrepare(type, org_id, signature, id, userId) {
         PrescriptionsModal = await Prescriptions.findOne({
           where: { id: id },
         });
-        medicinDbList = PrescriptionsModal.medicin;
+        // console.log(JSON.parse(PrescriptionsModal.medicin));
+        const medicinDbList = PrescriptionsModal.medicin;
         const MedicinListData = medicinDbList.map((medicine) => {
           return {
             id: medicine.id,
