@@ -14,6 +14,7 @@ var Patient = require("../models/Patient");
 var Organisation = require("../models/Organisation");
 const multer = require("multer");
 const fs = require("fs");
+var Patient = require("../models/Patient");
 var Doctor = require("../models/Doctor");
 var SettingService = require("../models/SettingService");
 var TestRequests = require("../models/TestRequests");
@@ -24,6 +25,80 @@ var Email = require("../models/Email");
 var AutoEmailTemplate = require("../models/AutoEmailTemplate");
 const BASEURL = process.env.SITE_URL;
 const BASEPATH = process.env.BASE_PATH;
+
+exports.getPatients = async (req, res) => {
+  try {
+    let search = req.query.search;
+
+    let whereClause = {
+      id_organisation: req.org_id,
+    };
+
+    if (search && search.trim() !== "") {
+      whereClause = {
+        ...whereClause,
+        [Op.or]: [
+          Sequelize.where(
+            Sequelize.fn(
+              "concat",
+              Sequelize.col("name"),
+              " ",
+              Sequelize.col("last_name")
+            ),
+            {
+              [Op.like]: `%${search}%`,
+            }
+          ),
+          { email: { [Op.like]: `%${search}%` } },
+          { phone: { [Op.like]: `%${search}%` } },
+          { unique_id: { [Op.like]: `%${search}%` } },
+        ],
+      };
+    }
+
+    const { count, rows } = await Patient.findAndCountAll({
+      where: {
+        id_organisation: req.org_id,
+      },
+    });
+    PatientModal = await Patient.findAll({
+      attributes: [
+        "id",
+        "unique_id",
+        [
+          Sequelize.fn(
+            "CONCAT",
+            Sequelize.col(`name`),
+            " ",
+            Sequelize.col(`last_name`)
+          ),
+          "full_name",
+        ],
+
+        ["patient_id", "code"],
+        ["sex", "gender"],
+        "age",
+        "email",
+        "phone",
+      ],
+      order: [["id", "DESC"]],
+      where: whereClause,
+      limit: 20,
+    });
+    if (PatientModal === null) {
+      res.json({ status: 0, message: langCommon.nodatafound });
+    } else {
+      res.json({
+        status: 1,
+        message: "Patient Petched",
+        data: PatientModal,
+        total: count,
+      });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
 exports.getDoctorsList = async (req, res) => {
   try {
     let getData = [];

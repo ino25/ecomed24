@@ -3,7 +3,7 @@ var router = express.Router();
 const VerifyToken = require("./VerifyToken");
 
 const helperController = require("../controllers/helper.controller");
-
+router.get("/get-patients", VerifyToken, helperController.getPatients);
 router.get("/get-doctors", VerifyToken, helperController.getDoctorsList);
 router.get("/get-services", VerifyToken, helperController.getServicesList);
 

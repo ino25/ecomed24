@@ -1404,13 +1404,9 @@ exports.getReceiptInvoicePayments = async (req, res) => {
         items[i][0] = Pycategory.name;
       }
       let amount = items[i][1];
-      items[i][1] =
-        parseInt(amount).toFixed(1) + " " + SettingsModalAll.currency;
+      items[i][1] = parseInt(amount).toFixed(1);
 
-      items[i][3] =
-        parseInt(amount) * parseInt(items[i][3]) +
-        " " +
-        SettingsModalAll.currency;
+      items[i][3] = parseInt(amount) * parseInt(items[i][3]);
     }
     data.items = items;
     console.log(items);

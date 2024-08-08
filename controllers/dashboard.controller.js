@@ -11,6 +11,7 @@ const nodemailer = require("nodemailer");
 
 var User = require("../models/User");
 var District = require("../models/District");
+var Region = require("../models/Region");
 var Appointment = require("../models/Appointment");
 var Patient = require("../models/Patient");
 var Payment = require("../models/Payment");
@@ -71,7 +72,7 @@ function getDateRange(dateType) {
 exports.getTotals = async (req, res) => {
   try {
     const { date_type, from_date, to_date } = req.query;
-
+    const { startDate, endDate } = getDateRange("this_month");
     // Initialize an empty object to store dynamic conditions
     let conditions = {};
     // conditions.patient_id = req.params.patient_id;
@@ -97,16 +98,26 @@ exports.getTotals = async (req, res) => {
         [Op.between]: [startDate, endDate],
       };
     }
-
+    conditions.id_organisation = req.org_id;
     let data = {};
 
-    data.total_patients = await Patient.count({ where: { status: 1 } });
+    data.total_patients = await Patient.count({
+      where: { status: 1, id_organisation: req.org_id },
+    });
     data.new_patients = await Patient.count({ where: conditions });
     data.scheduled_appointment = await Appointment.count({ where: conditions });
     data.completed_appointment = await Appointment.count({
-      where: { status: 2, createdAt: conditions.createdAt },
+      where: {
+        status: 2,
+        createdAt: {
+          [Op.between]: [startDate, endDate],
+        },
+        id_organisation: req.org_id,
+      },
     });
-    data.revenue = await Payment.sum("amount_received");
+    data.revenue = await Payment.sum("amount_received", {
+      where: { id_organisation: req.org_id },
+    });
 
     const outstanding = await Payment.findOne({
       attributes: [
@@ -118,6 +129,7 @@ exports.getTotals = async (req, res) => {
           "outstanding_payments",
         ],
       ],
+      where: { id_organisation: req.org_id },
       raw: true,
     });
     // console.log(totalExpression);
@@ -159,15 +171,63 @@ exports.getPatientDemographic = async (req, res) => {
 
     let data = {};
     const ageRanges = [
-      { label: "0-1 an", condition: { age: { [Op.between]: [0, 1] } } },
-      { label: "1-4 ans", condition: { age: { [Op.between]: [1, 4] } } },
-      { label: "5-14 ans", condition: { age: { [Op.between]: [5, 14] } } },
-      { label: "15-19 ans", condition: { age: { [Op.between]: [15, 19] } } },
-      { label: "20-25 ans", condition: { age: { [Op.between]: [20, 25] } } },
-      { label: "26-49 ans", condition: { age: { [Op.between]: [26, 49] } } },
-      { label: "50-59 ans", condition: { age: { [Op.between]: [50, 59] } } },
-      { label: "60 ans & +", condition: { age: { [Op.gte]: 60 } } },
-      { label: "Age ND", condition: { age: null } }, // Adjust this condition as needed
+      {
+        label: "0-1 an",
+        condition: {
+          age: { [Op.between]: [0, 1] },
+          id_organisation: req.org_id,
+        },
+      },
+      {
+        label: "1-4 ans",
+        condition: {
+          age: { [Op.between]: [1, 4] },
+          id_organisation: req.org_id,
+        },
+      },
+      {
+        label: "5-14 ans",
+        condition: {
+          age: { [Op.between]: [5, 14] },
+          id_organisation: req.org_id,
+        },
+      },
+      {
+        label: "15-19 ans",
+        condition: {
+          age: { [Op.between]: [15, 19] },
+          id_organisation: req.org_id,
+        },
+      },
+      {
+        label: "20-25 ans",
+        condition: {
+          age: { [Op.between]: [20, 25] },
+          id_organisation: req.org_id,
+        },
+      },
+      {
+        label: "26-49 ans",
+        condition: {
+          age: { [Op.between]: [26, 49] },
+          id_organisation: req.org_id,
+        },
+      },
+      {
+        label: "50-59 ans",
+        condition: {
+          age: { [Op.between]: [50, 59] },
+          id_organisation: req.org_id,
+        },
+      },
+      {
+        label: "60 ans & +",
+        condition: { age: { [Op.gte]: 60 }, id_organisation: req.org_id },
+      },
+      {
+        label: "Age ND",
+        condition: { age: null, id_organisation: req.org_id },
+      }, // Adjust this condition as needed
     ];
 
     const patiet_age_data = await Promise.all(
@@ -179,17 +239,41 @@ exports.getPatientDemographic = async (req, res) => {
       })
     );
 
-    const districtData = await District.findAll({});
+    // const districtData = await Region.findAll({});
 
+    // const patient_district_data = await Promise.all(
+    //   districtData.map(async (range) => {
+    //     const count = await Patient.count({
+    //       where: { region: range.id, id_organisation: req.org_id },
+    //     });
+
+    //     return { label: range.name, count: count };
+    //   })
+    // );
+
+    const patient_region = await Patient.findAll({
+      attributes: [
+        "region",
+        [Sequelize.fn("COUNT", Sequelize.col("id")), "count"],
+      ],
+      group: "region",
+      raw: true,
+      where: { id_organisation: req.org_id },
+    });
+    //console.log(patient_region);
     const patient_district_data = await Promise.all(
-      districtData.map(async (range) => {
-        const count = await Patient.count({
-          where: { district: range.id },
-        });
-
-        return { label: range.name, count: count };
+      patient_region.map(async (range) => {
+        if (range.region === "") {
+          return { label: "Unknown", count: range.count };
+        } else {
+          const regionData = await Region.findOne({
+            where: { id: range.region },
+          });
+          return { label: regionData.name, count: range.count };
+        }
       })
     );
+
     console.log(patient_district_data);
 
     const genders = await Patient.findAll({
@@ -198,6 +282,7 @@ exports.getPatientDemographic = async (req, res) => {
         [Sequelize.fn("COUNT", Sequelize.col("id")), "count"],
       ],
       group: "sex",
+      where: { id_organisation: req.org_id },
     });
 
     const patient_gender_data = genders.map((gender) => ({
@@ -225,7 +310,7 @@ exports.getPatientDemographic = async (req, res) => {
 exports.getNosologieReport = async (req, res) => {
   try {
     const { date_type, from_date, to_date } = req.query;
-
+    // req.org_id;
     const sql = `
         SELECT
             sub.name,
@@ -254,16 +339,18 @@ exports.getNosologieReport = async (req, res) => {
                 COUNT(*) as disease_count
             FROM
                 clinical_desease
+                WHERE clinical_desease.type='nosologie'
             GROUP BY
                 name
             ORDER BY
                 disease_count DESC
-            LIMIT 5
+            LIMIT 50
         ) sub
         INNER JOIN
             clinical_desease d ON sub.name = d.name
         INNER JOIN
             patient p ON p.id = d.patient_id
+        WHERE d.type='nosologie'
         GROUP BY
             sub.name
     `;
