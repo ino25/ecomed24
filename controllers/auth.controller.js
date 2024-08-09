@@ -474,3 +474,14 @@ exports.AccountActivation = async (req, res) => {
     throw error;
   }
 };
+
+exports.getAuthcheck = async (req, res) => {
+  try {
+    res.json({
+      status: 1,
+      message: "token_valid",
+    });
+  } catch (error) {
+    throw error;
+  }
+};
