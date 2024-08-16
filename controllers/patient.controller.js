@@ -311,6 +311,7 @@ exports.getAllPatients = async (req, res) => {
 
     let whereClause = {
       id_organisation: req.org_id,
+      parent_id: null,
     };
 
     if (search && search.trim() !== "") {
@@ -338,6 +339,7 @@ exports.getAllPatients = async (req, res) => {
     const { count, rows } = await Patient.findAndCountAll({
       where: {
         id_organisation: req.org_id,
+        parent_id: null,
       },
     });
     PatientModal = await Patient.findAll({

@@ -64,22 +64,18 @@ exports.getPatients = async (req, res) => {
     PatientModal = await Patient.findAll({
       attributes: [
         "id",
-        "unique_id",
         [
-          Sequelize.fn(
-            "CONCAT",
-            Sequelize.col(`name`),
-            " ",
-            Sequelize.col(`last_name`)
-          ),
-          "full_name",
+          Sequelize.literal(`
+        CASE
+          WHEN name IS NOT NULL AND name != '' AND last_name IS NOT NULL AND last_name != '' AND unique_id IS NOT NULL AND unique_id != '' 
+          THEN CONCAT(name, ' ', last_name, ' (', unique_id, ')')
+          WHEN name IS NOT NULL AND name != '' AND last_name IS NOT NULL AND last_name != ''
+          THEN CONCAT(name, ' ', last_name)
+          ELSE NULL
+        END
+      `),
+          "label",
         ],
-
-        ["patient_id", "code"],
-        ["sex", "gender"],
-        "age",
-        "email",
-        "phone",
       ],
       order: [["id", "DESC"]],
       where: whereClause,

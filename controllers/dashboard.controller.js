@@ -99,13 +99,22 @@ exports.getTotals = async (req, res) => {
       };
     }
     conditions.id_organisation = req.org_id;
+    conditions.parent_id = null;
     let data = {};
 
     data.total_patients = await Patient.count({
-      where: { status: 1, id_organisation: req.org_id },
+      where: { status: 1, id_organisation: req.org_id, parent_id: null },
     });
     data.new_patients = await Patient.count({ where: conditions });
-    data.scheduled_appointment = await Appointment.count({ where: conditions });
+    data.scheduled_appointment = await Appointment.count({
+      where: {
+        status: 2,
+        createdAt: {
+          [Op.between]: [startDate, endDate],
+        },
+        id_organisation: req.org_id,
+      },
+    });
     data.completed_appointment = await Appointment.count({
       where: {
         status: 2,
@@ -176,6 +185,7 @@ exports.getPatientDemographic = async (req, res) => {
         condition: {
           age: { [Op.between]: [0, 1] },
           id_organisation: req.org_id,
+          parent_id: null,
         },
       },
       {
@@ -183,6 +193,7 @@ exports.getPatientDemographic = async (req, res) => {
         condition: {
           age: { [Op.between]: [1, 4] },
           id_organisation: req.org_id,
+          parent_id: null,
         },
       },
       {
@@ -190,6 +201,7 @@ exports.getPatientDemographic = async (req, res) => {
         condition: {
           age: { [Op.between]: [5, 14] },
           id_organisation: req.org_id,
+          parent_id: null,
         },
       },
       {
@@ -197,6 +209,7 @@ exports.getPatientDemographic = async (req, res) => {
         condition: {
           age: { [Op.between]: [15, 19] },
           id_organisation: req.org_id,
+          parent_id: null,
         },
       },
       {
@@ -204,6 +217,7 @@ exports.getPatientDemographic = async (req, res) => {
         condition: {
           age: { [Op.between]: [20, 25] },
           id_organisation: req.org_id,
+          parent_id: null,
         },
       },
       {
@@ -211,6 +225,7 @@ exports.getPatientDemographic = async (req, res) => {
         condition: {
           age: { [Op.between]: [26, 49] },
           id_organisation: req.org_id,
+          parent_id: null,
         },
       },
       {
@@ -218,15 +233,20 @@ exports.getPatientDemographic = async (req, res) => {
         condition: {
           age: { [Op.between]: [50, 59] },
           id_organisation: req.org_id,
+          parent_id: null,
         },
       },
       {
         label: "60 ans & +",
-        condition: { age: { [Op.gte]: 60 }, id_organisation: req.org_id },
+        condition: {
+          age: { [Op.gte]: 60 },
+          id_organisation: req.org_id,
+          parent_id: null,
+        },
       },
       {
         label: "Age ND",
-        condition: { age: null, id_organisation: req.org_id },
+        condition: { age: null, id_organisation: req.org_id, parent_id: null },
       }, // Adjust this condition as needed
     ];
 
@@ -258,20 +278,28 @@ exports.getPatientDemographic = async (req, res) => {
       ],
       group: "region",
       raw: true,
-      where: { id_organisation: req.org_id },
+      where: { id_organisation: req.org_id, parent_id: null },
     });
     //console.log(patient_region);
     const patient_district_data = await Promise.all(
       patient_region.map(async (range) => {
+        let data = null;
         if (range.region === "") {
-          return { label: "Unknown", count: range.count };
+          data = { label: "Unknown", count: range.count };
         } else {
           const regionData = await Region.findOne({
             where: { id: range.region },
           });
-          return { label: regionData.name, count: range.count };
+          if (regionData) {
+            data = { label: regionData.name, count: range.count };
+          }
         }
+        return data;
       })
+    );
+
+    const filtered_patient_district_data = patient_district_data.filter(
+      (item) => item !== null
     );
 
     console.log(patient_district_data);
@@ -282,7 +310,7 @@ exports.getPatientDemographic = async (req, res) => {
         [Sequelize.fn("COUNT", Sequelize.col("id")), "count"],
       ],
       group: "sex",
-      where: { id_organisation: req.org_id },
+      where: { id_organisation: req.org_id, parent_id: null },
     });
 
     const patient_gender_data = genders.map((gender) => ({
@@ -290,7 +318,7 @@ exports.getPatientDemographic = async (req, res) => {
       count: gender.dataValues.count,
     }));
     data.patiet_age_data = patiet_age_data;
-    data.patient_district_data = patient_district_data;
+    data.patient_district_data = filtered_patient_district_data;
     data.patient_gender_data = patient_gender_data;
 
     if (data === null) {
