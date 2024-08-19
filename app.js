@@ -10,18 +10,28 @@ const cron = require("node-cron");
 require("dotenv/config");
 const sequelize = require("./config").sequelize;
 let options = {};
-let http;
-// const { emailSchedule } = require("./controllers/cron.controller");
-// cron.schedule("*/5 * * * * *", emailSchedule);
+let protocol;
+const http = require("http");
+const https = require("https");
+const fs = require("fs");
+const { emailSchedule } = require("./controllers/cron.controller");
+
 if (process.env.NODE_ENV === "production") {
-  http = require("http");
-  // http = require('https');
-  // options = {
-  // 	key: fs.readFileSync('/etc/letsencrypt/live/staging.justbuysell.com/privkey.pem', 'utf8'),
-  // 	cert: fs.readFileSync('/etc/letsencrypt/live/staging.justbuysell.com/cert.pem', 'utf8')
-  // }
+  cron.schedule("*/5 * * * * *", emailSchedule);
+  protocol = https;
+  options = {
+    key: fs.readFileSync(
+      "/etc/letsencrypt/live/devapp.ecomed24.com/privkey.pem",
+      "utf8"
+    ),
+    cert: fs.readFileSync(
+      "/etc/letsencrypt/live/devapp.ecomed24.com/fullchain.pem",
+      "utf8"
+    ),
+  };
 } else {
-  http = require("http");
+  protocol = http;
+  options = {};
 }
 
 // Sync models with the database
@@ -59,8 +69,9 @@ app.use((req, res, next) => {
   next();
 });
 
-let server = http.Server(options, app);
+let server = protocol.Server(options, app);
 app.use("/uploads", express.static("uploads"));
+app.use("/uploads/invoicefile", express.static("uploads/invoicefile"));
 
 const authRouter = require("./routes/auth.routes");
 const helperRouter = require("./routes/helper.routes");
@@ -70,6 +81,7 @@ const billingRoutes = require("./routes/billing.routes");
 const organizationRoutes = require("./routes/organization.routes");
 const rolesRoutes = require("./routes/role.routes");
 const permisssionRoutes = require("./routes/permission.routes");
+const dashboardRoutes = require("./routes/dashboard.routes");
 
 if (app.get("env") === "production") {
   app.use(morgan("combined"));
@@ -107,5 +119,14 @@ app.use("/billing", billingRoutes);
 app.use("/organization", organizationRoutes);
 app.use("/roles", rolesRoutes);
 app.use("/permissions", permisssionRoutes);
+app.use("/dashboard", dashboardRoutes);
+// Create HTTPS server
+// const server = server.createServer(options, app);
+
+// Start server
+const PORT = process.env.PORT || 3001;
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
 module.exports = { app: app, server: server };

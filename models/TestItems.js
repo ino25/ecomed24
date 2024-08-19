@@ -1,8 +1,8 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config").sequelize;
 
-const TestRequests = sequelize.define(
-  "TestRequests",
+const TestItems = sequelize.define(
+  "TestItems",
   {
     id: {
       type: DataTypes.INTEGER,
@@ -17,26 +17,23 @@ const TestRequests = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
-    advice: {
+    request_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    test_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    name: {
       type: DataTypes.STRING,
       allowNull: false,
-    },
-    reports: {
-      type: DataTypes.JSON,
-      allowNull: true,
     },
     type: {
       type: DataTypes.STRING,
       allowNull: true,
     },
-    file: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    clinical_id: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-    },
+
     status: {
       type: DataTypes.INTEGER,
       allowNull: true,
@@ -51,9 +48,9 @@ const TestRequests = sequelize.define(
     },
   },
   {
-    tableName: "test_requests",
+    tableName: "test_items",
     timestamps: true, // Disable Sequelize's default timestamps
   }
 );
 
-module.exports = TestRequests;
+module.exports = TestItems;

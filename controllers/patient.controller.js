@@ -12,6 +12,9 @@ const nodemailer = require("nodemailer");
 
 var User = require("../models/User");
 var Patient = require("../models/Patient");
+var Region = require("../models/Region");
+var District = require("../models/District");
+var Country = require("../models/Country");
 var Appointment = require("../models/Appointment");
 var SettingService = require("../models/SettingService");
 var SettingServiceSpecialiteOrganisation = require("../models/SettingServiceSpecialiteOrganisation");
@@ -44,11 +47,17 @@ var TestRequests = require("../models/TestRequests");
 var Illness = require("../models/Illness");
 var NosologieIllness = require("../models/NosologieIllness");
 var IllnessConsultation = require("../models/IllnessConsultation");
-var PartenariatSanteAssurance = require("../models/PartenariatSanteAssurance");
+var TestItems = require("../models/TestItems");
+var PrescribedMedicins = require("../models/PrescribedMedicins");
+var ClinicalDesease = require("../models/ClinicalDesease");
 const multer = require("multer");
 const fs = require("fs");
 const Docmosis = require("../helpers/DocmosisHelper");
 //////Modal Relationship
+
+Patient.belongsTo(Region, { as: "region_details", foreignKey: "region" });
+Patient.belongsTo(District, { as: "district_details", foreignKey: "district" });
+Patient.belongsTo(Country, { as: "country_details", foreignKey: "country" });
 
 // Current Medications
 CurrentMedications.belongsTo(User, {
@@ -277,11 +286,12 @@ PatientLogs.belongsTo(Organisation, {
   as: "org_details",
   foreignKey: "org_id",
 });
-
+const BASEPATH = process.env.BASE_PATH;
 const BASEURL = process.env.SITE_URL;
 const APP_URL = process.env.APP_URL;
 exports.getAllPatients = async (req, res) => {
   try {
+    let search = req.query.search;
     let offsetdata = parseInt(
       req.query.offset
         ? req.query.offset == undefined || req.query.offset == 1
@@ -298,8 +308,37 @@ exports.getAllPatients = async (req, res) => {
     if (isNaN(datalimit)) {
       datalimit = 5;
     }
+
+    let whereClause = {
+      id_organisation: req.org_id,
+    };
+
+    if (search && search.trim() !== "") {
+      whereClause = {
+        ...whereClause,
+        [Op.or]: [
+          Sequelize.where(
+            Sequelize.fn(
+              "concat",
+              Sequelize.col("name"),
+              " ",
+              Sequelize.col("last_name")
+            ),
+            {
+              [Op.like]: `%${search}%`,
+            }
+          ),
+          { email: { [Op.like]: `%${search}%` } },
+          { phone: { [Op.like]: `%${search}%` } },
+          { unique_id: { [Op.like]: `%${search}%` } },
+        ],
+      };
+    }
+
     const { count, rows } = await Patient.findAndCountAll({
-      where: { id_organisation: req.org_id },
+      where: {
+        id_organisation: req.org_id,
+      },
     });
     PatientModal = await Patient.findAll({
       attributes: [
@@ -338,7 +377,7 @@ exports.getAllPatients = async (req, res) => {
       order: [["id", "DESC"]],
       limit: datalimit,
       offset: offsetdata,
-      where: { id_organisation: req.org_id },
+      where: whereClause,
     });
     if (PatientModal === null) {
       res.json({ status: 0, message: langCommon.nodatafound });
@@ -357,7 +396,7 @@ exports.getAllPatients = async (req, res) => {
 
 exports.updateUniqueID = async (req, res) => {
   try {
-    PatientModal = await Patient.findAll({});
+    PatientModal = await Patient.findAll({ unique_id: null });
     if (PatientModal === null) {
       res.json({ status: 0, message: langCommon.nodatafound });
     } else {
@@ -652,6 +691,18 @@ exports.getGeneralInfo = async (req, res) => {
         ["phone_contact", "emergency_contact_no"],
       ],
       where: { id: req.params.patient_id },
+      include: [
+        {
+          model: Region,
+          attributes: ["id", "name"],
+          as: "region_details",
+        },
+        {
+          model: District,
+          attributes: ["id", "name"],
+          as: "district_details",
+        },
+      ],
     });
     // console.log(PatientModal.birthdate);
     // PatientModal.birthdate = moment(PatientModal.birthdate).format('d/m/Y')
@@ -661,10 +712,10 @@ exports.getGeneralInfo = async (req, res) => {
     } else {
       if (PatientModal.img_url) {
         PatientModal.img_url =
-          APP_URL + "/uploads/imgUsers/" + PatientModal.img_url;
+          BASEURL + "/uploads/imgUsers/" + PatientModal.img_url;
       } else {
         PatientModal.img_url =
-          APP_URL + "/uploads/user-profile-placeholder.png";
+          BASEURL + "/uploads/user-profile-placeholder.png";
       }
       next_appointment = await Appointment.findOne({
         attributes: [
@@ -862,6 +913,27 @@ exports.getAppontments = async (req, res) => {
     const { count, rows } = await Appointment.findAndCountAll({
       where: { patient: req.params.patient_id },
     });
+
+    let whereClause = {
+      patient: req.params.patient_id,
+    };
+
+    // if (search && search.trim() !== "") {
+    //   whereClause = {
+    //     ...whereClause,
+    //     [Op.or]: [
+    //       Sequelize.where(
+    //         Sequelize.fn('concat', Sequelize.col('name'), ' ', Sequelize.col('last_name')),
+    //         {
+    //           [Op.like]: `%${search}%`
+    //         }
+    //       ),
+    //       { email: { [Op.like]: `%${search}%` } },
+    //       { phone: { [Op.like]: `%${search}%` } },
+    //       { unique_id: { [Op.like]: `%${search}%` } },
+    //     ],
+    //   };
+    // }
     AppointmentModal = await Appointment.findAll({
       attributes: [
         "id",
@@ -1405,13 +1477,9 @@ exports.getReceiptInvoicePayments = async (req, res) => {
         items[i][0] = Pycategory.name;
       }
       let amount = items[i][1];
-      items[i][1] =
-        parseInt(amount).toFixed(1) + " " + SettingsModalAll.currency;
+      items[i][1] = parseInt(amount).toFixed(1);
 
-      items[i][3] =
-        parseInt(amount) * parseInt(items[i][3]) +
-        " " +
-        SettingsModalAll.currency;
+      items[i][3] = parseInt(amount) * parseInt(items[i][3]);
     }
     data.items = items;
     console.log(items);
@@ -1419,17 +1487,17 @@ exports.getReceiptInvoicePayments = async (req, res) => {
     data.id_organisation = req.org_id;
     /*data.organisation = OrganisationModal;*/
     data.path_logo = OrganisationModal.path_logo
-      ? APP_URL + "/" + OrganisationModal.path_logo
+      ? BASEURL + "/" + OrganisationModal.path_logo
       : null;
     data.nom_organisation = OrganisationModal.nom;
     data.entete = OrganisationModal.entete
-      ? APP_URL + "/" + OrganisationModal.entete
+      ? BASEURL + "/" + OrganisationModal.entete
       : null;
     data.footer = OrganisationModal.footer
-      ? APP_URL + "/" + OrganisationModal.footer
+      ? BASEURL + "/" + OrganisationModal.footer
       : null;
     data.signature = OrganisationModal.signature
-      ? APP_URL + "/" + OrganisationModal.signature
+      ? BASEURL + "/" + OrganisationModal.signature
       : null;
 
     res.json({
@@ -2406,10 +2474,12 @@ exports.getAssuranceByID = async (req, res) => {
 exports.getAssuranceOrg = async (req, res) => {
   try {
     let getData = [];
-    OrganisationModal = await Organisation.findAll({
-      attributes: ["id", "nom"],
-      where: { [Op.or]: [{ type: "ASSURANCE" }, { type: "IPM" }] },
-    });
+    OrganisationModal = await Database.query(
+      "SELECT o.id,o.nom FROM partenariat_sante_assurance as psa INNER JOIN organisation as o ON psa.id_organisation_assurance = o.id where id_organisation_sante =" +
+        req.org_id +
+        " and (o.type = 'ASSURANCE' OR o.type = 'IPM');",
+      { type: Database.QueryTypes.SELECT }
+    );
     if (OrganisationModal === null) {
       res.json({ status: 0, message: langCommon.nodatafound });
     } else {
@@ -2419,6 +2489,23 @@ exports.getAssuranceOrg = async (req, res) => {
         data: OrganisationModal,
       });
     }
+
+    // OrganisationModal = await Organisation.findAll({
+    //   attributes: ["id", "nom"],
+    //   where: {
+    //     org_id: req.org_id,
+    //     [Op.or]: [{ type: "ASSURANCE" }, { type: "IPM" }],
+    //   },
+    // });
+    // if (OrganisationModal === null) {
+    //   res.json({ status: 0, message: langCommon.nodatafound });
+    // } else {
+    //   res.json({
+    //     status: 1,
+    //     message: langPatientModule.assurance.orglist,
+    //     data: OrganisationModal,
+    //   });
+    // }
   } catch (error) {
     throw error;
   }
@@ -2560,12 +2647,13 @@ exports.getAttachments = async (req, res) => {
         [
           Sequelize.fn(
             "CONCAT",
-            APP_URL + "/uploads/documentsPatient/",
+            BASEURL + "/uploads/documentsPatient/",
             Sequelize.col(`url`)
           ),
           "url",
         ],
         "category",
+        "prescriber",
         "id_organisation",
         "added_by",
         "updated_by",
@@ -2650,14 +2738,51 @@ exports.getAttachmentsByID = async (req, res) => {
         [
           Sequelize.fn(
             "CONCAT",
-            APP_URL + "/uploads/documentsPatient/",
+            BASEURL + "/uploads/documentsPatient/",
             Sequelize.col(`url`)
           ),
           "url",
         ],
+        "prescriber",
         "date",
       ],
       where: { id: req.params.attachment_id },
+      include: [
+        {
+          model: User,
+          attributes: [
+            "id",
+            ["id_organisation", "org_id"],
+            "first_name",
+            "last_name",
+            "username",
+            "email",
+          ],
+          as: "addedby_details",
+        },
+        {
+          model: User,
+          attributes: [
+            "id",
+            ["id_organisation", "org_id"],
+            "first_name",
+            "last_name",
+            "username",
+            "email",
+          ],
+          as: "updatedby_details",
+        },
+        {
+          model: Organisation,
+          attributes: ["id", "nom", "email", "adresse"],
+          as: "org_details",
+        },
+        {
+          model: DocumentTypes,
+          attributes: ["id", "name"],
+          as: "doctypes_details",
+        },
+      ],
     });
     if (PatientMaterialModal === null) {
       res.json({ status: 0, message: langCommon.nodatafound });
@@ -2732,6 +2857,7 @@ exports.addAttachments = async (req, res) => {
       id_organisation: req.org_id,
       date: moment().unix(),
       title: req.body.title,
+      prescriber: req.body.prescriber,
       category: req.body.category,
       patient: req.body.uniqueID,
       patient_name: PatientModal.name + " " + PatientModal.last_name,
@@ -2805,7 +2931,9 @@ exports.deleteAttachments = async (req, res) => {
     if (PatientMaterialModal === null) {
       res.json({ status: 0, message: langCommon.errormessage });
     } else {
-      fs.unlinkSync("../uploads/documentsPatient/" + PatientMaterialModal.url);
+      fs.unlinkSync(
+        BASEPATH + "uploads/documentsPatient/" + PatientMaterialModal.url
+      );
       PatientMaterialModal = await PatientMaterial.destroy({
         where: { id: req.params.id },
       });
@@ -3611,6 +3739,47 @@ exports.getKnownHealthIssuesByID = async (req, res) => {
         ],
       ],
       where: { id: req.params.pre_condition_id },
+      include: [
+        {
+          model: User,
+          attributes: [
+            "id",
+            ["id_organisation", "org_id"],
+            "first_name",
+            "last_name",
+            "username",
+            "email",
+          ],
+          as: "addedby_details",
+        },
+        {
+          model: User,
+          attributes: [
+            "id",
+            ["id_organisation", "org_id"],
+            "first_name",
+            "last_name",
+            "username",
+            "email",
+          ],
+          as: "updatedby_details",
+        },
+        {
+          model: Organisation,
+          attributes: ["id", "nom", "email", "adresse"],
+          as: "org_details",
+        },
+        {
+          model: HealthIssueType,
+          attributes: ["id", "name", "code"],
+          as: "type_details",
+        },
+        {
+          model: HealthIssue,
+          attributes: ["id", "name", "type_id"],
+          as: "issue_details",
+        },
+      ],
     });
     if (PreConditionsModal === null) {
       res.json({ status: 0, message: langCommon.nodatafound });
@@ -4160,8 +4329,9 @@ exports.addClinicalNotes = async (req, res) => {
     let imaging_data = req.body.imaging;
     let Prescription_data = req.body.prescription;
     let hospitalization_data = req.body.hospitalization;
-    console.log(req.body);
-    console.log(clinicalNotes_data);
+
+    const dci_diseases = clinicalNotes_data.desease;
+    const nosology_diseases = clinicalNotes_data.nosologie;
     PatientModal = await Patient.findOne({ where: { id: patientID } });
     ClinicalNotesModal = await ClinicalNotes.create({
       patient_id: patientID,
@@ -4179,6 +4349,32 @@ exports.addClinicalNotes = async (req, res) => {
       nosologie: clinicalNotes_data.nosologie,
       status: 1,
       added_by: req.userId,
+    });
+
+    dci_diseases.map(async (desease) => {
+      await ClinicalDesease.create({
+        patient_id: patientID,
+        org_id: req.org_id,
+        clinical_id: ClinicalNotesModal.id,
+        disease_id: desease.id,
+        name: desease.desease_name,
+        type: "dci",
+        status: 1,
+        added_by: req.userId,
+      });
+    });
+
+    nosology_diseases.map(async (desease) => {
+      await ClinicalDesease.create({
+        patient_id: patientID,
+        org_id: req.org_id,
+        clinical_id: ClinicalNotesModal.id,
+        disease_id: desease.id,
+        name: desease.desease_name,
+        type: "nosologie",
+        status: 1,
+        added_by: req.userId,
+      });
     });
 
     if (appointment_data != null) {
@@ -4275,10 +4471,23 @@ exports.addClinicalNotes = async (req, res) => {
         clinical_id: ClinicalNotesModal.id,
         org_id: req.org_id,
         type: "lab",
-        action: "add",
+        advice: req.body.advice,
         reports: lab_data.reports,
         status: 0,
         added_by: req.userId,
+      });
+      const Labreports = req.body.reports;
+      Labreports.map(async (report) => {
+        await TestItems.create({
+          patient_id: patientID,
+          org_id: req.org_id,
+          request_id: TestRequestsModal.id,
+          test_id: report.id,
+          name: report.name,
+          type: report.type,
+          status: 1,
+          added_by: req.userId,
+        });
       });
       await PatientLogs.create({
         patient_id: TestRequestsModal.patient_id,
@@ -4298,11 +4507,25 @@ exports.addClinicalNotes = async (req, res) => {
         clinical_id: ClinicalNotesModal.id,
         org_id: req.org_id,
         type: "imaging",
-        action: "add",
+        advice: req.body.advice,
         reports: imaging_data.reports,
         status: 0,
         added_by: req.userId,
       });
+      const Imagingreports = req.body.reports;
+      Imagingreports.map(async (report) => {
+        await TestItems.create({
+          patient_id: patientID,
+          org_id: req.org_id,
+          request_id: TestRequestsModal.id,
+          test_id: report.id,
+          name: report.name,
+          type: report.type,
+          status: 1,
+          added_by: req.userId,
+        });
+      });
+
       await PatientLogs.create({
         patient_id: TestRequestsModal.patient_id,
         org_id: req.org_id,
@@ -4330,6 +4553,21 @@ exports.addClinicalNotes = async (req, res) => {
         status: 1,
         added_by: req.userId,
       });
+      const medicins = Prescription_data.medicin;
+      medicins.map(async (medicin) => {
+        await PrescribedMedicins.create({
+          patient_id: PrescriptionsModal.patient_id,
+          org_id: req.org_id,
+          prescription_id: PrescriptionsModal.id,
+          mdeicin_id: medicin.id,
+          name: medicin.name,
+          advice: medicin.advice,
+          dosage: medicin.doses,
+          posology: medicin.posology,
+          status: 1,
+          added_by: req.userId,
+        });
+      });
       await PatientLogs.create({
         patient_id: PrescriptionsModal.patient_id,
         org_id: req.org_id,
@@ -4354,8 +4592,14 @@ exports.addClinicalNotes = async (req, res) => {
         patient_phone: PatientModal.phone_contact,
         patient_address: PatientModal.address,
 
-        reason: hospitalization_data.reason,
-        current_disease: hospitalization_data.current_disease,
+        channel: hospitalization_data.channel,
+        motive: hospitalization_data.motive,
+        desease_history: hospitalization_data.desease_history,
+        consultation: hospitalization_data.consultation,
+        diagnostic: hospitalization_data.diagnostic,
+        treatment: hospitalization_data.treatment,
+        referredby: hospitalization_data.referredby,
+        referred_type: hospitalization_data.referred_type,
         hospitalization_date: hospitalization_data.hospitalization_date,
         hospitalization_time: hospitalization_data.hospitalization_time,
 
@@ -4714,6 +4958,37 @@ exports.getHospitalizationByID = async (req, res) => {
       results;
     PatientHospitalizationModal = await PatientHospitalization.findOne({
       where: { id: req.params.hospitalization_id },
+      include: [
+        {
+          model: User,
+          attributes: [
+            "id",
+            ["id_organisation", "org_id"],
+            "first_name",
+            "last_name",
+            "username",
+            "email",
+          ],
+          as: "addedby_details",
+        },
+        {
+          model: User,
+          attributes: [
+            "id",
+            ["id_organisation", "org_id"],
+            "first_name",
+            "last_name",
+            "username",
+            "email",
+          ],
+          as: "updatedby_details",
+        },
+        {
+          model: Organisation,
+          attributes: ["id", "nom", "email", "adresse"],
+          as: "org_details",
+        },
+      ],
     });
     if (PatientHospitalizationModal === null) {
       res.json({ status: 0, message: langCommon.nodatafound });
@@ -4746,10 +5021,21 @@ exports.addHospitalization = async (req, res) => {
       patient_phone: PatientModal.phone_contact,
       patient_address: PatientModal.address,
 
-      reason: req.body.reason,
-      current_disease: req.body.current_disease,
+      channel: req.body.channel,
+      motive: req.body.motive,
+      desease_history: req.body.desease_history,
+      consultation: req.body.consultation,
+      diagnostic: req.body.diagnostic,
+      treatment: req.body.treatment,
+      referredby: req.body.referredby,
+      referred_type: req.body.referred_type,
       hospitalization_date: req.body.hospitalization_date,
       hospitalization_time: req.body.hospitalization_time,
+
+      // reason: req.body.reason,
+      // current_disease: req.body.current_disease,
+      // hospitalization_date: req.body.hospitalization_date,
+      // hospitalization_time: req.body.hospitalization_time,
 
       status: 1,
       added_by: req.userId,
@@ -4886,6 +5172,7 @@ exports.addPrescription = async (req, res) => {
     PatientModal = await Patient.findOne({
       where: { id: req.body.patient_id },
     });
+    const medicins = JSON.parse(req.body.medicin);
     PrescriptionsModal = await Prescriptions.create({
       patient_id: req.body.patient_id,
       org_id: req.org_id,
@@ -4904,6 +5191,20 @@ exports.addPrescription = async (req, res) => {
     if (PrescriptionsModal === null) {
       res.json({ status: 0, message: langCommon.errormessage });
     } else {
+      medicins.map(async (medicin) => {
+        await PrescribedMedicins.create({
+          patient_id: req.body.patient_id,
+          org_id: req.org_id,
+          prescription_id: PrescriptionsModal.id,
+          mdeicin_id: medicin.id,
+          name: medicin.name,
+          advice: medicin.advice,
+          dosage: medicin.doses,
+          posology: medicin.posology,
+          status: 1,
+          added_by: req.userId,
+        });
+      });
       await PatientLogs.create({
         patient_id: PrescriptionsModal.patient_id,
         org_id: req.org_id,
@@ -5047,6 +5348,7 @@ exports.addLabTest = async (req, res) => {
   try {
     let getData = [],
       results;
+    const reports = JSON.parse(req.body.reports);
     PatientModal = await Patient.findOne({
       where: { id: req.body.patient_id },
     });
@@ -5054,14 +5356,27 @@ exports.addLabTest = async (req, res) => {
       patient_id: req.body.patient_id,
       org_id: req.org_id,
       type: "lab",
-      action: "add",
+      advice: req.body.advice,
       reports: JSON.parse(req.body.reports),
       status: 0,
       added_by: req.userId,
     });
+
     if (TestRequestsModal === null) {
       res.json({ status: 0, message: langCommon.errormessage });
     } else {
+      reports.map(async (report) => {
+        await TestItems.create({
+          patient_id: req.body.patient_id,
+          org_id: req.org_id,
+          request_id: TestRequestsModal.id,
+          test_id: report.id,
+          name: report.name,
+          type: report.type,
+          status: 1,
+          added_by: req.userId,
+        });
+      });
       await PatientLogs.create({
         patient_id: TestRequestsModal.patient_id,
         org_id: req.org_id,
@@ -5201,11 +5516,12 @@ exports.addImagingRequest = async (req, res) => {
     PatientModal = await Patient.findOne({
       where: { id: req.body.patient_id },
     });
+    const reports = JSON.parse(req.body.reports);
     TestRequestsModal = await TestRequests.create({
       patient_id: req.body.patient_id,
       org_id: req.org_id,
       type: "imaging",
-      action: "add",
+      advice: req.body.advice,
       reports: JSON.parse(req.body.reports),
       status: 0,
       added_by: req.userId,
@@ -5213,6 +5529,18 @@ exports.addImagingRequest = async (req, res) => {
     if (TestRequestsModal === null) {
       res.json({ status: 0, message: langCommon.errormessage });
     } else {
+      reports.map(async (report) => {
+        await TestItems.create({
+          patient_id: req.body.patient_id,
+          org_id: req.org_id,
+          request_id: TestRequestsModal.id,
+          test_id: report.id,
+          name: report.name,
+          type: report.type,
+          status: 1,
+          added_by: req.userId,
+        });
+      });
       await PatientLogs.create({
         patient_id: TestRequestsModal.patient_id,
         org_id: req.org_id,
@@ -5745,10 +6073,10 @@ exports.getPaymentHistoryInfo = async (req, res) => {
     } else {
       if (PatientModal.img_url) {
         PatientModal.img_url =
-          APP_URL + "/uploads/imgUsers/" + PatientModal.img_url;
+          BASEURL + "/uploads/imgUsers/" + PatientModal.img_url;
       } else {
         PatientModal.img_url =
-          APP_URL + "/uploads/user-profile-placeholder.png";
+          BASEURL + "/uploads/user-profile-placeholder.png";
       }
       total_balance = await Payment.sum("gross_total", {
         where: { patient: req.params.patient_id },

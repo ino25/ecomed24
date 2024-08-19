@@ -11,7 +11,9 @@ const nodemailer = require("nodemailer");
 
 var User = require("../models/User");
 var Permission = require("../models/Permission");
-var OrgPermission = require("../models/OrgPermission");
+var OrgPermissionItems = require("../models/OrgPermissionItems");
+var OrganizationPermissions = require("../models/OrganizationPermissions");
+var Module = require("../models/Module");
 var Organisation = require("../models/Organisation");
 
 //////Modal Relationship
@@ -20,6 +22,24 @@ Permission.belongsTo(User, { as: "addedby_details", foreignKey: "added_by" });
 Permission.belongsTo(User, {
   as: "updatedby_details",
   foreignKey: "updated_by",
+});
+
+OrganizationPermissions.belongsTo(User, {
+  as: "addedby_details",
+  foreignKey: "added_by",
+});
+OrganizationPermissions.belongsTo(User, {
+  as: "updatedby_details",
+  foreignKey: "updated_by",
+});
+OrganizationPermissions.belongsTo(Organisation, {
+  as: "org_details",
+  foreignKey: "org_id",
+});
+
+OrganizationPermissions.hasMany(OrgPermissionItems, {
+  as: "permissions",
+  foreignKey: "org_permissionid",
 });
 // Permission.belongsTo(Organisation, { as: "org_details", foreignKey: "org_id" });
 
@@ -50,8 +70,6 @@ exports.getList = async (req, res) => {
         "description",
         "module_id",
         "status",
-        "added_by",
-        "updated_by",
         "added_by",
         "updated_by",
         [
@@ -208,28 +226,119 @@ exports.status = async (req, res) => {
   }
 };
 
+exports.getModulesList = async (req, res) => {
+  try {
+    let offsetdata = parseInt(
+      req.query.offset
+        ? req.query.offset == undefined || req.query.offset == 1
+          ? 0
+          : req.query.offset
+        : 0
+    );
+    if (isNaN(offsetdata)) {
+      offsetdata = 0;
+    }
+    let datalimit = parseInt(
+      req.query.limit
+        ? req.query.limit == undefined
+          ? 50
+          : req.query.limit
+        : 50
+    );
+    if (isNaN(datalimit)) {
+      datalimit = 50;
+    }
+    const { count, rows } = await Module.findAndCountAll({});
+    ModuleModal = await Module.findAll({
+      attributes: [
+        "id",
+        "name",
+        "description",
+        "status",
+        "added_by",
+        "updated_by",
+
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("Module.createdAt"),
+            "%d/%m/%Y %H:%i"
+          ),
+          "createdAt",
+        ],
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("Module.updatedAt"),
+            "%d/%m/%Y %H:%i"
+          ),
+          "updatedAt",
+        ],
+      ],
+
+      order: [["id", "DESC"]],
+      limit: datalimit,
+      offset: offsetdata,
+    });
+    if (ModuleModal === null) {
+      res.json({ status: 0, message: langCommon.nodatafound });
+    } else {
+      res.json({
+        status: 1,
+        message: langPermissionModule.list,
+        data: ModuleModal,
+        total: count,
+      });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+//Organization Permission assignment
+
 exports.AllowPermissionToOrg = async (req, res) => {
   try {
-    let Systempermissions = req.body.sp_id;
-    Systempermissions.forEach(async function (permissionid) {
-      OrgPermissionModal = await OrgPermission.create({
-        sp_id: permissionid,
+    CheckPermissionExists = await OrganizationPermissions.findOne({
+      where: { org_id: req.body.org_id },
+    });
+
+    if (CheckPermissionExists === null) {
+      // console.log(CheckPermissionExists);
+      let Systempermissions = req.body.sp_id;
+
+      OrganizationPermissionsModal = await OrganizationPermissions.create({
         org_id: req.body.org_id,
         start_date: req.body.start_date,
         end_date: req.body.end_date,
         status: req.body.status,
         added_by: req.userId,
       });
-    });
-    //   if(OrgPermissionModal === null){
-    //       res.json({ status: 0, message: langCommon.errormessage });
-    //   }else{
-    res.json({
-      status: 1,
-      message: langPermissionModule.permissionassign,
-      data: "",
-    });
-    //   }
+
+      if (OrganizationPermissionsModal === null) {
+        res.json({ status: 0, message: langCommon.errormessage });
+      } else {
+        Systempermissions.forEach(async function (permissionid) {
+          OrgPermissionItemsModal = await OrgPermissionItems.create({
+            org_permissionid: OrganizationPermissionsModal.id,
+            sp_id: permissionid,
+            org_id: req.body.org_id,
+            status: req.body.status,
+            added_by: req.userId,
+          });
+        });
+        res.json({
+          status: 1,
+          message: langPermissionModule.permissionassign,
+          data: "",
+        });
+      }
+    } else {
+      res.json({
+        status: 0,
+        message: "Permissions Already assigned to this organization",
+      });
+    }
   } catch (error) {
     throw error;
   }
@@ -238,7 +347,7 @@ exports.AllowPermissionToOrg = async (req, res) => {
 exports.getSystemPermissions = async (req, res) => {
   try {
     PermissionModal = await Permission.findAll({
-      attributes: ["id", "name"],
+      attributes: ["id", "name", "description"],
       order: [["id", "DESC"]],
       where: { status: 1 },
     });
@@ -250,6 +359,291 @@ exports.getSystemPermissions = async (req, res) => {
         message: langPermissionModule.list,
         data: PermissionModal,
       });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+// list
+exports.getOrgAssignedList = async (req, res) => {
+  try {
+    let offsetdata = parseInt(
+      req.query.offset
+        ? req.query.offset == undefined || req.query.offset == 1
+          ? 0
+          : req.query.offset
+        : 0
+    );
+    if (isNaN(offsetdata)) {
+      offsetdata = 0;
+    }
+    let datalimit = parseInt(
+      req.query.limit ? (req.query.limit == undefined ? 5 : req.query.limit) : 5
+    );
+    if (isNaN(datalimit)) {
+      datalimit = 5;
+    }
+    const { count, rows } = await OrganizationPermissions.findAndCountAll({});
+    OrganizationPermissionsModal = await OrganizationPermissions.findAll({
+      attributes: [
+        "id",
+        "org_id",
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("OrganizationPermissions.start_date"),
+            "%d/%m/%Y %H:%i"
+          ),
+          "start_date",
+        ],
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("OrganizationPermissions.end_date"),
+            "%d/%m/%Y %H:%i"
+          ),
+          "end_date",
+        ],
+        "status",
+        "added_by",
+        "updated_by",
+        "added_by",
+        "updated_by",
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("OrganizationPermissions.createdAt"),
+            "%d/%m/%Y %H:%i"
+          ),
+          "createdAt",
+        ],
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("OrganizationPermissions.updatedAt"),
+            "%d/%m/%Y %H:%i"
+          ),
+          "updatedAt",
+        ],
+      ],
+
+      order: [["id", "DESC"]],
+      limit: datalimit,
+      offset: offsetdata,
+      include: [
+        {
+          model: User,
+          attributes: [
+            "id",
+            ["id_organisation", "org_id"],
+            "first_name",
+            "last_name",
+            "username",
+            "email",
+          ],
+          as: "addedby_details",
+        },
+        {
+          model: User,
+          attributes: [
+            "id",
+            ["id_organisation", "org_id"],
+            "first_name",
+            "last_name",
+            "username",
+            "email",
+          ],
+          as: "updatedby_details",
+        },
+        {
+          model: Organisation,
+          attributes: ["id", "nom", "email", "adresse"],
+          as: "org_details",
+        },
+      ],
+    });
+    if (OrganizationPermissionsModal === null) {
+      res.json({ status: 0, message: langCommon.nodatafound });
+    } else {
+      res.json({
+        status: 1,
+        message: langPermissionModule.list,
+        data: OrganizationPermissionsModal,
+        total: count,
+      });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+exports.getOrgPermissionByID = async (req, res) => {
+  try {
+    OrganizationPermissionsModal = await OrganizationPermissions.findOne({
+      attributes: [
+        "id",
+        "org_id",
+        "start_date",
+        "end_date",
+        "status",
+        "added_by",
+        "updated_by",
+        "added_by",
+        "updated_by",
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("OrganizationPermissions.createdAt"),
+            "%d/%m/%Y %H:%i"
+          ),
+          "createdAt",
+        ],
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("OrganizationPermissions.updatedAt"),
+            "%d/%m/%Y %H:%i"
+          ),
+          "updatedAt",
+        ],
+      ],
+      where: { id: req.params.id },
+      include: [
+        {
+          model: OrgPermissionItems,
+          attributes: ["id", "org_permissionid", "sp_id", "org_id", "status"],
+          // where: { status: 1 },
+          as: "permissions",
+        },
+      ],
+    });
+    if (OrganizationPermissionsModal === null) {
+      res.json({ status: 0, message: langCommon.nodatafound });
+    } else {
+      res.json({
+        status: 1,
+        message: langPermissionModule.individual,
+        data: OrganizationPermissionsModal,
+      });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+exports.OrgPermissionUpdate = async (req, res) => {
+  try {
+    OrganizationPermissionsModal = await OrganizationPermissions.update(
+      {
+        // org_id: req.body.org_id,
+        start_date: req.body.start_date,
+        end_date: req.body.end_date,
+        status: req.body.status,
+        updated_by: req.userId,
+      },
+      {
+        where: { id: req.params.id },
+      }
+    );
+
+    if (OrganizationPermissionsModal === null) {
+      res.json({ status: 0, message: langCommon.errormessage });
+    } else {
+      // MapModal = await OrgPermissionItems.destroy({
+      //   where: { org_permissionid: req.params.id },
+      // });
+      Systempermissions = req.body.sp_id;
+      OrgInactive = req.body.inactive_permissions;
+      Systempermissions.forEach(async function (permissionid) {
+        // Try to find the user first
+        const item = await OrgPermissionItems.findOne({
+          where: {
+            org_permissionid: req.params.id,
+            sp_id: permissionid,
+            org_id: req.body.org_id,
+          },
+        });
+        if (item) {
+          await item.update({
+            status: 1,
+          });
+        } else {
+          // If OrgPermissionItems does not exist, create
+          await OrgPermissionItems.create({
+            org_permissionid: req.params.id,
+            sp_id: permissionid,
+            org_id: req.body.org_id,
+            status: 1,
+            added_by: req.userId,
+          });
+        }
+      });
+
+      OrgInactive.forEach(async function (pid) {
+        const item = await OrgPermissionItems.findOne({
+          where: {
+            org_permissionid: req.params.id,
+            sp_id: pid,
+            org_id: req.body.org_id,
+          },
+        });
+        if (item) {
+          await item.update({
+            status: 0,
+          });
+        } else {
+          // If OrgPermissionItems does not exist, create
+          // await OrgPermissionItems.create({
+          //   org_permissionid: req.params.id,
+          //   sp_id: pid,
+          //   org_id: req.body.org_id,
+          //   status: 0,
+          //   added_by: req.userId,
+          // });
+        }
+      });
+      res.json({ status: 1, message: langPermissionModule.update, data: "" });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+exports.OrgPermissionDelete = async (req, res) => {
+  try {
+    OrganizationPermissionsModal = await OrganizationPermissions.destroy({
+      where: { id: req.params.id },
+    });
+    if (OrganizationPermissionsModal === null) {
+      res.json({ status: 0, message: langCommon.errormessage });
+    } else {
+      MapModal = await OrgPermissionItems.destroy({
+        where: { org_permissionid: req.params.id },
+      });
+      res.json({
+        status: 1,
+        message: "Organization Permission Deleted",
+        data: "",
+      });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+exports.OrgPermissionStatus = async (req, res) => {
+  try {
+    OrganizationPermissionsModal = await OrganizationPermissions.update(
+      { status: req.body.status },
+      { where: { id: req.params.id } }
+    );
+    if (OrganizationPermissionsModal === null) {
+      res.json({ status: 0, message: langCommon.errormessage });
+    } else {
+      OrgPermissionItemsModal = await OrgPermissionItems.update(
+        { status: req.body.status },
+        { where: { org_permissionid: req.params.id } }
+      );
+      res.json({ status: 1, message: langPermissionModule.status, data: "" });
     }
   } catch (error) {
     throw error;

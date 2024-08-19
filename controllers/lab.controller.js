@@ -8,7 +8,7 @@ const nodemailer = require("nodemailer");
 const axios = require("axios");
 const mailer = require("../helpers/LabMailer");
 const multer = require("multer");
-
+const { DocmosisTestLab, dataPrepare } = require("../helpers/DocmosisHelper");
 const { URLSearchParams } = require("url");
 
 const upload = multer({ dest: "uploads/" });
@@ -730,24 +730,38 @@ exports.getUserById = async (req, res) => {
 
 exports.savePDF = (req, res) => {
   try {
-    const outputName = req.headers["output-name"];
-    const pdfData = req.file;
+    const type = req.body.type;
+    const id_payment = req.body.id_payment;
+    const data = req.body.data;
 
-    if (!pdfData) {
-      return res.status(400).json({ error: "Aucun fichier n'a été envoyé." });
-    }
-
-    const pdfPath = path.join("/var/www/html/uploads", outputName);
-
-    // Rename the temporary file to the desired file name
-    fs.renameSync(pdfData.path, pdfPath);
-
-    res.json({ message: "Fichier PDF sauvegardé avec succès." });
+    DocmosisTestLab(type, id_payment, data)
+      .then(async (response) => {
+        console.log(response);
+        if (response.status) {
+          res.json({
+            status: 1,
+            message: response.message,
+            pdfpath: response.pdfPath,
+          });
+        } else {
+          res.json({
+            status: 0,
+            message: "Server Error, Please Try Againg Later!!",
+          });
+        }
+        console.log("Response:", response, req.body.type, req.body.id_payment);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        res.json({
+          status: 0,
+          message: "Server Error, Please Try Againg Later!!!",
+        });
+      });
   } catch (error) {
-    console.error("Erreur lors de la sauvegarde du PDF :", error);
-    res
-      .status(500)
-      .json({ error: "Une erreur est survenue lors de la sauvegarde du PDF." });
+    console.error("Error:", error);
+    res.json({ status: 0, message: "Server Error, Please Try Againg Later!!" });
+    // throw error;
   }
 };
 
@@ -755,7 +769,7 @@ exports.envoiPdf = async (req, res) => {
   const { email, pdfFilePath } = req.body;
 
   const fileName = path.basename(pdfFilePath);
-  const filePath = pdfFilePath;
+  const filePath = path.join("..", "uploads", "invoicefile", fileName);
 
   fs.access(filePath, fs.constants.F_OK, async (err) => {
     if (err) {
@@ -764,7 +778,7 @@ exports.envoiPdf = async (req, res) => {
     }
 
     const mailOptions = {
-      from: "contact@pathfinderacademy.in",
+      from: "no-reply@ecomed24.com",
       to: email,
       subject: "Votre fichier PDF",
       html: "Voici votre fichier PDF en pièce jointe.",

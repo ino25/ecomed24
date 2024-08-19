@@ -2,7 +2,7 @@ const mail = require("../config").mailConfig;
 const nodemailer = require("nodemailer");
 
 // Send Mail
-async function Mailer(to, from, subject, html) {
+async function Mailer(to, from, subject, html, attachments) {
   try {
     let transporter = nodemailer.createTransport(mail);
     await transporter.sendMail(
@@ -11,6 +11,7 @@ async function Mailer(to, from, subject, html) {
         from: process.env.MFROM,
         subject: subject,
         html: html,
+        attachments: attachments,
       },
       (error, info) => {
         if (error) {

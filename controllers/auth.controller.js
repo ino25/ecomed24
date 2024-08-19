@@ -298,7 +298,7 @@ exports.getUserPermission = async (req, res) => {
     let getData = [];
 
     PermissionModal = await Database.query(
-      "SELECT rpm.id,sp.name,sp.description,sp.module_id FROM role_permissions_map as rpm inner JOIN org_permissions as op ON op.sp_id= rpm.op_id inner JOIN system_permissions as sp ON op.sp_id= sp.id where rpm.status=1 and rpm.role_id = " +
+      "SELECT rpm.id,sp.name,sp.description,sp.module_id FROM role_permissions_map as rpm inner JOIN org_permission_items as op ON op.id= rpm.op_id inner JOIN system_permissions as sp ON op.sp_id= sp.id where rpm.status=1 and rpm.role_id = " +
         req.role_id +
         ";",
       { type: Database.QueryTypes.SELECT }
@@ -470,6 +470,17 @@ exports.AccountActivation = async (req, res) => {
       .catch((error) => {
         throw error;
       });
+  } catch (error) {
+    throw error;
+  }
+};
+
+exports.getAuthcheck = async (req, res) => {
+  try {
+    res.json({
+      status: 1,
+      message: "token_valid",
+    });
   } catch (error) {
     throw error;
   }

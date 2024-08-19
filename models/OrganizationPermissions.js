@@ -1,44 +1,28 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config").sequelize;
 
-const TestRequests = sequelize.define(
-  "TestRequests",
+const OrganizationPermissions = sequelize.define(
+  "OrganizationPermissions",
   {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
     },
-    patient_id: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-    },
     org_id: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-    },
-    advice: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    reports: {
-      type: DataTypes.JSON,
-      allowNull: true,
-    },
-    type: {
       type: DataTypes.STRING,
       allowNull: true,
     },
-    file: {
+    start_date: {
       type: DataTypes.STRING,
       allowNull: true,
     },
-    clinical_id: {
-      type: DataTypes.INTEGER,
+    end_date: {
+      type: DataTypes.STRING,
       allowNull: true,
     },
     status: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       allowNull: true,
     },
     added_by: {
@@ -51,9 +35,9 @@ const TestRequests = sequelize.define(
     },
   },
   {
-    tableName: "test_requests",
+    tableName: "organization_permissions",
     timestamps: true, // Disable Sequelize's default timestamps
   }
 );
 
-module.exports = TestRequests;
+module.exports = OrganizationPermissions;

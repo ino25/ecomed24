@@ -13,7 +13,6 @@ var Settings = require("../models/Settings");
 var User = require("../models/User");
 var DoctorSignature = require("../models/DoctorSignature");
 var Organisation = require("../models/Organisation");
-var Organisation = require("../models/Organisation");
 var PaymentCategory = require("../models/PaymentCategory");
 var SettingServiceSpecialite = require("../models/SettingServiceSpecialite");
 var SettingService = require("../models/SettingService");
@@ -24,7 +23,6 @@ async function Docmosis(type, id, data) {
   return new Promise((resolve, reject) => {
     const formData = data;
     const templateNameValue = {
-      lab: "ecoMed24.dev/requests/ecomed_MasterRequestTemplateV0.7.docx",
       lab_test_request:
         "ecoMed24.dev/requests/ecomed_MasterRequestTemplateV0.7.docx",
       imaging_request:
@@ -34,7 +32,6 @@ async function Docmosis(type, id, data) {
     };
 
     const pathToStore = {
-      lab: BASEPATH + "uploads/invoicefile/",
       lab_test_request: BASEPATH + "uploads/invoicefile/",
       imaging_request: BASEPATH + "uploads/invoicefile/",
       prescription: BASEPATH + "uploads/invoicefile/",
@@ -290,7 +287,7 @@ async function dataPrepare(type, org_id, signature, id, userId) {
           reportedTime: "",
           orderingOrganisationID: "",
           orderingOrganisationName: OrganisationModal.nom,
-          clinicalNotes: "Clinical notes are here",
+          clinicalNotes: TestRequestsModal.advice,
           signature: {
             id: DoctorSignatureModal.id,
             doc_id: DoctorSignatureModal.doc_id,
@@ -461,7 +458,7 @@ async function dataPrepare(type, org_id, signature, id, userId) {
           orderingOrganisationID: org_id,
           orderingOrganisationName: OrganisationModal.nom,
           orderNumber: "",
-          clinicalNotes: "",
+          clinicalNotes: TestRequestsModal.advice,
           request_type: "RADIO",
           signature: {
             id: DoctorSignatureModal.id,
@@ -481,14 +478,15 @@ async function dataPrepare(type, org_id, signature, id, userId) {
         PrescriptionsModal = await Prescriptions.findOne({
           where: { id: id },
         });
-        medicinDbList = PrescriptionsModal.medicin;
+        // console.log(JSON.parse(PrescriptionsModal.medicin));
+        const medicinDbList = PrescriptionsModal.medicin;
         const MedicinListData = medicinDbList.map((medicine) => {
           return {
             id: medicine.id,
             dci: medicine.name,
             dosage: medicine.dosage,
-            posologie: medicine.posologie,
-            notes: "",
+            posologie: medicine.posology,
+            notes: medicine.advice,
           };
         });
         console.log(MedicinListData);
@@ -598,6 +596,110 @@ async function dataPrepare(type, org_id, signature, id, userId) {
   }
 }
 
+async function DocmosisTestLab(type, id_payment, data) {
+  return new Promise((resolve, reject) => {
+    const formData = data;
+    const templateNameValue = {
+      lab_test_request:
+        "ecoMed24.dev/Laboratory/ecomed_MasterLabTemplateV1.0.1.docx",
+      imaging_request:
+        "ecoMed24.dev/requests/ecomed_MasterRequestTemplateV0.7.docx",
+      prescription:
+        "/ecoMed24.dev/requests/ecomed_MasterRequestTemplateV0.7.docx",
+    };
+
+    const pathToStore = {
+      lab_test_request: BASEPATH + "uploads/invoicefile/",
+      imaging_request: BASEPATH + "uploads/invoicefile/",
+      prescription: BASEPATH + "uploads/invoicefile/",
+    };
+    // lab-report--00
+    const outputName = `lab-report--00${id_payment}.pdf`;
+    const accessKey = process.env.DOCMOSIS_ACCESSKEY;
+
+    const postData = querystring.stringify({
+      accessKey: accessKey,
+      templateName: templateNameValue[type],
+      outputName: outputName,
+      data: JSON.stringify(formData),
+    });
+
+    const options = {
+      hostname: "eu.dws3.docmosis.com",
+      port: 443,
+      path: "/api/render",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Length": Buffer.byteLength(postData),
+      },
+    };
+
+    const ReqPromise = new Promise((resolve, reject) => {
+      const ReqResponse = https.request(options, (resp) => {
+        switch (resp.statusCode) {
+          case 200:
+            const pdfPath = `${pathToStore[type]}${outputName}`;
+            console.log(pdfPath);
+            const file = fs.createWriteStream(pdfPath);
+
+            // feed response into file
+            resp.pipe(file);
+            file.on("finish", () => {
+              file.close();
+
+              console.log(pdfPath, "created");
+              // Resolve with success JSON
+              const successResponse = {
+                status: true,
+                message: "PDF created successfully",
+                pdfPath: BASEURL + "/uploads/invoicefile/" + outputName,
+                filename: outputName,
+              };
+              resolve(successResponse);
+            });
+            break;
+          default:
+            // show error response (details)
+            console.log("Error response:", resp.statusCode, resp.statusMessage);
+            let errorResponse = "";
+            resp.on("data", (data) => {
+              errorResponse += data;
+            });
+            resp.on("end", () => {
+              console.log(errorResponse);
+              // Resolve with error JSON
+              const errorResponseObj = {
+                status: 0,
+                message: `Error: ${resp.statusCode} ${resp.statusMessage}`,
+                details: errorResponse,
+              };
+              resolve(errorResponseObj);
+            });
+        }
+      });
+
+      ReqResponse.on("error", (e) => {
+        console.error("Request error:", JSON.stringify(e, null, 4));
+        reject(e);
+      });
+
+      // write data to request body
+      ReqResponse.write(postData);
+      ReqResponse.end();
+    });
+
+    ReqPromise.then((response) => {
+      resolve(response);
+    }).catch((error) => {
+      console.error("Server Error:", error);
+      reject({
+        status: 0,
+        message: "Unable to generate PDF at the moment.",
+      });
+    });
+  });
+}
 function ConvertToBase64(imagePath) {
   // Check if the file exists
   if (fs.existsSync(imagePath)) {
@@ -618,4 +720,5 @@ module.exports = {
   Docmosis,
   dataPrepare,
   ConvertToBase64,
+  DocmosisTestLab,
 };

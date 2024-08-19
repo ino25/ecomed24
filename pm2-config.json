@@ -1,0 +1,33 @@
+{
+    "apps": [
+        {
+            "name": "ecomed24",
+            "script": "app.js",
+            "exec_mode": "fork",
+            "instances": 1,
+            "max_memory_restart": "500M",
+            "merge_logs": true,
+            "env": {
+                "NODE_ENV": "development",
+                "NODE_PATH": "/var/www/html/node-app-ecomed24",
+                "BASE_PATH": "/var/www/html/",
+                "SITE_URL": "https://devapp.ecomed24.com",
+                "APP_URL": "https://devapp.ecomed24.com:2001",
+                "URL": "localhost",
+                "HOST": "ecomedtest240.czszvxooo21r.us-east-1.rds.amazonaws.com",
+                "PORT": "2001",
+                "USERNAME": "admin",
+                "PASS": "1TdHaN6b0bB1VPw0YvDg",
+                "DB": "ecomed24",
+                "SECRET": "supersecret",
+                "DOCMOSIS_RenderURL": "https://eu.dws3.docmosis.com/api/render",
+                "DOCMOSIS_ACCESSKEY": "ODBiYzNkNzItYWE2Ni00ZGIzLWE0YzgtY2MzYjYzODkwZmRjOjA4MjQ5MjQ",
+                "MFROM": "no-reply@ecomed24.com",
+                "MHOST": "email-smtp.us-east-1.amazonaws.com",
+                "MUSER": "AKIA3YNYOJUCTQI3WO5Z",
+                "MPASS": "BB7J5UtFSNzFyBJ5UwbloWNXadXn3uDAdkUJx38+UCUQ",
+                "MPORT": "587"
+            }
+        }
+    ]
+}

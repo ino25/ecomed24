@@ -20,6 +20,7 @@ Role.belongsTo(User, { as: "addedby_details", foreignKey: "added_by" });
 Role.belongsTo(User, { as: "updatedby_details", foreignKey: "updated_by" });
 Role.belongsTo(Organisation, { as: "org_details", foreignKey: "org_id" });
 
+Role.hasMany(RolePermissionsMap, { as: "permissions", foreignKey: "role_id" });
 // Roles
 exports.getList = async (req, res) => {
   try {
@@ -106,7 +107,7 @@ exports.getByID = async (req, res) => {
         [
           Sequelize.fn(
             "DATE_FORMAT",
-            Sequelize.col("createdAt"),
+            Sequelize.col("Role.createdAt"),
             "%d/%m/%Y %H:%i"
           ),
           "createdAt",
@@ -114,13 +115,21 @@ exports.getByID = async (req, res) => {
         [
           Sequelize.fn(
             "DATE_FORMAT",
-            Sequelize.col("updatedAt"),
+            Sequelize.col("Role.updatedAt"),
             "%d/%m/%Y %H:%i"
           ),
           "updatedAt",
         ],
       ],
       where: { id: req.params.id },
+      include: [
+        {
+          model: RolePermissionsMap,
+          attributes: ["id", "role_id", "op_id", "org_id", "status"],
+          as: "permissions",
+          // where: { status: 1 },
+        },
+      ],
     });
     if (RoleModal === null) {
       res.json({ status: 0, message: langCommon.nodatafound });
@@ -137,29 +146,36 @@ exports.getByID = async (req, res) => {
 };
 exports.add = async (req, res) => {
   try {
-    let permissions = req.body.permissions;
-    RoleModal = await Role.create({
-      name: req.body.name,
-      description: req.body.description,
-      org_id: req.org_id,
-      status: req.body.status,
-      added_by: req.userId,
+    RoleModalExists = await Role.findOne({
+      where: { name: req.body.name, org_id: req.org_id },
     });
-
-    if (RoleModal === null) {
-      res.json({ status: 0, message: langCommon.errormessage });
-    } else {
-      permissions.forEach(async function (permissionid) {
-        RolePermissionsMapModal = await RolePermissionsMap.create({
-          role_id: RoleModal.id,
-          op_id: permissionid,
-          org_id: req.org_id,
-          status: req.body.status,
-          added_by: req.userId,
-        });
+    if (RoleModalExists === null) {
+      let permissions = req.body.permissions;
+      RoleModal = await Role.create({
+        name: req.body.name,
+        description: req.body.description,
+        org_id: req.org_id,
+        status: req.body.status,
+        added_by: req.userId,
       });
 
-      res.json({ status: 1, message: langRoleModule.add, data: "" });
+      if (RoleModal === null) {
+        res.json({ status: 0, message: langCommon.errormessage });
+      } else {
+        permissions.forEach(async function (permissionid) {
+          RolePermissionsMapModal = await RolePermissionsMap.create({
+            role_id: RoleModal.id,
+            op_id: permissionid,
+            org_id: req.org_id,
+            status: req.body.status,
+            added_by: req.userId,
+          });
+        });
+
+        res.json({ status: 1, message: langRoleModule.add, data: "" });
+      }
+    } else {
+      res.json({ status: 0, message: "Role Already Exists with same name" });
     }
   } catch (error) {
     throw error;
@@ -168,6 +184,7 @@ exports.add = async (req, res) => {
 exports.update = async (req, res) => {
   try {
     let permissions = req.body.permissions;
+    let RoleInactivePermi = req.body.inactive_permissions;
     RoleModal = await Role.update(
       {
         name: req.body.name,
@@ -183,17 +200,66 @@ exports.update = async (req, res) => {
     if (RoleModal === null) {
       res.json({ status: 0, message: langCommon.errormessage });
     } else {
-      MapModal = await RolePermissionsMap.destroy({
-        where: { role_id: req.params.id },
-      });
+      // MapModal = await RolePermissionsMap.destroy({
+      //   where: { role_id: req.params.id },
+      // });
+
       permissions.forEach(async function (permissionid) {
-        RolePermissionsMapModal = await RolePermissionsMap.create({
-          role_id: req.params.id,
-          op_id: permissionid,
-          org_id: req.org_id,
-          status: req.body.status,
-          added_by: req.userId,
+        // Try to find the user first
+        const item = await RolePermissionsMap.findOne({
+          where: {
+            role_id: req.params.id,
+            op_id: permissionid,
+            org_id: req.org_id,
+          },
         });
+        if (item) {
+          await item.update({
+            status: 1,
+          });
+        } else {
+          // If OrgPermissionItems does not exist, create
+          RolePermissionsMapModal = await RolePermissionsMap.create({
+            role_id: req.params.id,
+            op_id: permissionid,
+            org_id: req.org_id,
+            status: req.body.status,
+            added_by: req.userId,
+          });
+        }
+
+        // RolePermissionsMapModal = await RolePermissionsMap.create({
+        //   role_id: req.params.id,
+        //   op_id: permissionid,
+        //   org_id: req.org_id,
+        //   status: req.body.status,
+        //   added_by: req.userId,
+        // });
+      });
+
+      RoleInactivePermi.forEach(async function (permissionid) {
+        // Try to find the user first
+        const item = await RolePermissionsMap.findOne({
+          where: {
+            role_id: req.params.id,
+            op_id: permissionid,
+            org_id: req.org_id,
+          },
+        });
+        if (item) {
+          await item.update({
+            status: 0,
+          });
+        } else {
+          // If OrgPermissionItems does not exist, create
+          // RolePermissionsMapModal = await RolePermissionsMap.create({
+          //   role_id: req.params.id,
+          //   op_id: permissionid,
+          //   org_id: req.org_id,
+          //   status: 0,
+          //   added_by: req.userId,
+          // });
+        }
       });
       res.json({ status: 1, message: langRoleModule.update, data: "" });
     }
@@ -206,13 +272,14 @@ exports.delete = async (req, res) => {
     RoleModal = await RolePermissionsMap.destroy({
       where: { role_id: req.params.id },
     });
-    RoleModal = await Role.destroy({ where: { id: req.params.id } });
+
     if (RoleModal === null) {
       res.json({ status: 0, message: langCommon.errormessage });
     } else {
+      RoleModal = await Role.destroy({ where: { id: req.params.id } });
       res.json({
         status: 1,
-        message: langRoleModule.appointment.delete,
+        message: "Role Successfully deleted",
         data: "",
       });
     }
@@ -229,6 +296,10 @@ exports.status = async (req, res) => {
     if (RoleModal === null) {
       res.json({ status: 0, message: langCommon.errormessage });
     } else {
+      RolePermissionsMapModal = await RolePermissionsMap.update(
+        { status: req.body.status },
+        { where: { role_id: req.params.id } }
+      );
       res.json({
         status: 1,
         message: langRoleModule.appointment.status,
