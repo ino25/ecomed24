@@ -2,9 +2,9 @@ const express = require("express");
 const router = express.Router();
 const VerifyToken = require("./VerifyToken");
 const labController = require("../controllers/lab.controller");
-const multer = require('multer');
+const multer = require("multer");  // Déclarez multer ici une seule fois
 
-// Configure multer storage
+// Configurez le stockage multer
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, 'uploads/'); // Assurez-vous que ce répertoire existe
@@ -16,8 +16,6 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-const multer = require("multer");
-const upload = multer({ dest: "uploads/" });
 router.get("/labs", VerifyToken, labController.getAllLabs);
 router.post("/listactes", VerifyToken, labController.getActeDemande);
 router.post("/statistiques", VerifyToken, labController.getStats);

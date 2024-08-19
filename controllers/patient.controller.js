@@ -47,6 +47,7 @@ var TestRequests = require("../models/TestRequests");
 var Illness = require("../models/Illness");
 var NosologieIllness = require("../models/NosologieIllness");
 var IllnessConsultation = require("../models/IllnessConsultation");
+var PartenariatSanteAssurance = require("../models/PartenariatSanteAssurance");
 var TestItems = require("../models/TestItems");
 var PrescribedMedicins = require("../models/PrescribedMedicins");
 var ClinicalDesease = require("../models/ClinicalDesease");
