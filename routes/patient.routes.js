@@ -515,4 +515,7 @@ router.get(
   VerifyToken,
   patientController.getPaymentDepositLogs
 );
+
+router.get('/invoice-price-grid/:patient_id', VerifyToken, patientController.getPaymentDetailsPriceGrids);
+
 module.exports = router;

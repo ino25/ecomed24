@@ -1572,7 +1572,8 @@ exports.getLightOrgInvoicePayments = async (req, res) => {
     throw error;
   }
 };
-exports.getPaymentDetailsInvoicePayments = async (req, res) => {
+//getPaymentDetailsPriceGrids
+exports.getPaymentDetailsPriceGrids = async (req, res) => {
   let data = {};
   data.labs = [];
   data.patient = await Patient.findOne({
@@ -1765,6 +1766,190 @@ exports.getPaymentDetailsInvoicePayments = async (req, res) => {
     data: data,
   });
 };
+
+
+exports.getPaymentDetailsInvoicePayments = async (req, res) => {
+  try {
+    let data = {};
+    data.labs = [];
+
+    // Récupération des informations du patient
+    data.patient = await Patient.findOne({
+      where: { id: req.params.patient_id },
+    });
+
+    // Récupération des paramètres de réglages
+    const SettingsModal = await Settings.findOne({ attributes: ["discount"] });
+    data.discount_type = SettingsModal ? SettingsModal.discount : null;
+
+    // Récupération des informations de l'utilisateur actuel
+    data.currentuser = await User.findOne({
+      attributes: [
+        "id",
+        ["id_organisation", "org_id"],
+        "first_name",
+        "last_name",
+        "username",
+        "email",
+      ],
+      where: { id: req.userId },
+    });
+
+    // Récupération des informations des mutuelles du patient
+    data.mutuelles = await PatientMutuelle.findAll({
+      attributes: [
+        ["idpm", "id"],
+        ["pm_idmutuelle", "payer_name"],
+        "pm_idmutuelle",
+        "pm_numpolice",
+        "pm_charge",
+        "pm_datevalid",
+        "added_by",
+        "updated_by",
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("PatientMutuelle.createdAt"),
+            "%d-%m-%Y %H:%i:%s"
+          ),
+          "createdAt",
+        ],
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("PatientMutuelle.updatedAt"),
+            "%d-%m-%Y %H:%i:%s"
+          ),
+          "updatedAt",
+        ],
+      ],
+      where: { pm_idpatent: req.params.patient_id, pm_status: 1 },
+      order: [["id", "DESC"]],
+      include: [
+        {
+          model: User,
+          attributes: [
+            "id",
+            ["id_organisation", "org_id"],
+            "first_name",
+            "last_name",
+            "username",
+            "email",
+          ],
+          as: "addedby_details",
+        },
+        {
+          model: User,
+          attributes: [
+            "id",
+            ["id_organisation", "org_id"],
+            "first_name",
+            "last_name",
+            "username",
+            "email",
+          ],
+          as: "updatedby_details",
+        },
+        {
+          model: Organisation,
+          attributes: ["id", "nom", "email", "adresse", "type"],
+          as: "org_details",
+        },
+        {
+          model: Organisation,
+          attributes: ["id", "nom", "email", "adresse", "type"],
+          as: "nom_mutuelle_details",
+        },
+      ],
+    });
+
+    // Détermination du type de l'organisation
+    let organisationType = 'PAF'; // Valeur par défaut
+    if (data.mutuelles.length > 0) {
+      organisationType = data.mutuelles[0].nom_mutuelle_details?.type || 'PAF';
+    }
+
+    // Construction de la requête SQL en fonction du type d'organisation
+    let query = '';
+    const id_organisation = req.org_id;
+
+    if (organisationType === 'IPM') {
+      query = `
+        SELECT 
+          pricegriddetails.productID AS id, 
+          payment_category.prestation, 
+          pricegriddetails.adjustedPrice AS tarif_public, 
+          pricegrids.gridName, 
+          setting_service_specialite.name_specialite 
+        FROM 
+          pricegriddetails 
+        JOIN payment_category ON payment_category.id = pricegriddetails.productID 
+        JOIN pricegrids ON pricegrids.gridID = pricegriddetails.gridID 
+        JOIN setting_service_specialite ON setting_service_specialite.idspe = payment_category.id_spe 
+        JOIN organisation ON organisation.id = pricegrids.organizationID 
+        WHERE 
+          pricegrids.gridName = 'IPM' 
+          AND pricegrids.organizationID = ${id_organisation}`;
+    } else if (organisationType === 'Assurance') {
+      query = `
+        SELECT 
+          pricegriddetails.productID AS id, 
+          payment_category.prestation, 
+          pricegriddetails.adjustedPrice AS tarif_public, 
+          pricegrids.gridName, 
+          setting_service_specialite.name_specialite 
+        FROM 
+          pricegriddetails 
+        JOIN payment_category ON payment_category.id = pricegriddetails.productID 
+        JOIN pricegrids ON pricegrids.gridID = pricegriddetails.gridID 
+        JOIN setting_service_specialite ON setting_service_specialite.idspe = payment_category.id_spe 
+        JOIN organisation ON organisation.id = pricegrids.organizationID 
+        WHERE 
+          pricegrids.gridName = 'Assurance' 
+          AND pricegrids.organizationID = ${id_organisation}`;
+    } else {
+      query = `
+        SELECT 
+          pricegriddetails.productID AS id, 
+          payment_category.prestation, 
+          pricegriddetails.adjustedPrice AS tarif_public, 
+          pricegrids.gridName, 
+          setting_service_specialite.name_specialite 
+        FROM 
+          pricegriddetails 
+        JOIN payment_category ON payment_category.id = pricegriddetails.productID 
+        JOIN pricegrids ON pricegrids.gridID = pricegriddetails.gridID 
+        JOIN setting_service_specialite ON setting_service_specialite.idspe = payment_category.id_spe 
+        JOIN organisation ON organisation.id = pricegrids.organizationID 
+        WHERE 
+          pricegrids.organizationID = ${id_organisation} 
+          AND organisation.pricing_category = pricegrids.gridID`;
+    }
+
+    // Exécution de la requête
+    data.services = await Database.query(query, {
+      type: Database.QueryTypes.SELECT,
+    });
+
+    // Récupération des tests de laboratoire
+    data.labs = await LabTest.findAll({ where: { id_organisation: req.org_id } });
+
+    // Retour des données au format JSON
+    res.json({
+      status: 1,
+      message: 'Détails du paiement récupérés avec succès.',
+      data: data,
+    });
+  } catch (error) {
+    console.error("Erreur lors de la récupération des détails du paiement :", error);
+    res.status(500).json({
+      status: 0,
+      message: 'Une erreur est survenue lors de la récupération des détails du paiement.',
+      error: error.message,
+    });
+  }
+};
+
 exports.addPayments = async (req, res) => {
   try {
     let getData = [],
@@ -2381,12 +2566,12 @@ exports.getAssurance = async (req, res) => {
         },
         {
           model: Organisation,
-          attributes: ["id", "nom", "email", "adresse"],
+          attributes: ["id", "nom", "email", "adresse", "type"],
           as: "org_details",
         },
         {
           model: Organisation,
-          attributes: ["id", "nom", "email", "adresse"],
+          attributes: ["id", "nom", "email", "adresse", "type"],
           as: "nom_mutuelle_details",
         },
       ],
@@ -2449,12 +2634,12 @@ exports.getAssuranceByID = async (req, res) => {
         },
         {
           model: Organisation,
-          attributes: ["id", "nom", "email", "adresse"],
+          attributes: ["id", "nom", "email", "adresse", "type"],
           as: "org_details",
         },
         {
           model: Organisation,
-          attributes: ["id", "nom", "email", "adresse"],
+          attributes: ["id", "nom", "email", "adresse", "type"],
           as: "nom_mutuelle_details",
         },
       ],
