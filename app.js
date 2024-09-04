@@ -18,16 +18,15 @@ const { emailSchedule } = require("./controllers/cron.controller");
 
 if (process.env.NODE_ENV === "production") {
   cron.schedule("*/5 * * * * *", emailSchedule);
+}
+
+if (process.env.SSL === "enabled") {
   protocol = https;
+  const sslkey = process.env.SSL_KEY;
+  const sslcert = process.env.SSL_CERT;
   options = {
-    key: fs.readFileSync(
-      "/etc/letsencrypt/live/devapp.ecomed24.com/privkey.pem",
-      "utf8"
-    ),
-    cert: fs.readFileSync(
-      "/etc/letsencrypt/live/devapp.ecomed24.com/fullchain.pem",
-      "utf8"
-    ),
+    key: fs.readFileSync(sslkey, "utf8"),
+    cert: fs.readFileSync(sslcert, "utf8"),
   };
 } else {
   protocol = http;

@@ -26,7 +26,34 @@
                 "MHOST": "email-smtp.us-east-1.amazonaws.com",
                 "MUSER": "AKIA3YNYOJUCTQI3WO5Z",
                 "MPASS": "BB7J5UtFSNzFyBJ5UwbloWNXadXn3uDAdkUJx38+UCUQ",
-                "MPORT": "587"
+                "MPORT": "587",
+                "SSL": "enabled",
+                "SSL_KEY": "/etc/letsencrypt/live/devapp.ecomed24.com/privkey.pem",
+                "SSL_CERT": "/etc/letsencrypt/live/devapp.ecomed24.com/cert.pem"
+            },
+            "env_production": {
+                "NODE_ENV": "production",
+                "NODE_PATH": "/var/www/html/node-app-ecomed24",
+                "BASE_PATH": "/var/www/html/",
+                "SITE_URL": "https://app.ecomed24.com",
+                "APP_URL": "https://app.ecomed24.com:2001",
+                "URL": "localhost",
+                "HOST": "ecomedtest240.czszvxooo21r.us-east-1.rds.amazonaws.com",
+                "PORT": "2001",
+                "USERNAME": "admin",
+                "PASS": "1TdHaN6b0bB1VPw0YvDg",
+                "DB": "ecomed24",
+                "SECRET": "supersecret",
+                "DOCMOSIS_RenderURL": "https://eu.dws3.docmosis.com/api/render",
+                "DOCMOSIS_ACCESSKEY": "ODBiYzNkNzItYWE2Ni00ZGIzLWE0YzgtY2MzYjYzODkwZmRjOjA4MjQ5MjQ",
+                "MFROM": "no-reply@ecomed24.com",
+                "MHOST": "email-smtp.us-east-1.amazonaws.com",
+                "MUSER": "AKIA3YNYOJUCTQI3WO5Z",
+                "MPASS": "BB7J5UtFSNzFyBJ5UwbloWNXadXn3uDAdkUJx38+UCUQ",
+                "MPORT": "587",
+                "SSL": "enabled",
+                "SSL_KEY": "/etc/letsencrypt/live/app.ecomed24.com/privkey.pem",
+                "SSL_CERT": "/etc/letsencrypt/live/app.ecomed24.com/cert.pem"
             }
         }
     ]
