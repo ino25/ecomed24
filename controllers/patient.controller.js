@@ -51,6 +51,9 @@ var PartenariatSanteAssurance = require("../models/PartenariatSanteAssurance");
 var TestItems = require("../models/TestItems");
 var PrescribedMedicins = require("../models/PrescribedMedicins");
 var ClinicalDesease = require("../models/ClinicalDesease");
+var ServiceRequest = require('../models/ServiceRequest'); 
+var ServiceInstance = require('../models/ServiceInstance');
+var PaymentBIS = require('../models/PaymentBis');
 const multer = require("multer");
 const fs = require("fs");
 const Docmosis = require("../helpers/DocmosisHelper");
@@ -6405,5 +6408,156 @@ exports.getPatient = async (req, res) => {
     }
   } catch (error) {
     throw error;
+  }
+};
+exports.createServiceRequestWithInstances = async (req, res) => {
+  const {
+    patientID,
+    organisationID,
+    partenaireID,
+    noteClinique,
+    prescripteur,
+    status,
+    instances,
+    amount,
+    walletType,
+    amountDue,
+  } = req.body;
+
+  try {
+    // Créer le ServiceRequest
+    const newServiceRequest = await ServiceRequest.create({
+      patientID,
+      organisationID,
+      partenaireID,
+      status,
+      noteClinique,
+      prescripteur,
+      lastModifiedBy: req.userId,
+    });
+
+    if (!newServiceRequest) {
+      return res
+        .status(400)
+        .json({ status: 0, message: "Échec de la création de la demande de service." });
+    }
+
+    // Créer les instances de service associées
+    const serviceID = newServiceRequest.requestID;
+    const serviceInstancesData = instances.map((instance) => ({
+      serviceID,
+      organisationID: instance.organisationID,
+      patientID: instance.patientID,
+      status: instance.status,
+      productID: instance.productID,
+      priceProduct: instance.priceProduct,
+      lastModifiedBy: req.userId,
+    }));
+
+    const newServiceInstances = await ServiceInstance.bulkCreate(serviceInstancesData);
+
+    if (!newServiceInstances) {
+      return res
+        .status(400)
+        .json({ status: 0, message: "Échec de la création des instances de service." });
+    }
+
+    // Créer le paiement associé
+    const newPayment = await PaymentBIS.create({
+      serviceRequestID: newServiceRequest.requestID,
+      amount,
+      amountDue,
+      walletType,
+      date_created: new Date(),
+    });
+
+    if (!newPayment) {
+      return res
+        .status(400)
+        .json({ status: 0, message: "Échec de la création du paiement." });
+    }
+
+    const OrganisationModal = await Organisation.findOne({
+      where: { id: organisationID },
+    });
+    // Récupérer les informations détaillées du patient
+    const patientDetails = await Patient.findOne({
+      attributes: [
+        "id",
+        "unique_id",
+        "name",
+        "last_name",
+        ["patient_id", "code"],
+        ["sex", "gender"],
+        "sex",
+        "age",
+        "email",
+        "phone",
+        "address",
+        "country",
+        "region",
+        "district",
+        ["registration_time", "register"],
+        "grade",
+        "estCivil",
+        "passport",
+        "matricule",
+        ["bloodgroup", "blood_type"],
+        "birthdate",
+        ["birth_position", "birth_place"],
+        "religion",
+        "img_url",
+        ["nom_contact", "emergency_contact_name"],
+        ["phone_contact", "emergency_contact_no"],
+      ],
+      where: { id: patientID },
+      include: [
+        {
+          model: Region,
+          attributes: ["id", "name"],
+          as: "region_details",
+        },
+        {
+          model: District,
+          attributes: ["id", "name"],
+          as: "district_details",
+        },
+      ],
+    });
+
+    if (!patientDetails) {
+      return res
+        .status(400)
+        .json({ status: 0, message: "Patient non trouvé." });
+    }
+
+    // Récupérer les noms des prestations pour chaque productID
+    const prestationNames = await Promise.all(
+      newServiceInstances.map(async (instance) => {
+        const prestation = await PaymentCategory.findOne({
+          where: { id: instance.productID },
+        });
+        return {
+          ...instance.dataValues,
+          prestationName: prestation ? prestation.prestation : "N/A",
+        };
+      })
+    );
+
+    // Inclure toutes les informations dans la réponse
+    res.json({
+      status: 1,
+      message: "Demande de service, instances et paiement créés avec succès.",
+      data: {
+        serviceRequest: newServiceRequest,
+        patientDetails,
+        serviceInstances: prestationNames,
+        payment: newPayment,
+        organisationDetails: OrganisationModal,
+      },
+    });
+  } catch (error) {
+    console.error("Erreur lors de la création du service, des instances et du paiement:", error);
+    res.status(500).json({ status: 0, message: "Erreur interne du serveur." });
   }
 };
