@@ -339,49 +339,64 @@ exports.getNosologieReport = async (req, res) => {
   try {
     const { date_type, from_date, to_date } = req.query;
     // req.org_id;
+    let dateCondition = "";
+    if (date_type) {
+      if (date_type === "date_range" && from_date && to_date) {
+        const startDate = moment(from_date).format("YYYY-MM-DD 00:00:00");
+        const endDate = moment(to_date).format("YYYY-MM-DD 23:59:59");
+        dateCondition = `AND d.createdAt BETWEEN '${startDate}' AND '${endDate}'`;
+      } else {
+        const { startDate, endDate } = getDateRange(date_type);
+        const formattedStartDate = moment(startDate).format(
+          "YYYY-MM-DD 00:00:00"
+        );
+        const formattedEndDate = moment(endDate).format("YYYY-MM-DD 23:59:59");
+        dateCondition = `AND d.createdAt BETWEEN '${formattedStartDate}' AND '${formattedEndDate}'`;
+      }
+    }
+    // req.org_id;
     const sql = `
-        SELECT
-            sub.name,
-            COUNT(CASE WHEN p.age BETWEEN 0 AND 1 AND p.sex = 'Masculin' THEN 1 END) AS '0 - 1 an M',
-            COUNT(CASE WHEN p.age BETWEEN 0 AND 1 AND p.sex = 'Feminin' THEN 1 END) AS '0 - 1 an F',
-            COUNT(CASE WHEN p.age BETWEEN 2 AND 4 AND p.sex = 'Masculin' THEN 1 END) AS '1 - 4 ans M',
-            COUNT(CASE WHEN p.age BETWEEN 2 AND 4 AND p.sex = 'Feminin' THEN 1 END) AS '1 - 4 ans F',
-            COUNT(CASE WHEN p.age BETWEEN 5 AND 14 AND p.sex = 'Masculin' THEN 1 END) AS '5 - 14 ans M',
-            COUNT(CASE WHEN p.age BETWEEN 5 AND 14 AND p.sex = 'Feminin' THEN 1 END) AS '5 - 14 ans F',
-            COUNT(CASE WHEN p.age BETWEEN 15 AND 19 AND p.sex = 'Masculin' THEN 1 END) AS '15 - 19 ans M',
-            COUNT(CASE WHEN p.age BETWEEN 15 AND 19 AND p.sex = 'Feminin' THEN 1 END) AS '15 - 19 ans F',
-            COUNT(CASE WHEN p.age BETWEEN 20 AND 25 AND p.sex = 'Masculin' THEN 1 END) AS '20 - 25 ans M',
-            COUNT(CASE WHEN p.age BETWEEN 20 AND 25 AND p.sex = 'Feminin' THEN 1 END) AS '20 - 25 ans F',
-            COUNT(CASE WHEN p.age BETWEEN 26 AND 49 AND p.sex = 'Masculin' THEN 1 END) AS '26 - 49 ans M',
-            COUNT(CASE WHEN p.age BETWEEN 26 AND 49 AND p.sex = 'Feminin' THEN 1 END) AS '26 - 49 ans F',
-            COUNT(CASE WHEN p.age BETWEEN 50 AND 59 AND p.sex = 'Masculin' THEN 1 END) AS '50 - 59 ans M',
-            COUNT(CASE WHEN p.age BETWEEN 50 AND 59 AND p.sex = 'Feminin' THEN 1 END) AS '50 - 59 ans F',
-            COUNT(CASE WHEN p.age >= 60 AND p.sex = 'Masculin' THEN 1 END) AS '60 ans & + M',
-            COUNT(CASE WHEN p.age >= 60 AND p.sex = 'Feminin' THEN 1 END) AS '60 ans & + F',
-            COUNT(CASE WHEN p.age IS NULL AND p.sex = 'Masculin' THEN 1 END) AS 'Age ND M',
-            COUNT(CASE WHEN p.age IS NULL AND p.sex = 'Feminin' THEN 1 END) AS 'Age ND F',
-            COUNT(*) AS 'TOTAL'
-        FROM (
-            SELECT
-                name,
-                COUNT(*) as disease_count
-            FROM
-                clinical_desease
-                WHERE clinical_desease.type='nosologie'
-            GROUP BY
-                name
-            ORDER BY
-                disease_count DESC
-            LIMIT 50
-        ) sub
-        INNER JOIN
-            clinical_desease d ON sub.name = d.name
-        INNER JOIN
-            patient p ON p.id = d.patient_id
-        WHERE d.type='nosologie'
-        GROUP BY
-            sub.name
-    `;
+          SELECT
+              sub.name,
+              COUNT(CASE WHEN p.age BETWEEN 0 AND 1 AND p.sex = 'Masculin' THEN 1 END) AS '0 - 1 an M',
+              COUNT(CASE WHEN p.age BETWEEN 0 AND 1 AND p.sex = 'Feminin' THEN 1 END) AS '0 - 1 an F',
+              COUNT(CASE WHEN p.age BETWEEN 2 AND 4 AND p.sex = 'Masculin' THEN 1 END) AS '1 - 4 ans M',
+              COUNT(CASE WHEN p.age BETWEEN 2 AND 4 AND p.sex = 'Feminin' THEN 1 END) AS '1 - 4 ans F',
+              COUNT(CASE WHEN p.age BETWEEN 5 AND 14 AND p.sex = 'Masculin' THEN 1 END) AS '5 - 14 ans M',
+              COUNT(CASE WHEN p.age BETWEEN 5 AND 14 AND p.sex = 'Feminin' THEN 1 END) AS '5 - 14 ans F',
+              COUNT(CASE WHEN p.age BETWEEN 15 AND 19 AND p.sex = 'Masculin' THEN 1 END) AS '15 - 19 ans M',
+              COUNT(CASE WHEN p.age BETWEEN 15 AND 19 AND p.sex = 'Feminin' THEN 1 END) AS '15 - 19 ans F',
+              COUNT(CASE WHEN p.age BETWEEN 20 AND 25 AND p.sex = 'Masculin' THEN 1 END) AS '20 - 25 ans M',
+              COUNT(CASE WHEN p.age BETWEEN 20 AND 25 AND p.sex = 'Feminin' THEN 1 END) AS '20 - 25 ans F',
+              COUNT(CASE WHEN p.age BETWEEN 26 AND 49 AND p.sex = 'Masculin' THEN 1 END) AS '26 - 49 ans M',
+              COUNT(CASE WHEN p.age BETWEEN 26 AND 49 AND p.sex = 'Feminin' THEN 1 END) AS '26 - 49 ans F',
+              COUNT(CASE WHEN p.age BETWEEN 50 AND 59 AND p.sex = 'Masculin' THEN 1 END) AS '50 - 59 ans M',
+              COUNT(CASE WHEN p.age BETWEEN 50 AND 59 AND p.sex = 'Feminin' THEN 1 END) AS '50 - 59 ans F',
+              COUNT(CASE WHEN p.age >= 60 AND p.sex = 'Masculin' THEN 1 END) AS '60 ans & + M',
+              COUNT(CASE WHEN p.age >= 60 AND p.sex = 'Feminin' THEN 1 END) AS '60 ans & + F',
+              COUNT(CASE WHEN p.age IS NULL AND p.sex = 'Masculin' THEN 1 END) AS 'Age ND M',
+              COUNT(CASE WHEN p.age IS NULL AND p.sex = 'Feminin' THEN 1 END) AS 'Age ND F',
+              COUNT(*) AS 'TOTAL'
+          FROM (
+              SELECT
+                  name,
+                  COUNT(*) as disease_count
+              FROM
+                  clinical_desease
+                  WHERE clinical_desease.type='nosologie' and org_id=${req.org_id}
+              GROUP BY
+                  name
+              ORDER BY
+                  disease_count DESC
+          ) sub
+          INNER JOIN
+              clinical_desease d ON sub.name = d.name
+          INNER JOIN
+              patient p ON p.id = d.patient_id
+          WHERE d.type='nosologie' ${dateCondition}
+          GROUP BY
+              sub.name
+      `;
 
     OrganisationModal = await Database.query(sql, {
       type: Database.QueryTypes.SELECT,

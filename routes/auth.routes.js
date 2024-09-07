@@ -14,7 +14,7 @@ const authController = require("../controllers/auth.controller");
 router.post("/login", authController.Login);
 router.post("/login-with-otp", authController.LoginWithOtp);
 router.post("/verify-otp", authController.VerifyOTP);
-router.post("/forgot-password", authController.ForgotPassword);
+router.patch("/forgot-password", authController.ForgotPassword);
 router.post("/activate", authController.AccountActivation);
 router.get("/logout", VerifyToken, authController.Logout);
 router.get("/authcheck", VerifyToken, authController.getAuthcheck);

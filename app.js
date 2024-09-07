@@ -81,6 +81,7 @@ const organizationRoutes = require("./routes/organization.routes");
 const rolesRoutes = require("./routes/role.routes");
 const permisssionRoutes = require("./routes/permission.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
+const reportRoutes = require("./routes/report.routes");
 
 if (app.get("env") === "production") {
   app.use(morgan("combined"));
@@ -119,8 +120,7 @@ app.use("/organization", organizationRoutes);
 app.use("/roles", rolesRoutes);
 app.use("/permissions", permisssionRoutes);
 app.use("/dashboard", dashboardRoutes);
-// Create HTTPS server
-// const server = server.createServer(options, app);
+app.use("/report", reportRoutes);
 
 // Start server
 const PORT = process.env.PORT || 3001;

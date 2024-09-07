@@ -10,12 +10,14 @@ var jwt = require("jsonwebtoken");
 var User = require("../models/User");
 var GeneratedOtp = require("../models/GeneratedOtp");
 var Email = require("../models/Email");
+var AutoEmailTemplate = require("../models/AutoEmailTemplate");
 var Sms = require("../models/Sms");
 const multer = require("multer");
 const fs = require("fs");
 const i18n = require("i18n");
 const langAuth = i18n.__("auth");
 const langCommon = i18n.__("common");
+const { replaceShortcodes } = require("../helpers/ShortcodesHelper");
 //////Modal Relationship
 
 exports.Login = async (req, res) => {
@@ -320,120 +322,181 @@ exports.getUserPermission = async (req, res) => {
   }
 };
 
+// exports.ForgotPassword = async (req, res) => {
+//   try {
+//     let postData = [],
+//       postPass = [],
+//       mailData = {};
+//     if (!req.body.email) {
+//       return res.json({
+//         status: 0,
+//         message: "Bad Request. Check Body Parameters.",
+//       });
+//     }
+//     const organization = req.body.organization.trim();
+//     const userMail = req.body.email.trim();
+
+//     postData.push(organization);
+//     postData.push(userMail);
+//     let password;
+//     // crypto.randomBytes(8, (err, buf) => {
+//     // if (err) throw err;
+//     // password = buf.toString('hex');
+//     // });
+//     crypto.randomBytes(4, (err, buf) => {
+//       if (err) throw err;
+//       password = buf.toString("hex");
+//     });
+
+//     await query(user.getRecoveryUser, postData)
+//       .then(async (resp) => {
+//         if (resp.length) {
+//           let hash = crypto.createHash("md5").update(password).digest("hex");
+//           postPass.push(hash);
+//           postPass.push(resp[0].id);
+//           postPass.push(resp[0].org_id);
+//           const userName = resp[0].name.trim();
+
+//           await user
+//             .setUsertempPassword(postPass)
+//             .then(async (result) => {
+//               if (result) {
+//                 // Get student email template from database
+//                 await query(user.getMailBody, [organization, "forgot", 3]).then(
+//                   async (data) => {
+//                     if (data.length) {
+//                       mailData = JSON.parse(data[0].template);
+//                       // Reading email layout
+//                       mailData.email = file.readEmail("email.html");
+
+//                       // Replacing data in email template and email layout
+//                       mailData.gjshtml = mailData.gjshtml.replaceArray(
+//                         ["{{user}}", "{{password}}"],
+//                         [userName, password]
+//                       );
+//                       mailData.email = mailData.email.replaceArray(
+//                         ["{{title}}", "{{css}}", "{{body}}"],
+//                         ["Password Recovery", mailData.gjscss, mailData.gjshtml]
+//                       );
+
+//                       await mailer(
+//                         userMail,
+//                         "Contact <contact@pathfinderacademy.in>",
+//                         "Password Recovery",
+//                         mailData.email
+//                       )
+//                         .then(() => {
+//                           res.json({
+//                             status: 1,
+//                             message:
+//                               "Password reset successful, Please Check your inbox for temporary password!!",
+//                           });
+//                         })
+//                         .catch(() => {
+//                           res.json({
+//                             status: 0,
+//                             message:
+//                               "Something wrong with the mail server. Please contact admin.",
+//                           });
+//                         });
+//                     } else {
+//                       res.json({
+//                         status: 0,
+//                         message:
+//                           "No email template found. Please contact admin.",
+//                       });
+//                     }
+//                   }
+//                 );
+//               } else {
+//                 res.json({
+//                   status: 0,
+//                   message:
+//                     "You are not register or your account is not activated. Please contact admin.",
+//                 });
+//               }
+//             })
+//             .catch(() => {
+//               res.json({
+//                 status: 0,
+//                 message:
+//                   "Server busy. Please try after sometime or contact admin.",
+//               });
+//             });
+//         } else {
+//           res.json({
+//             status: 0,
+//             message: "This email is not registered with us!!",
+//           });
+//         }
+//       })
+//       .catch((err) => {
+//         res.json({
+//           status: 0,
+//           message: "Something Went Wrong. Please Try Again Later.",
+//         });
+//       });
+//   } catch (error) {
+//     throw error;
+//   }
+// };
+
 exports.ForgotPassword = async (req, res) => {
   try {
-    let postData = [],
-      postPass = [],
-      mailData = {};
-    if (!req.body.organization || !req.body.email) {
+    if (!req.body.email) {
       return res.json({
         status: 0,
-        message: "Bad Request. Check Body Parameters.",
+        message: langAuth.badrequest,
       });
     }
-    const organization = req.body.organization.trim();
-    const userMail = req.body.email.trim();
-
-    postData.push(organization);
-    postData.push(userMail);
-    let password;
-    // crypto.randomBytes(8, (err, buf) => {
-    // if (err) throw err;
-    // password = buf.toString('hex');
-    // });
-    crypto.randomBytes(4, (err, buf) => {
-      if (err) throw err;
-      password = buf.toString("hex");
+    var otp = Math.floor(100000 + Math.random() * 900000);
+    console.log(otp);
+    console.log("otp");
+    // var otp = "123456";
+    // let hash = crypto.createHash("md5").update(otp).digest("hex");
+    const userModal = await User.findOne({
+      where: { email: req.body.email.trim() },
     });
+    if (userModal === null) {
+      res.json({ status: 0, message: langAuth.login.usernotexist });
+    } else {
+      //OTP Integration Here
+      //   GeneratedOtp;
+      let phone = userModal.phone;
+      let email = userModal.email;
+      let UserID = userModal.id;
 
-    await query(user.getRecoveryUser, postData)
-      .then(async (resp) => {
-        if (resp.length) {
-          let hash = crypto.createHash("md5").update(password).digest("hex");
-          postPass.push(hash);
-          postPass.push(resp[0].id);
-          postPass.push(resp[0].org_id);
-          const userName = resp[0].name.trim();
-
-          await user
-            .setUsertempPassword(postPass)
-            .then(async (result) => {
-              if (result) {
-                // Get student email template from database
-                await query(user.getMailBody, [organization, "forgot", 3]).then(
-                  async (data) => {
-                    if (data.length) {
-                      mailData = JSON.parse(data[0].template);
-                      // Reading email layout
-                      mailData.email = file.readEmail("email.html");
-
-                      // Replacing data in email template and email layout
-                      mailData.gjshtml = mailData.gjshtml.replaceArray(
-                        ["{{user}}", "{{password}}"],
-                        [userName, password]
-                      );
-                      mailData.email = mailData.email.replaceArray(
-                        ["{{title}}", "{{css}}", "{{body}}"],
-                        ["Password Recovery", mailData.gjscss, mailData.gjshtml]
-                      );
-
-                      await mailer(
-                        userMail,
-                        "Contact <contact@pathfinderacademy.in>",
-                        "Password Recovery",
-                        mailData.email
-                      )
-                        .then(() => {
-                          res.json({
-                            status: 1,
-                            message:
-                              "Password reset successful, Please Check your inbox for temporary password!!",
-                          });
-                        })
-                        .catch(() => {
-                          res.json({
-                            status: 0,
-                            message:
-                              "Something wrong with the mail server. Please contact admin.",
-                          });
-                        });
-                    } else {
-                      res.json({
-                        status: 0,
-                        message:
-                          "No email template found. Please contact admin.",
-                      });
-                    }
-                  }
-                );
-              } else {
-                res.json({
-                  status: 0,
-                  message:
-                    "You are not register or your account is not activated. Please contact admin.",
-                });
-              }
-            })
-            .catch(() => {
-              res.json({
-                status: 0,
-                message:
-                  "Server busy. Please try after sometime or contact admin.",
-              });
-            });
-        } else {
-          res.json({
-            status: 0,
-            message: "This email is not registered with us!!",
-          });
-        }
-      })
-      .catch((err) => {
-        res.json({
-          status: 0,
-          message: "Something Went Wrong. Please Try Again Later.",
-        });
+      let passwordReset = langAuth.forgot_password.link_sent;
+      // otpMessage = otpMessage.replace("{otp}", email);
+      TemplateModal = await AutoEmailTemplate.findOne({
+        where: { type: "forgot_password_by_email", status: "Active" },
       });
+      const activation_code = moment().unix();
+      const BodyShortCodes = {
+        reset_url:
+          process.env.SITE_URL + "/auth/reset_password/" + activation_code,
+      };
+      let Message = replaceShortcodes(TemplateModal.message, BodyShortCodes);
+      EmailModal = await Email.create({
+        is_sent: null,
+        subject: TemplateModal.name,
+        date: moment().format("YYYY-MM-DD HH:mm:ss"),
+        message: Message,
+        reciepient: email,
+        attachment_path: "",
+        user: userModal.id,
+      });
+      console.log(BodyShortCodes);
+      // if user is found and valid create a Update OTP in db
+      await User.update(
+        {
+          forgotten_password_code: activation_code,
+          forgotten_password_time: moment().unix(),
+        },
+        { where: { id: userModal.id } }
+      );
+      res.json({ status: 1, message: passwordReset });
+    }
   } catch (error) {
     throw error;
   }

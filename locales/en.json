@@ -7,6 +7,9 @@
             "usernotexist":"User does not exists please please check your login credentials.",
             "otpnotvalid":"Please Enter Valid OTP",
             "loginsuccess":"Successfully Logged-In!!"
+        },
+        "forgot_password":{
+            "link_sent":"Password reset link sent to mail"
         }
     },
     "common":{
