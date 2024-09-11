@@ -538,4 +538,9 @@ router.get(
   VerifyToken,
   patientController.getPaymentDepositLogs
 );
+router.post(
+  "/referene-form/add",
+  VerifyToken,
+  patientController.addReferenceForm
+);
 module.exports = router;

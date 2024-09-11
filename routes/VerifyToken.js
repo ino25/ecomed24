@@ -16,7 +16,7 @@ async function verifyToken(req, res, next) {
         if (err) {
             const td = jwt.decode(token);
             // Set User Logout Flag
-            await User.update({ token: null,}, {where: {id: td.id,id_organisation:td.org_id,active:1}});
+            await User.update({ token: null, }, { where: { id: td.id, id_organisation: td.org_id, active: 1 } });
             return res.status(401).json({ status: 0, message: 'Failed to authenticate token.' });
         }
         console.log(decoded);

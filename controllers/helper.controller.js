@@ -20,6 +20,7 @@ var SettingService = require("../models/SettingService");
 var TestRequests = require("../models/TestRequests");
 var Prescriptions = require("../models/Prescriptions");
 var OrgPermissionItems = require("../models/OrgPermissionItems");
+var VisitReason = require("../models/VisitReason");
 var crypto = require("crypto");
 var Email = require("../models/Email");
 var AutoEmailTemplate = require("../models/AutoEmailTemplate");
@@ -254,8 +255,8 @@ exports.getOrganizationPermission = async (req, res) => {
 
     OrgPermissionModal = await Database.query(
       "SELECT op.id,sp.name,sp.description,sp.module_id FROM org_permission_items as op  LEFT JOIN system_permissions as sp ON op.sp_id= sp.id where op.status=1 and op.org_id = " +
-        req.org_id +
-        ";",
+      req.org_id +
+      ";",
       { type: Database.QueryTypes.SELECT }
     );
     if (OrgPermissionModal === null) {
@@ -337,17 +338,17 @@ const SHA1 = (msg) => {
     case 2:
       word_array.push(
         (msg.charCodeAt(msg_len - 2) << 24) |
-          (msg.charCodeAt(msg_len - 1) << 16) |
-          0x08000
+        (msg.charCodeAt(msg_len - 1) << 16) |
+        0x08000
       );
 
       break;
     case 3:
       word_array.push(
         (msg.charCodeAt(msg_len - 3) << 24) |
-          (msg.charCodeAt(msg_len - 2) << 16) |
-          (msg.charCodeAt(msg_len - 1) << 8) |
-          0x80
+        (msg.charCodeAt(msg_len - 2) << 16) |
+        (msg.charCodeAt(msg_len - 1) << 8) |
+        0x80
       );
 
       break;
@@ -683,3 +684,36 @@ exports.sendDocument = async (req, res) => {
     // throw error;
   }
 };
+
+exports.getvisitReason = async (req, res) => {
+  try {
+
+    const { searchTag = '' } = req.query;
+    const limit = 10;
+
+    const visitReasondata = await VisitReason.findAll({
+      attributes: [
+        "id",
+        "name",
+        "description"
+
+      ],
+      where: {
+        tag: {
+          [Sequelize.Op.like]: `%${searchTag}%`,
+        }
+      },
+      limit: parseInt(limit, 10)
+    });
+
+    if (visitReasondata.length === 0) {
+      res.json({ status: 0, message: "No Data Found" });
+    } else {
+      res.json({ status: 1, message: "Visit Reason List", data: visitReasondata });
+    }
+  } catch (error) {
+    console.error("Error fetching visit Reason:", error);
+    res.status(500).json({ status: 0, message: "An error occurred" });
+  }
+};
+

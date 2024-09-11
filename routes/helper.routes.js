@@ -27,11 +27,20 @@ router.get(
   helperController.getOrganizationPermission
 );
 
+
 router.post(
   "/get-doctor-signature",
   VerifyToken,
   helperController.getDoctorSignature
 );
+
 router.post("/generate-pdf", VerifyToken, helperController.generatePDF);
 router.post("/send-document", VerifyToken, helperController.sendDocument);
+//Get visit-reason
+router.get(
+  "/get-visit-reason",
+  VerifyToken,
+  helperController.getvisitReason
+);
+
 module.exports = router;
