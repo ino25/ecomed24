@@ -5,10 +5,9 @@ var path = require("path");
 dotenv.config({
   path: path.join(
     process.cwd(),
-    `.env${
-      !process.env.NODE_ENV || process.env.NODE_ENV === "development"
-        ? ""
-        : "." + process.env.NODE_ENV
+    `.env${!process.env.NODE_ENV || process.env.NODE_ENV === "development"
+      ? ""
+      : "." + process.env.NODE_ENV
     }`
   ),
 });

@@ -1,15 +1,15 @@
 {
     "index": "Bienvenue sur notre API!",
-    "auth":{
+    "auth": {
         "badrequest": "Aucune donnée disponible",
-        "login":{
-            "optsent":"Vous devez vérifier votre identité. Un code de vérification valide pour 15 minutes vous a été envoyé par SMS au {phone} et par email à l'adresse {email}.",
-            "usernotexist":"User does not exists please please check your login credentials.",
-            "otpnotvalid":"Please Enter Valid OTP",
-            "loginsuccess":"Successfully Logged-In!!"
+        "login": {
+            "optsent": "Vous devez vérifier votre identité. Un code de vérification valide pour 15 minutes vous a été envoyé par SMS au {phone} et par email à l'adresse {email}.",
+            "usernotexist": "User does not exists please please check your login credentials.",
+            "otpnotvalid": "Please Enter Valid OTP",
+            "loginsuccess": "Successfully Logged-In!!"
         },
-        "forgot_password":{
-            "link_sent":"Mail de réinitialisation du mot de passe envoyé"
+        "forgot_password": {
+            "link_sent": "Mail de réinitialisation du mot de passe envoyé"
         }
     },
     "common": {
@@ -212,5 +212,21 @@
         "list": "Permission(s) récupérée(s)",
         "individual": "Détail des permissions disponibles",
         "permissionassign": "Permission(s) affectées a votre organisation"
+    },
+    "ReferenceForm": {
+        "add": "Formulaire de référence patient ajouté avec succès !",
+        "update": "Formulaire de référence patient mis à jour avec succès !",
+        "status": "Statut du formulaire de référence patient changé avec succès !",
+        "deleted": "Formulaire de référence patient supprimé avec succès !",
+        "individual": "Détails du formulaire de référence patient récupérés !",
+        "list": "Liste des formulaires de référence patient récupérée !"
+    },
+    "MiseEnObservation": {
+        "add": "Patient mis en observation ajouté avec succès !",
+        "update": "Patient mis en observation mis à jour avec succès !",
+        "status": "Statut du patient mis en observation changé avec succès !",
+        "deleted": "Patient mis en observation supprimé avec succès !",
+        "individual": "Détails du patient mis en observation récupérés !",
+        "list": "Liste des patients mis en observation récupérée !"
     }
 }

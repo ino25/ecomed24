@@ -38,6 +38,8 @@ var LabTest = require("../models/LabTest");
 var PaymentCategory = require("../models/PaymentCategory");
 var MasterMedicine = require("../models/MasterMedicine");
 var ClinicalNotes = require("../models/ClinicalNotes");
+var ReferenceForm = require("../models/ReferenceForm");
+var MiseEnObservation = require("../models/MiseEnObservation");
 var ConfidentialNotes = require("../models/ConfidentialNotes");
 var DeathRecord = require("../models/DeathRecord");
 var PatientHospitalization = require("../models/PatientHospitalization");
@@ -370,8 +372,8 @@ exports.getAllPatients = async (req, res) => {
         [
           Sequelize.literal(
             '(SELECT ((SUM(p.gross_total) + SUM(p.frais_service)) - (select SUM(patient_deposit.deposited_amount) as sum_deposit from patient_deposit where patient = p.patient)) as total_due from payment as p where p.bulletinAnalyse like "" and p.patient = Patient.id and id_organisation=' +
-              req.org_id +
-              ")"
+            req.org_id +
+            ")"
           ),
           "due_amount",
         ],
@@ -1275,7 +1277,7 @@ exports.addDepositInvoicePayments = async (req, res) => {
       console.log(deposited_amount);
       if (
         parseInt(paymentDetails.gross_total) +
-          parseInt(paymentDetails.frais_service) <
+        parseInt(paymentDetails.frais_service) <
         deposited_amount
       ) {
         return res.json({
@@ -1676,12 +1678,12 @@ exports.getPaymentDetailsInvoicePayments = async (req, res) => {
   // console.log(Sequelize);
   data.services = await Database.query(
     "select payment_category.id, payment_category.prestation,payment_category_organisation.tarif_public, payment_category_organisation.tarif_professionnel, payment_category_organisation.tarif_assurance, payment_category_organisation.tarif_ipm, setting_service_specialite.name_specialite " +
-      bonus_select +
-      " from setting_service_specialite_organisation join setting_service_specialite on setting_service_specialite.idspe = setting_service_specialite_organisation.id_specialite and setting_service_specialite_organisation.statut = 1 join setting_service on setting_service_specialite_organisation.id_service = setting_service.idservice and setting_service_specialite_organisation.id_organisation = " +
-      id_organisation +
-      " and setting_service_specialite_organisation.statut = 1 join payment_category on payment_category.id_service = setting_service.idservice and payment_category.id_spe = setting_service_specialite_organisation.id_specialite join payment_category_organisation on payment_category_organisation.id_presta = payment_category.id and payment_category_organisation.id_organisation = setting_service_specialite_organisation.id_organisation " +
-      bonus_clause +
-      " order by payment_category.prestation asc",
+    bonus_select +
+    " from setting_service_specialite_organisation join setting_service_specialite on setting_service_specialite.idspe = setting_service_specialite_organisation.id_specialite and setting_service_specialite_organisation.statut = 1 join setting_service on setting_service_specialite_organisation.id_service = setting_service.idservice and setting_service_specialite_organisation.id_organisation = " +
+    id_organisation +
+    " and setting_service_specialite_organisation.statut = 1 join payment_category on payment_category.id_service = setting_service.idservice and payment_category.id_spe = setting_service_specialite_organisation.id_specialite join payment_category_organisation on payment_category_organisation.id_presta = payment_category.id and payment_category_organisation.id_organisation = setting_service_specialite_organisation.id_organisation " +
+    bonus_clause +
+    " order by payment_category.prestation asc",
     { type: Database.QueryTypes.SELECT }
   );
   data.labs = await LabTest.findAll({ where: { id_organisation: req.org_id } });
@@ -2404,8 +2406,8 @@ exports.getAssuranceOrg = async (req, res) => {
     let getData = [];
     OrganisationModal = await Database.query(
       "SELECT o.id,o.nom FROM partenariat_sante_assurance as psa INNER JOIN organisation as o ON psa.id_organisation_assurance = o.id where id_organisation_sante =" +
-        req.org_id +
-        " and (o.type = 'ASSURANCE' OR o.type = 'IPM');",
+      req.org_id +
+      " and (o.type = 'ASSURANCE' OR o.type = 'IPM');",
       { type: Database.QueryTypes.SELECT }
     );
     if (OrganisationModal === null) {
@@ -5864,8 +5866,8 @@ exports.TimelineDoctors = async (req, res) => {
     let patient_id = req.params.patient_id;
     Deposits = await Database.query(
       "SELECT u.id, CONCAT(u.first_name, ' ', u.last_name) AS name FROM patient_logs as pg LEFT JOIN users u ON pg.added_by = u.id where pg.patient_id = " +
-        patient_id +
-        " GROUP BY pg.added_by",
+      patient_id +
+      " GROUP BY pg.added_by",
       { type: Database.QueryTypes.SELECT }
     );
     if (Deposits === null) {
@@ -6116,6 +6118,194 @@ exports.getPaymentDepositLogs = async (req, res) => {
         message: langPatientModule.payment.paymentdepositlogs,
         data: PatientDepositModal,
         total: count,
+      });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+exports.addReferenceForm = async (req, res) => {
+  try {
+    let patientID = req.body.patient_id;
+    let ReferenceForm_data = req.body.reference_form;
+
+    let VitalSign_data = req.body.vital_sign;
+
+    PatientModal = await Patient.findOne({ where: { id: patientID } });
+    ReferenceFormModal = await ReferenceForm.create({
+      patient_id: patientID,
+      org_id: req.org_id,
+      bulletin_de_transfer: ReferenceForm_data.bulletin_de_transfer,
+      arrivalDateTime: ReferenceForm_data.arrivalDateTime,
+      transferDateTime: ReferenceForm_data.transferDateTime,
+      transferReason: ReferenceForm_data.transferReason,
+      clinicalSummary: ReferenceForm_data.clinicalSummary,
+      providedTreatment: ReferenceForm_data.providedTreatment,
+      urgencyLevel: ReferenceForm_data.urgencyLevel,
+      targetOrganisationType: ReferenceForm_data.targetOrganisationType,
+      targetServiceType: ReferenceForm_data.targetServiceType,
+      transportationMean: ReferenceForm_data.transportationMean,
+      carePerson: ReferenceForm_data.carePerson,
+      gcs_total: ReferenceForm_data.gcs_total,
+      ouverture_des_yeux: ReferenceForm_data.ouverture_des_yeux,
+      reponse_verbale: ReferenceForm_data.reponse_verbale,
+      reponse_motrice: ReferenceForm_data.reponse_motrice,
+      status: 1,
+      added_by: req.userId,
+    });
+
+
+
+    if (VitalSign_data != null) {
+      VitalSignModal = await VitalSign.create({
+        patient: patientID,
+        clinical_id: null,
+        id_organisation: req.org_id,
+        prescripteur: VitalSign_data.prescripteur,
+        frequenceRespiratoire: VitalSign_data.frequenceRespiratoire,
+        frequenceCardiaque: VitalSign_data.frequenceCardiaque,
+        saturationArterielle: VitalSign_data.saturationArterielle,
+        temperature: VitalSign_data.temperature,
+        systolique: VitalSign_data.systolique,
+        diastolique: VitalSign_data.diastolique,
+        tensionArterielle: VitalSign_data.tensionArterielle,
+        weight: VitalSign_data.weight,
+        blood_sugar: VitalSign_data.blood_sugar,
+        height: VitalSign_data.height,
+        body_mass_index: VitalSign_data.body_mass_index,
+        ion_user_id: req.userId, //loggedin id
+        add_date: moment(VitalSign_data.add_date).format("YYYY-MM-DD"),
+        patient_name: "",
+        patient_address: "",
+        patient_phone: "",
+        date_string: moment().format("DD-MM-YYYY"),
+        date: moment().unix(),
+        added_by: req.userId,
+        status: 1,
+      });
+      await PatientLogs.create({
+        patient_id: VitalSignModal.patient,
+        org_id: req.org_id,
+        description: "New Vital Sign has been Added.",
+        type: "vital_sign",
+        action: "add",
+        relation_id: VitalSignModal.id,
+        status: 1,
+        added_by: req.userId,
+      });
+    }
+
+
+    if (ReferenceFormModal === null) {
+      res.json({ status: 0, message: langCommon.errormessage });
+    } else {
+      console.log(req.body);
+
+      await PatientLogs.create({
+        patient_id: ReferenceFormModal.patient_id,
+        org_id: req.org_id,
+        description: "Reference form has been added ",
+        type: "reference_form",
+        action: "add",
+        relation_id: ReferenceFormModal.id,
+        status: 1,
+        added_by: req.userId,
+      });
+      res.json({
+        status: 1,
+        message: "Reference Form Added successfully", //langPatientModule.ReferenceForm.add,
+        data: "",
+      });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+exports.addMiseEnObservation = async (req, res) => {
+  try {
+    let patientID = req.body.patient_id;
+    let MiseEnObservation_data = req.body.mise_en_observation;
+
+    let VitalSign_data = req.body.vital_sign;
+
+    PatientModal = await Patient.findOne({ where: { id: patientID } });
+    MiseEnObservationModal = await MiseEnObservation.create({
+      patient_id: patientID,
+      org_id: req.org_id,
+      MiseenObservation: MiseEnObservation_data.MiseenObservation,
+      arrivalDateTime: MiseEnObservation_data.arrivalDateTime,
+      clinicalSummary: MiseEnObservation_data.clinicalSummary,
+      requestedTests: MiseEnObservation_data.requestedTests,
+      providedTreatment: MiseEnObservation_data.providedTreatment,
+      observation: MiseEnObservation_data.observation,
+      evolutions: MiseEnObservation_data.evolutions,
+      status: 1,
+      added_by: req.userId,
+    });
+
+
+
+    if (VitalSign_data != null) {
+      VitalSignModal = await VitalSign.create({
+        patient: patientID,
+        clinical_id: null,
+        id_organisation: req.org_id,
+        prescripteur: VitalSign_data.prescripteur,
+        frequenceRespiratoire: VitalSign_data.frequenceRespiratoire,
+        frequenceCardiaque: VitalSign_data.frequenceCardiaque,
+        saturationArterielle: VitalSign_data.saturationArterielle,
+        temperature: VitalSign_data.temperature,
+        systolique: VitalSign_data.systolique,
+        diastolique: VitalSign_data.diastolique,
+        tensionArterielle: VitalSign_data.tensionArterielle,
+        weight: VitalSign_data.weight,
+        blood_sugar: VitalSign_data.blood_sugar,
+        height: VitalSign_data.height,
+        body_mass_index: VitalSign_data.body_mass_index,
+        ion_user_id: req.userId, //loggedin id
+        add_date: moment(VitalSign_data.add_date).format("YYYY-MM-DD"),
+        patient_name: "",
+        patient_address: "",
+        patient_phone: "",
+        date_string: moment().format("DD-MM-YYYY"),
+        date: moment().unix(),
+        added_by: req.userId,
+        status: 1,
+      });
+      await PatientLogs.create({
+        patient_id: VitalSignModal.patient,
+        org_id: req.org_id,
+        description: "New Vital Sign has been Added.",
+        type: "vital_sign",
+        action: "add",
+        relation_id: VitalSignModal.id,
+        status: 1,
+        added_by: req.userId,
+      });
+    }
+
+
+    if (MiseEnObservationModal === null) {
+      res.json({ status: 0, message: langCommon.errormessage });
+    } else {
+      console.log(req.body);
+
+      await PatientLogs.create({
+        patient_id: MiseEnObservationModal.patient_id,
+        org_id: req.org_id,
+        description: "Mise en Observation has been added ",
+        type: "mise_en_observation",
+        action: "add",
+        relation_id: MiseEnObservationModal.id,
+        status: 1,
+        added_by: req.userId,
+      });
+      res.json({
+        status: 1,
+        message: "Mise en Observation Added successfully", //langPatientModule.MiseEnObservation.add,
+        data: "",
       });
     }
   } catch (error) {
