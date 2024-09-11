@@ -6304,7 +6304,7 @@ exports.addMiseEnObservation = async (req, res) => {
       });
       res.json({
         status: 1,
-        message: "Mise en Observation Added successfully", //langPatientModule.ReferenceModule.add,
+        message: "Mise en Observation Added successfully", //langPatientModule.MiseEnObservation.add,
         data: "",
       });
     }

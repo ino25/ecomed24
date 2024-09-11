@@ -220,5 +220,13 @@
         "deleted": "Formulaire de référence patient supprimé avec succès !",
         "individual": "Détails du formulaire de référence patient récupérés !",
         "list": "Liste des formulaires de référence patient récupérée !"
+    },
+    "MiseEnObservation": {
+        "add": "Patient mis en observation ajouté avec succès !",
+        "update": "Patient mis en observation mis à jour avec succès !",
+        "status": "Statut du patient mis en observation changé avec succès !",
+        "deleted": "Patient mis en observation supprimé avec succès !",
+        "individual": "Détails du patient mis en observation récupérés !",
+        "list": "Liste des patients mis en observation récupérée !"
     }
 }

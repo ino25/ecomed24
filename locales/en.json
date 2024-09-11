@@ -220,5 +220,13 @@
         "deleted": "Patient Reference Form Successfully Deleted!",
         "individual": "Patient Reference Form  Details Fetched!",
         "list": "Patient Reference Form List Fetched!"
+    },
+    "MiseEnObservation": {
+        "add": "Patient Mise En Observation successfully Added!",
+        "update": "Patient Mise En Observation successfully updated!",
+        "status": "Patient Mise En Observation Status Successfully changed!",
+        "deleted": "Patient Mise En Observation Successfully Deleted!",
+        "individual": "Patient Mise En Observation  Details Fetched!",
+        "list": "Patient Mise En Observation List Fetched!"
     }
 }

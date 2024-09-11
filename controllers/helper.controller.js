@@ -833,3 +833,115 @@ exports.getcarePerson = async (req, res) => {
   }
 };
 
+exports.getOuverturedesyeux = async (req, res) => {
+  try {
+
+    const Ouverturedesyeuxdata = [
+      {
+        "id": 1,
+        "name": "Pas d'ouverture"
+      },
+      {
+        "id": 2,
+        "name": "Ouverture en réponse à une douleur"
+      },
+      {
+        "id": 3,
+        "name": "Ouverture à la demande verbale"
+      },
+      {
+        "id": 4,
+        "name": "Ouverture spontanée"
+      }
+    ]
+
+    if (Ouverturedesyeuxdata.length === 0) {
+      res.json({ status: 0, message: "No Data Found" });
+    } else {
+      res.json({ status: 1, message: "Ouverture des yeux  List", data: Ouverturedesyeuxdata });
+    }
+  } catch (error) {
+    console.error("Error fetching Ouverture des yeux :", error);
+    res.status(500).json({ status: 0, message: "An error occurred" });
+  }
+};
+
+exports.getReponseverbale = async (req, res) => {
+  try {
+
+    const Reponseverbaledata = [
+      {
+        "id": 1,
+        "name": "Aucune réponse verbale"
+      },
+      {
+        "id": 2,
+        "name": "Sons incompréhensibles (grognements ou bruits, mais pas de mots)"
+      },
+      {
+        "id": 3,
+        "name": "Mots inappropriés (la personne dit des mots, mais ils ne forment pas de phrases compréhensibles)"
+      },
+      {
+        "id": 4,
+        "name": "Confus (la personne est capable de parler, mais est désorientée ou confuse)"
+      },
+      {
+        "id": 5,
+        "name": "Orienté (la personne répond de manière cohérente et est orientée)"
+      }
+    ]
+
+    if (Reponseverbaledata.length === 0) {
+      res.json({ status: 0, message: "No Data Found" });
+    } else {
+      res.json({ status: 1, message: "Réponse verbale List", data: Reponseverbaledata });
+    }
+  } catch (error) {
+    console.error("Error fetching Réponse verbale:", error);
+    res.status(500).json({ status: 0, message: "An error occurred" });
+  }
+};
+
+exports.getReponsemotrice = async (req, res) => {
+  try {
+
+    const Reponsemotricedata = [
+      {
+        "id": 1,
+        "name": "Aucune réponse mortice"
+      },
+      {
+        "id": 2,
+        "name": " Extension anormale (réaction d'extension en réponse à la douleur)"
+      },
+      {
+        "id": 3,
+        "name": "Flexion anormale (réaction de flexion en réponse à la douleur)"
+      },
+      {
+        "id": 4,
+        "name": "Retrait en réponse à la douleur (la personne retire le membre touché par la douleur) "
+      },
+      {
+        "id": 5,
+        "name": "Localise la douleur (la personne essaie de localiser la source de la douleur)"
+      },
+      {
+        "id": 6,
+        "name": "Obéit aux orders"
+      }
+    ]
+
+    if (Reponsemotricedata.length === 0) {
+      res.json({ status: 0, message: "No Data Found" });
+    } else {
+      res.json({ status: 1, message: "Réponse motrice List", data: Reponsemotricedata });
+    }
+  } catch (error) {
+    console.error("Error fetching Réponse motrice:", error);
+    res.status(500).json({ status: 0, message: "An error occurred" });
+  }
+};
+
+

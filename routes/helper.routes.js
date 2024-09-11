@@ -69,5 +69,20 @@ router.get(
   VerifyToken,
   helperController.getcarePerson
 );
+router.get(
+  "/get-ouverture-des-yeux",
+  VerifyToken,
+  helperController.getOuverturedesyeux
+);
+router.get(
+  "/get-reponse-verbale",
+  VerifyToken,
+  helperController.getReponseverbale
+);
+router.get(
+  "/get-reponse-motrice",
+  VerifyToken,
+  helperController.getReponsemotrice
+);
 
 module.exports = router;
