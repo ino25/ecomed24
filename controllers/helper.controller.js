@@ -21,6 +21,11 @@ var TestRequests = require("../models/TestRequests");
 var Prescriptions = require("../models/Prescriptions");
 var OrgPermissionItems = require("../models/OrgPermissionItems");
 var VisitReason = require("../models/VisitReason");
+var UrgencyLevel = require("../models/UrgencyLevel");
+var TargetOrganisationType = require("../models/TargetOrganisationType");
+var TargetServiceType = require("../models/TargetServiceType");
+var TransportationMean = require("../models/TransportationMean");
+var CarePerson = require("../models/CarePerson");
 var crypto = require("crypto");
 var Email = require("../models/Email");
 var AutoEmailTemplate = require("../models/AutoEmailTemplate");
@@ -713,6 +718,117 @@ exports.getvisitReason = async (req, res) => {
     }
   } catch (error) {
     console.error("Error fetching visit Reason:", error);
+    res.status(500).json({ status: 0, message: "An error occurred" });
+  }
+};
+
+exports.geturgencyLevel = async (req, res) => {
+  try {
+
+    const urgencyLeveldata = await UrgencyLevel.findAll({
+      attributes: [
+        "id",
+        "name",
+        "description"
+
+      ]
+    });
+
+    if (urgencyLeveldata.length === 0) {
+      res.json({ status: 0, message: "No Data Found" });
+    } else {
+      res.json({ status: 1, message: "urgencyLevel List", data: urgencyLeveldata });
+    }
+  } catch (error) {
+    console.error("Error fetching urgencyLevel:", error);
+    res.status(500).json({ status: 0, message: "An error occurred" });
+  }
+};
+
+exports.gettargetOrganisationType = async (req, res) => {
+  try {
+
+    const targetOrganisationTypedata = await TargetOrganisationType.findAll({
+      attributes: [
+        "id",
+        "name",
+        "description"
+      ]
+    });
+
+    if (targetOrganisationTypedata.length === 0) {
+      res.json({ status: 0, message: "No Data Found" });
+    } else {
+      res.json({ status: 1, message: "targetOrganisationType List", data: targetOrganisationTypedata });
+    }
+  } catch (error) {
+    console.error("Error fetching targetOrganisationType:", error);
+    res.status(500).json({ status: 0, message: "An error occurred" });
+  }
+};
+
+exports.gettargetServiceType = async (req, res) => {
+  try {
+
+    const targetServiceTypedata = await TargetServiceType.findAll({
+      attributes: [
+        "id",
+        "name",
+        "description"
+      ]
+    });
+
+    if (targetServiceTypedata.length === 0) {
+      res.json({ status: 0, message: "No Data Found" });
+    } else {
+      res.json({ status: 1, message: "targetServiceType List", data: targetServiceTypedata });
+    }
+  } catch (error) {
+    console.error("Error fetching targetServiceType:", error);
+    res.status(500).json({ status: 0, message: "An error occurred" });
+  }
+};
+
+exports.gettransportationMean = async (req, res) => {
+  try {
+
+    const transportationMeandata = await TransportationMean.findAll({
+      attributes: [
+        "id",
+        "name",
+        "description"
+      ]
+    });
+
+    if (transportationMeandata.length === 0) {
+      res.json({ status: 0, message: "No Data Found" });
+    } else {
+      res.json({ status: 1, message: "transportationMean List", data: transportationMeandata });
+    }
+  } catch (error) {
+    console.error("Error fetching transportationMean:", error);
+    res.status(500).json({ status: 0, message: "An error occurred" });
+  }
+};
+
+exports.getcarePerson = async (req, res) => {
+  try {
+
+    const carePersondata = await CarePerson.findAll({
+      attributes: [
+        "id",
+        "name",
+        "description"
+      ]
+    });
+
+    if (carePersondata.length === 0) {
+      res.json({ status: 0, message: "No Data Found" });
+    } else {
+      res.json({ status: 1, message: "carePerson List", data: carePersondata });
+    }
+  } catch (error) {
+    console.error("Error fetching carePerson:", error);
     res.status(500).json({ status: 0, message: "An error occurred" });
   }
 };

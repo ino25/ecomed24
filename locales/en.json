@@ -213,7 +213,7 @@
         "individual": "Role details fetched",
         "permissionassign": "Détails de l'ordonnance récupérés!"
     },
-    "ReferenceModule": {
+    "ReferenceForm": {
         "add": "Patient Reference Form successfully Added!",
         "update": "Patient Reference Form successfully updated!",
         "status": "Patient Reference Form Status Successfully changed!",

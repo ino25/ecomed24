@@ -213,7 +213,7 @@
         "individual": "Détail des permissions disponibles",
         "permissionassign": "Permission(s) affectées a votre organisation"
     },
-    "ReferenceModule": {
+    "ReferenceForm": {
         "add": "Formulaire de référence patient ajouté avec succès !",
         "update": "Formulaire de référence patient mis à jour avec succès !",
         "status": "Statut du formulaire de référence patient changé avec succès !",

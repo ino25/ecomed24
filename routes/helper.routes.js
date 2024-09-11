@@ -43,4 +43,31 @@ router.get(
   helperController.getvisitReason
 );
 
+router.get(
+  "/get-urgency-level",
+  VerifyToken,
+  helperController.geturgencyLevel
+);
+router.get(
+  "/get-target-organisationtype",
+  VerifyToken,
+  helperController.gettargetOrganisationType
+);
+router.get(
+  "/get-target-servicetype",
+  VerifyToken,
+  helperController.gettargetServiceType
+);
+
+router.get(
+  "/get-transportation-mean",
+  VerifyToken,
+  helperController.gettransportationMean
+);
+router.get(
+  "/get-care-person",
+  VerifyToken,
+  helperController.getcarePerson
+);
+
 module.exports = router;

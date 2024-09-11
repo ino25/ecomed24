@@ -543,4 +543,11 @@ router.post(
   VerifyToken,
   patientController.addReferenceForm
 );
+
+router.post(
+  "/mise-en-observation/add",
+  VerifyToken,
+  patientController.addMiseEnObservation
+);
+
 module.exports = router;
