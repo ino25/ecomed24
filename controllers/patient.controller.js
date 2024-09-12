@@ -372,8 +372,8 @@ exports.getAllPatients = async (req, res) => {
         [
           Sequelize.literal(
             '(SELECT ((SUM(p.gross_total) + SUM(p.frais_service)) - (select SUM(patient_deposit.deposited_amount) as sum_deposit from patient_deposit where patient = p.patient)) as total_due from payment as p where p.bulletinAnalyse like "" and p.patient = Patient.id and id_organisation=' +
-            req.org_id +
-            ")"
+              req.org_id +
+              ")"
           ),
           "due_amount",
         ],
@@ -1277,7 +1277,7 @@ exports.addDepositInvoicePayments = async (req, res) => {
       console.log(deposited_amount);
       if (
         parseInt(paymentDetails.gross_total) +
-        parseInt(paymentDetails.frais_service) <
+          parseInt(paymentDetails.frais_service) <
         deposited_amount
       ) {
         return res.json({
@@ -1678,12 +1678,12 @@ exports.getPaymentDetailsInvoicePayments = async (req, res) => {
   // console.log(Sequelize);
   data.services = await Database.query(
     "select payment_category.id, payment_category.prestation,payment_category_organisation.tarif_public, payment_category_organisation.tarif_professionnel, payment_category_organisation.tarif_assurance, payment_category_organisation.tarif_ipm, setting_service_specialite.name_specialite " +
-    bonus_select +
-    " from setting_service_specialite_organisation join setting_service_specialite on setting_service_specialite.idspe = setting_service_specialite_organisation.id_specialite and setting_service_specialite_organisation.statut = 1 join setting_service on setting_service_specialite_organisation.id_service = setting_service.idservice and setting_service_specialite_organisation.id_organisation = " +
-    id_organisation +
-    " and setting_service_specialite_organisation.statut = 1 join payment_category on payment_category.id_service = setting_service.idservice and payment_category.id_spe = setting_service_specialite_organisation.id_specialite join payment_category_organisation on payment_category_organisation.id_presta = payment_category.id and payment_category_organisation.id_organisation = setting_service_specialite_organisation.id_organisation " +
-    bonus_clause +
-    " order by payment_category.prestation asc",
+      bonus_select +
+      " from setting_service_specialite_organisation join setting_service_specialite on setting_service_specialite.idspe = setting_service_specialite_organisation.id_specialite and setting_service_specialite_organisation.statut = 1 join setting_service on setting_service_specialite_organisation.id_service = setting_service.idservice and setting_service_specialite_organisation.id_organisation = " +
+      id_organisation +
+      " and setting_service_specialite_organisation.statut = 1 join payment_category on payment_category.id_service = setting_service.idservice and payment_category.id_spe = setting_service_specialite_organisation.id_specialite join payment_category_organisation on payment_category_organisation.id_presta = payment_category.id and payment_category_organisation.id_organisation = setting_service_specialite_organisation.id_organisation " +
+      bonus_clause +
+      " order by payment_category.prestation asc",
     { type: Database.QueryTypes.SELECT }
   );
   data.labs = await LabTest.findAll({ where: { id_organisation: req.org_id } });
@@ -2406,8 +2406,8 @@ exports.getAssuranceOrg = async (req, res) => {
     let getData = [];
     OrganisationModal = await Database.query(
       "SELECT o.id,o.nom FROM partenariat_sante_assurance as psa INNER JOIN organisation as o ON psa.id_organisation_assurance = o.id where id_organisation_sante =" +
-      req.org_id +
-      " and (o.type = 'ASSURANCE' OR o.type = 'IPM');",
+        req.org_id +
+        " and (o.type = 'ASSURANCE' OR o.type = 'IPM');",
       { type: Database.QueryTypes.SELECT }
     );
     if (OrganisationModal === null) {
@@ -5866,8 +5866,8 @@ exports.TimelineDoctors = async (req, res) => {
     let patient_id = req.params.patient_id;
     Deposits = await Database.query(
       "SELECT u.id, CONCAT(u.first_name, ' ', u.last_name) AS name FROM patient_logs as pg LEFT JOIN users u ON pg.added_by = u.id where pg.patient_id = " +
-      patient_id +
-      " GROUP BY pg.added_by",
+        patient_id +
+        " GROUP BY pg.added_by",
       { type: Database.QueryTypes.SELECT }
     );
     if (Deposits === null) {
@@ -6155,8 +6155,6 @@ exports.addReferenceForm = async (req, res) => {
       added_by: req.userId,
     });
 
-
-
     if (VitalSign_data != null) {
       VitalSignModal = await VitalSign.create({
         patient: patientID,
@@ -6195,7 +6193,6 @@ exports.addReferenceForm = async (req, res) => {
         added_by: req.userId,
       });
     }
-
 
     if (ReferenceFormModal === null) {
       res.json({ status: 0, message: langCommon.errormessage });
@@ -6223,13 +6220,81 @@ exports.addReferenceForm = async (req, res) => {
   }
 };
 
+exports.getReferenceFormByID = async (req, res) => {
+  try {
+    let getData = [],
+      results;
+    ReferenceFormModal = await ReferenceForm.findOne({
+      attributes: [
+        "id",
+        "patient_id",
+        "org_id",
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("ReferenceForm.arrivalDateTime"),
+            "%d/%m/%Y %H:%i"
+          ),
+          "date_time",
+        ],
+        "transferDateTime",
+        "transferReason",
+        "clinicalSummary",
+        "providedTreatment",
+        "urgencyLevel",
+        "targetOrganisationType",
+        "targetServiceType",
+        "transportationMean",
+        "care_person_name",
+        "care_person_qualification",
+        "ouverture_des_yeux",
+        "reponse_verbale",
+        "reponse_motrice",
+        "gcs_total",
+        "status",
+        "added_by",
+        "updated_by",
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("ReferenceForm.createdAt"),
+            "%d/%m/%Y %H:%i"
+          ),
+          "createdAt",
+        ],
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("ReferenceForm.updatedAt"),
+            "%d/%m/%Y %H:%i"
+          ),
+          "updatedAt",
+        ],
+      ],
+      where: { id: req.params.reference_form_id },
+    });
+    if (ReferenceFormModal === null) {
+      res.json({ status: 0, message: langCommon.nodatafound });
+    } else {
+      res.json({
+        status: 1,
+        message: langPatientModule.clinical_notes.individual,
+        data: ReferenceFormModal,
+      });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
 exports.addMiseEnObservation = async (req, res) => {
   try {
     let patientID = req.body.patient_id;
     let MiseEnObservation_data = req.body.mise_en_observation;
 
     let VitalSign_data = req.body.vital_sign;
-
+    const Evolutionarray = MiseEnObservation_data.evolutions;
+    const EvolutionarrayString = Evolutionarray.join(", ");
     PatientModal = await Patient.findOne({ where: { id: patientID } });
     MiseEnObservationModal = await MiseEnObservation.create({
       patient_id: patientID,
@@ -6240,12 +6305,10 @@ exports.addMiseEnObservation = async (req, res) => {
       requestedTests: MiseEnObservation_data.requestedTests,
       providedTreatment: MiseEnObservation_data.providedTreatment,
       observation: MiseEnObservation_data.observation,
-      evolutions: MiseEnObservation_data.evolutions,
+      evolutions: EvolutionarrayString,
       status: 1,
       added_by: req.userId,
     });
-
-
 
     if (VitalSign_data != null) {
       VitalSignModal = await VitalSign.create({
@@ -6286,7 +6349,6 @@ exports.addMiseEnObservation = async (req, res) => {
       });
     }
 
-
     if (MiseEnObservationModal === null) {
       res.json({ status: 0, message: langCommon.errormessage });
     } else {
@@ -6306,6 +6368,66 @@ exports.addMiseEnObservation = async (req, res) => {
         status: 1,
         message: "Mise en Observation Added successfully", //langPatientModule.MiseEnObservation.add,
         data: "",
+      });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+exports.getMiseEnObservationByID = async (req, res) => {
+  try {
+    let getData = [],
+      results;
+    ClinicalNotesModal = await MiseEnObservation.findOne({
+      attributes: [
+        "id",
+        "patient_id",
+        "org_id",
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("MiseEnObservation.arrivalDateTime"),
+            "%d/%m/%Y %H:%i"
+          ),
+          "date_time",
+        ],
+        "MiseenObservation",
+        "arrivalDateTime",
+        "clinicalSummary",
+        "requestedTests",
+        "providedTreatment",
+        "observation",
+        "evolutions",
+        "status",
+        "added_by",
+        "updated_by",
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("MiseEnObservation.createdAt"),
+            "%d/%m/%Y %H:%i"
+          ),
+          "createdAt",
+        ],
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("MiseEnObservation.updatedAt"),
+            "%d/%m/%Y %H:%i"
+          ),
+          "updatedAt",
+        ],
+      ],
+      where: { id: req.params.mise_en_id },
+    });
+    if (ClinicalNotesModal === null) {
+      res.json({ status: 0, message: langCommon.nodatafound });
+    } else {
+      res.json({
+        status: 1,
+        message: langPatientModule.clinical_notes.individual,
+        data: ClinicalNotesModal,
       });
     }
   } catch (error) {

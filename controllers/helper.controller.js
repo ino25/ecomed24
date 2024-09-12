@@ -260,8 +260,8 @@ exports.getOrganizationPermission = async (req, res) => {
 
     OrgPermissionModal = await Database.query(
       "SELECT op.id,sp.name,sp.description,sp.module_id FROM org_permission_items as op  LEFT JOIN system_permissions as sp ON op.sp_id= sp.id where op.status=1 and op.org_id = " +
-      req.org_id +
-      ";",
+        req.org_id +
+        ";",
       { type: Database.QueryTypes.SELECT }
     );
     if (OrgPermissionModal === null) {
@@ -343,17 +343,17 @@ const SHA1 = (msg) => {
     case 2:
       word_array.push(
         (msg.charCodeAt(msg_len - 2) << 24) |
-        (msg.charCodeAt(msg_len - 1) << 16) |
-        0x08000
+          (msg.charCodeAt(msg_len - 1) << 16) |
+          0x08000
       );
 
       break;
     case 3:
       word_array.push(
         (msg.charCodeAt(msg_len - 3) << 24) |
-        (msg.charCodeAt(msg_len - 2) << 16) |
-        (msg.charCodeAt(msg_len - 1) << 8) |
-        0x80
+          (msg.charCodeAt(msg_len - 2) << 16) |
+          (msg.charCodeAt(msg_len - 1) << 8) |
+          0x80
       );
 
       break;
@@ -692,29 +692,27 @@ exports.sendDocument = async (req, res) => {
 
 exports.getvisitReason = async (req, res) => {
   try {
-
-    const { searchTag = '' } = req.query;
+    const { searchTag = "" } = req.query;
     const limit = 10;
 
     const visitReasondata = await VisitReason.findAll({
-      attributes: [
-        "id",
-        "name",
-        "description"
-
-      ],
+      attributes: ["id", "name", "description"],
       where: {
         tag: {
           [Sequelize.Op.like]: `%${searchTag}%`,
-        }
+        },
       },
-      limit: parseInt(limit, 10)
+      limit: parseInt(limit, 10),
     });
 
     if (visitReasondata.length === 0) {
       res.json({ status: 0, message: "No Data Found" });
     } else {
-      res.json({ status: 1, message: "Visit Reason List", data: visitReasondata });
+      res.json({
+        status: 1,
+        message: "Visit Reason List",
+        data: visitReasondata,
+      });
     }
   } catch (error) {
     console.error("Error fetching visit Reason:", error);
@@ -724,20 +722,18 @@ exports.getvisitReason = async (req, res) => {
 
 exports.geturgencyLevel = async (req, res) => {
   try {
-
     const urgencyLeveldata = await UrgencyLevel.findAll({
-      attributes: [
-        "id",
-        "name",
-        "description"
-
-      ]
+      attributes: ["id", "name", "description"],
     });
 
     if (urgencyLeveldata.length === 0) {
       res.json({ status: 0, message: "No Data Found" });
     } else {
-      res.json({ status: 1, message: "urgencyLevel List", data: urgencyLeveldata });
+      res.json({
+        status: 1,
+        message: "urgencyLevel List",
+        data: urgencyLeveldata,
+      });
     }
   } catch (error) {
     console.error("Error fetching urgencyLevel:", error);
@@ -747,19 +743,18 @@ exports.geturgencyLevel = async (req, res) => {
 
 exports.gettargetOrganisationType = async (req, res) => {
   try {
-
     const targetOrganisationTypedata = await TargetOrganisationType.findAll({
-      attributes: [
-        "id",
-        "name",
-        "description"
-      ]
+      attributes: ["id", "name", "description"],
     });
 
     if (targetOrganisationTypedata.length === 0) {
       res.json({ status: 0, message: "No Data Found" });
     } else {
-      res.json({ status: 1, message: "targetOrganisationType List", data: targetOrganisationTypedata });
+      res.json({
+        status: 1,
+        message: "targetOrganisationType List",
+        data: targetOrganisationTypedata,
+      });
     }
   } catch (error) {
     console.error("Error fetching targetOrganisationType:", error);
@@ -769,19 +764,18 @@ exports.gettargetOrganisationType = async (req, res) => {
 
 exports.gettargetServiceType = async (req, res) => {
   try {
-
     const targetServiceTypedata = await TargetServiceType.findAll({
-      attributes: [
-        "id",
-        "name",
-        "description"
-      ]
+      attributes: ["id", "name", "description"],
     });
 
     if (targetServiceTypedata.length === 0) {
       res.json({ status: 0, message: "No Data Found" });
     } else {
-      res.json({ status: 1, message: "targetServiceType List", data: targetServiceTypedata });
+      res.json({
+        status: 1,
+        message: "targetServiceType List",
+        data: targetServiceTypedata,
+      });
     }
   } catch (error) {
     console.error("Error fetching targetServiceType:", error);
@@ -791,19 +785,18 @@ exports.gettargetServiceType = async (req, res) => {
 
 exports.gettransportationMean = async (req, res) => {
   try {
-
     const transportationMeandata = await TransportationMean.findAll({
-      attributes: [
-        "id",
-        "name",
-        "description"
-      ]
+      attributes: ["id", "name", "description"],
     });
 
     if (transportationMeandata.length === 0) {
       res.json({ status: 0, message: "No Data Found" });
     } else {
-      res.json({ status: 1, message: "transportationMean List", data: transportationMeandata });
+      res.json({
+        status: 1,
+        message: "transportationMean List",
+        data: transportationMeandata,
+      });
     }
   } catch (error) {
     console.error("Error fetching transportationMean:", error);
@@ -813,13 +806,8 @@ exports.gettransportationMean = async (req, res) => {
 
 exports.getcarePerson = async (req, res) => {
   try {
-
     const carePersondata = await CarePerson.findAll({
-      attributes: [
-        "id",
-        "name",
-        "description"
-      ]
+      attributes: ["id", "name", "description"],
     });
 
     if (carePersondata.length === 0) {
@@ -835,30 +823,33 @@ exports.getcarePerson = async (req, res) => {
 
 exports.getOuverturedesyeux = async (req, res) => {
   try {
-
     const Ouverturedesyeuxdata = [
       {
-        "id": 1,
-        "name": "Pas d'ouverture"
+        id: 1,
+        name: "Pas d'ouverture",
       },
       {
-        "id": 2,
-        "name": "Ouverture en réponse à une douleur"
+        id: 2,
+        name: "Ouverture en réponse à une douleur",
       },
       {
-        "id": 3,
-        "name": "Ouverture à la demande verbale"
+        id: 3,
+        name: "Ouverture à la demande verbale",
       },
       {
-        "id": 4,
-        "name": "Ouverture spontanée"
-      }
-    ]
+        id: 4,
+        name: "Ouverture spontanée",
+      },
+    ];
 
     if (Ouverturedesyeuxdata.length === 0) {
       res.json({ status: 0, message: "No Data Found" });
     } else {
-      res.json({ status: 1, message: "Ouverture des yeux  List", data: Ouverturedesyeuxdata });
+      res.json({
+        status: 1,
+        message: "Ouverture des yeux  List",
+        data: Ouverturedesyeuxdata,
+      });
     }
   } catch (error) {
     console.error("Error fetching Ouverture des yeux :", error);
@@ -868,34 +859,37 @@ exports.getOuverturedesyeux = async (req, res) => {
 
 exports.getReponseverbale = async (req, res) => {
   try {
-
     const Reponseverbaledata = [
       {
-        "id": 1,
-        "name": "Aucune réponse verbale"
+        id: 1,
+        name: "Aucune réponse verbale",
       },
       {
-        "id": 2,
-        "name": "Sons incompréhensibles (grognements ou bruits, mais pas de mots)"
+        id: 2,
+        name: "Sons incompréhensibles (grognements ou bruits, mais pas de mots)",
       },
       {
-        "id": 3,
-        "name": "Mots inappropriés (la personne dit des mots, mais ils ne forment pas de phrases compréhensibles)"
+        id: 3,
+        name: "Mots inappropriés (la personne dit des mots, mais ils ne forment pas de phrases compréhensibles)",
       },
       {
-        "id": 4,
-        "name": "Confus (la personne est capable de parler, mais est désorientée ou confuse)"
+        id: 4,
+        name: "Confus (la personne est capable de parler, mais est désorientée ou confuse)",
       },
       {
-        "id": 5,
-        "name": "Orienté (la personne répond de manière cohérente et est orientée)"
-      }
-    ]
+        id: 5,
+        name: "Orienté (la personne répond de manière cohérente et est orientée)",
+      },
+    ];
 
     if (Reponseverbaledata.length === 0) {
       res.json({ status: 0, message: "No Data Found" });
     } else {
-      res.json({ status: 1, message: "Réponse verbale List", data: Reponseverbaledata });
+      res.json({
+        status: 1,
+        message: "Réponse verbale List",
+        data: Reponseverbaledata,
+      });
     }
   } catch (error) {
     console.error("Error fetching Réponse verbale:", error);
@@ -905,38 +899,41 @@ exports.getReponseverbale = async (req, res) => {
 
 exports.getReponsemotrice = async (req, res) => {
   try {
-
     const Reponsemotricedata = [
       {
-        "id": 1,
-        "name": "Aucune réponse mortice"
+        id: 1,
+        name: "Aucune réponse mortice",
       },
       {
-        "id": 2,
-        "name": " Extension anormale (réaction d'extension en réponse à la douleur)"
+        id: 2,
+        name: " Extension anormale (réaction d'extension en réponse à la douleur)",
       },
       {
-        "id": 3,
-        "name": "Flexion anormale (réaction de flexion en réponse à la douleur)"
+        id: 3,
+        name: "Flexion anormale (réaction de flexion en réponse à la douleur)",
       },
       {
-        "id": 4,
-        "name": "Retrait en réponse à la douleur (la personne retire le membre touché par la douleur) "
+        id: 4,
+        name: "Retrait en réponse à la douleur (la personne retire le membre touché par la douleur) ",
       },
       {
-        "id": 5,
-        "name": "Localise la douleur (la personne essaie de localiser la source de la douleur)"
+        id: 5,
+        name: "Localise la douleur (la personne essaie de localiser la source de la douleur)",
       },
       {
-        "id": 6,
-        "name": "Obéit aux orders"
-      }
-    ]
+        id: 6,
+        name: "Obéit aux orders",
+      },
+    ];
 
     if (Reponsemotricedata.length === 0) {
       res.json({ status: 0, message: "No Data Found" });
     } else {
-      res.json({ status: 1, message: "Réponse motrice List", data: Reponsemotricedata });
+      res.json({
+        status: 1,
+        message: "Réponse motrice List",
+        data: Reponsemotricedata,
+      });
     }
   } catch (error) {
     console.error("Error fetching Réponse motrice:", error);
@@ -944,4 +941,42 @@ exports.getReponsemotrice = async (req, res) => {
   }
 };
 
+exports.getEvolutions = async (req, res) => {
+  try {
+    const Reponsemotricedata = [
+      {
+        id: 1,
+        name: "Exeat",
+      },
+      {
+        id: 2,
+        name: "Hospitalisation",
+      },
+      {
+        id: 3,
+        name: "Référence",
+      },
+      {
+        id: 4,
+        name: "Décès",
+      },
+      {
+        id: 5,
+        name: "Refus de Soins",
+      },
+    ];
 
+    if (Reponsemotricedata.length === 0) {
+      res.json({ status: 0, message: "No Data Found" });
+    } else {
+      res.json({
+        status: 1,
+        message: "Evolutions successfully fetched",
+        data: Reponsemotricedata,
+      });
+    }
+  } catch (error) {
+    console.error("Error fetching Réponse motrice:", error);
+    res.status(500).json({ status: 0, message: "An error occurred" });
+  }
+};

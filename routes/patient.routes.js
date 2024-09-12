@@ -538,10 +538,17 @@ router.get(
   VerifyToken,
   patientController.getPaymentDepositLogs
 );
+
 router.post(
-  "/referene-form/add",
+  "/reference-form/add",
   VerifyToken,
   patientController.addReferenceForm
+);
+
+router.get(
+  "/reference-form/by-id/:reference_form_id",
+  VerifyToken,
+  patientController.getReferenceFormByID
 );
 
 router.post(
@@ -549,5 +556,9 @@ router.post(
   VerifyToken,
   patientController.addMiseEnObservation
 );
-
+router.get(
+  "/mise-en-observation/by-id/:mise_en_id",
+  VerifyToken,
+  patientController.getMiseEnObservationByID
+);
 module.exports = router;
