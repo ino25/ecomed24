@@ -4262,13 +4262,15 @@ exports.addClinicalNotes = async (req, res) => {
 
     const dci_diseases = clinicalNotes_data.desease;
     const nosology_diseases = clinicalNotes_data.nosologie;
+    const motivearray = clinicalNotes_data.motive;
+    const motivearrayString = motivearray.join(", ");
     PatientModal = await Patient.findOne({ where: { id: patientID } });
     ClinicalNotesModal = await ClinicalNotes.create({
       patient_id: patientID,
       org_id: req.org_id,
       date_time: clinicalNotes_data.date_time,
       channel: clinicalNotes_data.channel,
-      motive: clinicalNotes_data.motive,
+      motive: motivearrayString,
       known_health_issues: clinicalNotes_data.known_health_issues,
       desease_history: clinicalNotes_data.desease_history,
       consultation: clinicalNotes_data.consultation,
