@@ -2189,3 +2189,35 @@ exports.getAssuranceByOrganisation = async (req, res) => {
   }
 };
 
+exports.getPaymentOrganisation = async (req, res) => {
+  try {
+    const Prestation = await Database.query(
+      `SELECT 
+  servicerequest.requestID, 
+  patient.name, 
+  patient.last_name, 
+   ROUND(paymentbis.amount, 0) AS montant_du, 
+   ROUND(paymentbis.amountDue, 0) AS montant_payer, 
+  ROUND(paymentbis.amount - paymentbis.amountDue, 0) AS reste_a_payer, 
+  paymentbis.date_created, 
+  paymentbis.walletType,
+  servicerequest.status
+FROM servicerequest 
+JOIN patient ON patient.id = servicerequest.patientID 
+JOIN paymentbis ON paymentbis.serviceRequestID = servicerequest.requestID
+where servicerequest.organisationID=${req.params.org_id} order by servicerequest.requestID desc`,
+      { type: Database.QueryTypes.SELECT }
+    );
+    if (Prestation === null) {
+      res.json({ status: 0, message: "No Data Found" });
+    } else {
+      res.json({
+        status: 1,
+        message: "Payment List",
+        data: Prestation,
+      });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
