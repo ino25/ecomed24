@@ -702,6 +702,7 @@ exports.getvisitReason = async (req, res) => {
           [Sequelize.Op.like]: `%${search}%`, // Search for the term within tags
         },
       },
+      order: [['name', 'ASC']],
       limit: parseInt(limit, 10),
     });
 
