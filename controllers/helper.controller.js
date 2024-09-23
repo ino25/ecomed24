@@ -692,14 +692,14 @@ exports.sendDocument = async (req, res) => {
 
 exports.getvisitReason = async (req, res) => {
   try {
-    const { searchTag = "" } = req.query;
+    const { search = "" } = req.query;
     const limit = 10;
 
     const visitReasondata = await VisitReason.findAll({
       attributes: ["id", "name", "description"],
       where: {
         tag: {
-          [Sequelize.Op.like]: `%${searchTag}%`,
+          [Sequelize.Op.like]: `%${search}%`, // Search for the term within tags
         },
       },
       limit: parseInt(limit, 10),
