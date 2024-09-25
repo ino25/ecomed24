@@ -2001,11 +2001,11 @@ exports.addPayments = async (req, res) => {
       hospital_amount: req.body.hospital_amount,
       doctor_amount: req.body.doctor_amount,
       user: req.userId,
-      patient_name: PatientModal.name + "" + PatientModal.last_name,
+      patient_name: PatientModal.name + " " + PatientModal.last_name,
       patient_phone: PatientModal.phone,
       patient_address: PatientModal.address,
       doctor_name: "",
-      date_string: moment().format("d/m/Y H:i"),
+      date_string: moment().format("DD/MM/YYYY HH:mm"),
       id_organisation: req.org_id,
       remarks: req.body.remarks,
       charge_mutuelle: req.body.charge_mutuelle,
@@ -6422,6 +6422,7 @@ exports.createServiceRequestWithInstances = async (req, res) => {
     amount,
     walletType,
     amountDue,
+    paymentID
   } = req.body;
 
   try {
@@ -6434,6 +6435,7 @@ exports.createServiceRequestWithInstances = async (req, res) => {
       noteClinique,
       prescripteur,
       lastModifiedBy: req.userId,
+      paymentID
     });
 
     if (!newServiceRequest) {

@@ -2221,3 +2221,22 @@ where servicerequest.organisationID=${req.params.org_id} order by servicerequest
     throw error;
   }
 };
+exports.getPaymentOrdresOrganisation = async (req, res) => {
+  try {
+    const Prestation = await Database.query(
+      `select serviceinstance.instanceID, name_specialite, payment_category.prestation, ROUND(serviceinstance.priceProduct, 0) as priceProduct, serviceinstance.lastModifiedAt, serviceinstance.status from serviceinstance join payment_category on payment_category.id=serviceinstance.productID join servicerequest on  servicerequest.requestID = serviceinstance.serviceID join setting_service_specialite on setting_service_specialite.idspe = payment_category.id_spe where servicerequest.requestID=${req.params.serviceID}`,
+      { type: Database.QueryTypes.SELECT }
+    );
+    if (Prestation === null) {
+      res.json({ status: 0, message: "No Data Found" });
+    } else {
+      res.json({
+        status: 1,
+        message: "Payment Ordre List",
+        data: Prestation,
+      });
+    }
+  } catch (error) {
+    throw error;
+  }
+};

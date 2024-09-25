@@ -49,8 +49,7 @@ router.get('/get-price-grids-shared/:orgId', organizationController.getPriceGrid
 router.get('/get-assurance-by-organization/:orgId', organizationController.getAssuranceByOrganisation);
 // Payment
 router.get('/payment/:org_id', organizationController.getPaymentOrganisation);
-
-
+router.get('/payment/ordres/:serviceID', organizationController.getPaymentOrdresOrganisation);
 
 
 
