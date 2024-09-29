@@ -10,6 +10,7 @@ const levenshtein = require("fast-levenshtein");
 const path = require("path");
 const nodemailer = require("nodemailer");
 
+
 var User = require("../models/User");
 var Patient = require("../models/Patient");
 var Region = require("../models/Region");
@@ -57,6 +58,7 @@ var PaymentBIS = require('../models/PaymentBis');
 const multer = require("multer");
 const fs = require("fs");
 const Docmosis = require("../helpers/DocmosisHelper");
+var Transaction = require('../models/Transaction');
 //////Modal Relationship
 
 Patient.belongsTo(Region, { as: "region_details", foreignKey: "region" });
@@ -2068,10 +2070,6 @@ exports.addPayments = async (req, res) => {
         );
       }
 
-      /*if (amount_received && $etatlight != '1' && !$destinatairelight) {
-        
-        }*/
-
       PatientDepositModal = await PatientDeposit.create({
         date: moment().unix(),
         patient: req.body.patient_id,
@@ -2094,12 +2092,21 @@ exports.addPayments = async (req, res) => {
         status: 1,
         added_by: req.userId,
       });
-      res.json({ status: 1, message: langPatientModule.payment.add, data: "" });
+      
+      // Inclure l'ID du paiement dans la réponse
+      res.json({
+        status: 1,
+        message: langPatientModule.payment.add,
+        data: {
+          paymentID: PaymentModal.id, // Ajouter l'ID du paiement ici
+        },
+      });
     }
   } catch (error) {
     throw error;
   }
 };
+
 
 // Dependants
 exports.getDependants = async (req, res) => {
@@ -6560,6 +6567,52 @@ exports.createServiceRequestWithInstances = async (req, res) => {
     });
   } catch (error) {
     console.error("Erreur lors de la création du service, des instances et du paiement:", error);
+    res.status(500).json({ status: 0, message: "Erreur interne du serveur." });
+  }
+};
+
+exports.addTransaction = async (req, res) => {
+  const {
+    id_payment,
+    instances,
+    amount_received,
+    totalSupport,
+    id_patient_payeur,
+    id_organisation_origine,
+    id_organisation_assurance_ipm,
+  } = req.body;
+
+  try {
+    // Préparer les données de transactions pour chaque instance
+    const transactionData = instances.map((instance) => ({
+      id_payment: id_payment,
+      id_prestation_organisation: instance.productID,
+      amount: instance.amount_received,
+      to_Pay: instance.totalSupport,
+      id_patient_payeur: id_patient_payeur,
+      id_patient_parent: null, // Ajuster en fonction de votre logique
+      id_organisation_origine: id_organisation_origine,
+      id_organisation_destinataire: instance.id_organisation_destinataire || null,
+      id_organisation_light: instance.id_organisation_light || null,
+      id_organisation_assurance_ipm: id_organisation_assurance_ipm,
+      type: instance.type || null,
+      status: "En Cours", // Statut par défaut
+    }));
+
+    // Insertion des transactions dans la base de données
+    const newTransactions = await Transaction.bulkCreate(transactionData);
+
+    if (!newTransactions) {
+      return res.status(400).json({ status: 0, message: "Échec de la création des transactions." });
+    }
+
+    res.json({
+      status: 1,
+      message: "Transactions créées avec succès.",
+      data: newTransactions,
+    });
+  } catch (error) {
+    console.error("Erreur lors de la création des transactions :", error);
     res.status(500).json({ status: 0, message: "Erreur interne du serveur." });
   }
 };

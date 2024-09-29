@@ -557,4 +557,10 @@ router.post(
   patientController.createServiceRequestWithInstances
 );
 
+router.post(
+  "/transaction/add",
+  VerifyToken,
+  patientController.addTransaction
+);
+
 module.exports = router;
