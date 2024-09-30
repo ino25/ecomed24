@@ -128,7 +128,7 @@ exports.getActeDemande = async (req, res) => {
       return map;
     }, {});
 
-    // Building the final labData array
+    // Building the final labData array with filtering for the specified services
     let labData = [];
     paymentData.forEach((payment) => {
       const paymentCategories = payment.category_name
@@ -156,34 +156,44 @@ exports.getActeDemande = async (req, res) => {
               };
             });
 
-          labData.push({
-            id_payment: payment.id,
-            payment_code: payment.code,
-            amount: payment.amount,
-            code: payment.code + category.id,
-            date_string: payment.date_string,
-            patient_name: payment.patient_name,
-            id_service: category.id_service,
-            name_service: service ? service.name_service : null,
-            id_specialite: category.id_spe,
-            name_specialite: specialite ? specialite.name_specialite : null,
-            code_specialite: specialite ? specialite.code_specialite : null,
-            id_prestation: category.id,
-            prestation: category.prestation,
-            id_organisation: payment.id_organisation,
-            id_doctor: payment.doctor,
-            doctor_name: payment.doctor_name,
-            status_number: status_number,
-            status:
-              ["UNKNOWN", "EN COURS", "EFFECTUÉ", "VALIDÉ"][status_number] ||
-              "UNKNOWN",
-            date_prelevement: lab ? lab.date_prelevement : null,
-            clinique: payment.renseignementClinique,
-            patient_data: patient,
-            prestationDetails: prestationParams,
-            lab: lab,
-            motifVoyage: payment.motifVoyage,
-          });
+          // Filter to include only "Laboratoire d'Analyses Médicales" or "Biologie médicale"
+          if (
+            service &&
+            (service.name_service === "Laboratoire d'Analyses Médicales" ||
+              service.name_service === "Biologie médicale")
+          ) {
+            labData.push({
+              id_payment: payment.id,
+              payment_code: payment.code,
+              amount: payment.amount,
+              payment_etat: payment.etat,
+              payment_etatlight: payment.etatlight,
+              organnisation_destinataire: payment.organisation_destinataire,
+              code: payment.code + category.id,
+              date_string: payment.date_string,
+              patient_name: payment.patient_name,
+              id_service: category.id_service,
+              name_service: service ? service.name_service : null,
+              id_specialite: category.id_spe,
+              name_specialite: specialite ? specialite.name_specialite : null,
+              code_specialite: specialite ? specialite.code_specialite : null,
+              id_prestation: category.id,
+              prestation: category.prestation,
+              id_organisation: payment.id_organisation,
+              id_doctor: payment.doctor,
+              doctor_name: payment.doctor_name,
+              status_number: status_number,
+              status:
+                ["UNKNOWN", "EN COURS", "EFFECTUÉ", "VALIDÉ"][status_number] ||
+                "UNKNOWN",
+              date_prelevement: lab ? lab.date_prelevement : null,
+              clinique: payment.renseignementClinique,
+              patient_data: patient,
+              prestationDetails: prestationParams,
+              lab: lab,
+              motifVoyage: payment.motifVoyage,
+            });
+          }
         }
       });
     });
@@ -227,6 +237,7 @@ exports.getStats = async (req, res) => {
         const id_prestation = splitString[0];
         const status_number = splitString[4];
 
+        // Récupération des données de la catégorie
         const categoryData = await sequelize.query(
           `SELECT id, prestation, id_service,	id_spe  FROM payment_category WHERE id = ${sequelize.escape(
             id_prestation
@@ -235,24 +246,42 @@ exports.getStats = async (req, res) => {
         );
 
         if (categoryData[0]) {
-          // Get name_specialite
-          const specialiteData = await sequelize.query(
-            `SELECT name_specialite FROM setting_service_specialite WHERE idspe = ${sequelize.escape(
-              categoryData[0].id_spe
+          // Récupérer le nom du service pour filtrer les catégories
+          const serviceData = await sequelize.query(
+            `SELECT name_service FROM setting_service WHERE idservice = ${sequelize.escape(
+              categoryData[0].id_service
             )}`,
             { type: sequelize.QueryTypes.SELECT }
           );
 
-          if (specialiteData[0]) {
-            let specialites = specialiteData[0].name_specialite.split(",");
-            for (let specialite of specialites) {
-              let splitSpecialite = specialite.split("*");
-              const name_specialite = splitSpecialite[0];
-              if (status_number === "1" || status_number === "2") {
-                labData.push({
-                  name_specialite: name_specialite,
-                  status_number: status_number,
-                });
+          if (
+            serviceData[0] &&
+            (serviceData[0].name_service ===
+              "Laboratoire d'Analyses Médicales" ||
+              serviceData[0].name_service === "Biologie médicale")
+          ) {
+            // Si le service correspond à ceux demandés, continuer
+            // Récupération du nom de la spécialité
+            const specialiteData = await sequelize.query(
+              `SELECT name_specialite FROM setting_service_specialite WHERE idspe = ${sequelize.escape(
+                categoryData[0].id_spe
+              )}`,
+              { type: sequelize.QueryTypes.SELECT }
+            );
+
+            if (specialiteData[0]) {
+              let specialites = specialiteData[0].name_specialite.split(",");
+              for (let specialite of specialites) {
+                let splitSpecialite = specialite.split("*");
+                const name_specialite = splitSpecialite[0];
+
+                // Vérifier le status_number et ajouter aux statistiques si valide
+                if (status_number === "1" || status_number === "2") {
+                  labData.push({
+                    name_specialite: name_specialite,
+                    status_number: status_number,
+                  });
+                }
               }
             }
           }
@@ -260,6 +289,7 @@ exports.getStats = async (req, res) => {
       }
     }
 
+    // Agrégation des statistiques
     let stats = labData.reduce((result, item) => {
       let key = `${item.name_specialite}`;
       if (!result[key]) {
@@ -270,6 +300,7 @@ exports.getStats = async (req, res) => {
     }, {});
 
     stats = Object.values(stats);
+
     // Trier les stats par name_specialite
     stats.sort((a, b) => a.name_specialite.localeCompare(b.name_specialite));
 
@@ -771,6 +802,10 @@ exports.envoiPdf = async (req, res) => {
   const fileName = path.basename(pdfFilePath);
   const filePath = path.join("..", "uploads", "invoicefile", fileName);
 
+  // Log pour déboguer
+  console.log(`Chemin du fichier PDF : ${filePath}`);
+
+  // Vérifier si le fichier existe localement
   fs.access(filePath, fs.constants.F_OK, async (err) => {
     if (err) {
       console.error("Fichier PDF introuvable:", err);
@@ -790,8 +825,8 @@ exports.envoiPdf = async (req, res) => {
       ],
     };
 
-    // Utilisez la fonction mailer pour envoyer l'e-mail
     try {
+      console.log("Sending email...");
       const emailSent = await mailer(
         email,
         mailOptions.from,
@@ -801,13 +836,54 @@ exports.envoiPdf = async (req, res) => {
       );
       if (emailSent) {
         console.log("E-mail envoyé avec succès.");
-        res.status(200).send("E-mail envoyé avec succès.");
+        return res.status(200).send("E-mail envoyé avec succès.");
       } else {
-        throw new Error("Failed to send email");
+        console.error("Failed to send email");
+        return res.status(500).send("Erreur lors de l'envoi de l'e-mail.");
       }
     } catch (error) {
       console.error("Erreur lors de l'envoi de l'e-mail :", error);
-      res.status(500).send("Erreur lors de l'envoi de l'e-mail.");
+      return res.status(500).send("Erreur lors de l'envoi de l'e-mail.");
     }
   });
+};
+
+// Add this function to your controller file
+exports.getPatientTestHistory = async (req, res) => {
+  const { id_patient, id_organisation } = req.params;
+
+  try {
+    // Query to get all lab records for the specified patient and organization
+    const labRecords = await sequelize.query(
+      `SELECT * FROM lab WHERE patient = ${sequelize.escape(id_patient)} 
+       AND id_organisation = ${sequelize.escape(id_organisation)}`,
+      { type: Sequelize.QueryTypes.SELECT }
+    );
+
+    if (labRecords.length === 0) {
+      return res.status(404).send("No lab records found for this patient.");
+    }
+
+    // Extract lab IDs
+    const labIds = labRecords.map((lab) => lab.id);
+
+    // Query to get lab_data for the extracted lab IDs
+    const labDataRecords = await sequelize.query(
+      `SELECT * FROM lab_data WHERE id_lab IN (${labIds
+        .map((id) => sequelize.escape(id))
+        .join(", ")}) AND status = 3`,
+      { type: Sequelize.QueryTypes.SELECT }
+    );
+
+    // Combine lab and lab_data records into a comprehensive response
+    const response = labRecords.map((lab) => ({
+      ...lab,
+      tests: labDataRecords.filter((data) => data.id_lab === lab.id),
+    }));
+
+    res.status(200).json(response);
+  } catch (error) {
+    console.error("Error fetching patient test history:", error);
+    res.status(500).send(error);
+  }
 };
