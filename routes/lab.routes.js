@@ -6,6 +6,11 @@ const multer = require("multer");
 const upload = multer({ dest: "uploads/" });
 router.get("/labs", VerifyToken, labController.getAllLabs);
 router.post("/listactes", VerifyToken, labController.getActeDemande);
+router.post(
+  "/listautresactes",
+  VerifyToken,
+  labController.getActeDemandeAutresActes
+);
 router.post("/statistiques", VerifyToken, labController.getStats);
 router.post("/resultats", VerifyToken, labController.LabData);
 router.post("/reprendre", VerifyToken, labController.Reprendre);
