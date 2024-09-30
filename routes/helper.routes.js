@@ -32,6 +32,46 @@ router.post(
   VerifyToken,
   helperController.getDoctorSignature
 );
+
 router.post("/generate-pdf", VerifyToken, helperController.generatePDF);
 router.post("/send-document", VerifyToken, helperController.sendDocument);
+//Get visit-reason
+router.get("/get-visit-reason", VerifyToken, helperController.getvisitReason);
+
+router.get("/get-urgency-level", VerifyToken, helperController.geturgencyLevel);
+router.get(
+  "/get-target-organisationtype",
+  VerifyToken,
+  helperController.gettargetOrganisationType
+);
+router.get(
+  "/get-target-servicetype",
+  VerifyToken,
+  helperController.gettargetServiceType
+);
+
+router.get(
+  "/get-transportation-mean",
+  VerifyToken,
+  helperController.gettransportationMean
+);
+router.get("/get-care-person", VerifyToken, helperController.getcarePerson);
+router.get(
+  "/get-ouverture-des-yeux",
+  VerifyToken,
+  helperController.getOuverturedesyeux
+);
+router.get(
+  "/get-reponse-verbale",
+  VerifyToken,
+  helperController.getReponseverbale
+);
+router.get(
+  "/get-reponse-motrice",
+  VerifyToken,
+  helperController.getReponsemotrice
+);
+
+router.get("/get-evolutions", VerifyToken, helperController.getEvolutions);
+
 module.exports = router;

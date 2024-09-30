@@ -38,6 +38,8 @@ var LabTest = require("../models/LabTest");
 var PaymentCategory = require("../models/PaymentCategory");
 var MasterMedicine = require("../models/MasterMedicine");
 var ClinicalNotes = require("../models/ClinicalNotes");
+var ReferenceForm = require("../models/ReferenceForm");
+var MiseEnObservation = require("../models/MiseEnObservation");
 var ConfidentialNotes = require("../models/ConfidentialNotes");
 var DeathRecord = require("../models/DeathRecord");
 var PatientHospitalization = require("../models/PatientHospitalization");
@@ -4260,13 +4262,15 @@ exports.addClinicalNotes = async (req, res) => {
 
     const dci_diseases = clinicalNotes_data.desease;
     const nosology_diseases = clinicalNotes_data.nosologie;
+    const motivearray = clinicalNotes_data.motive;
+    const motivearrayString = motivearray.join(", ");
     PatientModal = await Patient.findOne({ where: { id: patientID } });
     ClinicalNotesModal = await ClinicalNotes.create({
       patient_id: patientID,
       org_id: req.org_id,
       date_time: clinicalNotes_data.date_time,
       channel: clinicalNotes_data.channel,
-      motive: clinicalNotes_data.motive,
+      motive: motivearrayString,
       known_health_issues: clinicalNotes_data.known_health_issues,
       desease_history: clinicalNotes_data.desease_history,
       consultation: clinicalNotes_data.consultation,
@@ -6116,6 +6120,316 @@ exports.getPaymentDepositLogs = async (req, res) => {
         message: langPatientModule.payment.paymentdepositlogs,
         data: PatientDepositModal,
         total: count,
+      });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+exports.addReferenceForm = async (req, res) => {
+  try {
+    let patientID = req.body.patient_id;
+    let ReferenceForm_data = req.body.reference_form;
+
+    let VitalSign_data = req.body.vital_sign;
+
+    PatientModal = await Patient.findOne({ where: { id: patientID } });
+    ReferenceFormModal = await ReferenceForm.create({
+      patient_id: patientID,
+      org_id: req.org_id,
+      bulletin_de_transfer: ReferenceForm_data.bulletin_de_transfer,
+      arrivalDateTime: ReferenceForm_data.arrivalDateTime,
+      transferDateTime: ReferenceForm_data.transferDateTime,
+      transferReason: ReferenceForm_data.transferReason,
+      clinicalSummary: ReferenceForm_data.clinicalSummary,
+      providedTreatment: ReferenceForm_data.providedTreatment,
+      urgencyLevel: ReferenceForm_data.urgencyLevel,
+      targetOrganisationType: ReferenceForm_data.targetOrganisationType,
+      targetServiceType: ReferenceForm_data.targetServiceType,
+      transportationMean: ReferenceForm_data.transportationMean,
+      carePerson: ReferenceForm_data.carePerson,
+      gcs_total: ReferenceForm_data.gcs_total,
+      ouverture_des_yeux: ReferenceForm_data.ouverture_des_yeux,
+      reponse_verbale: ReferenceForm_data.reponse_verbale,
+      reponse_motrice: ReferenceForm_data.reponse_motrice,
+      status: 1,
+      added_by: req.userId,
+    });
+
+    if (VitalSign_data != null) {
+      VitalSignModal = await VitalSign.create({
+        patient: patientID,
+        clinical_id: null,
+        id_organisation: req.org_id,
+        prescripteur: VitalSign_data.prescripteur,
+        frequenceRespiratoire: VitalSign_data.frequenceRespiratoire,
+        frequenceCardiaque: VitalSign_data.frequenceCardiaque,
+        saturationArterielle: VitalSign_data.saturationArterielle,
+        temperature: VitalSign_data.temperature,
+        systolique: VitalSign_data.systolique,
+        diastolique: VitalSign_data.diastolique,
+        tensionArterielle: VitalSign_data.tensionArterielle,
+        weight: VitalSign_data.weight,
+        blood_sugar: VitalSign_data.blood_sugar,
+        height: VitalSign_data.height,
+        body_mass_index: VitalSign_data.body_mass_index,
+        ion_user_id: req.userId, //loggedin id
+        add_date: moment(VitalSign_data.add_date).format("YYYY-MM-DD"),
+        patient_name: "",
+        patient_address: "",
+        patient_phone: "",
+        date_string: moment().format("DD-MM-YYYY"),
+        date: moment().unix(),
+        added_by: req.userId,
+        status: 1,
+      });
+      await PatientLogs.create({
+        patient_id: VitalSignModal.patient,
+        org_id: req.org_id,
+        description: "New Vital Sign has been Added.",
+        type: "vital_sign",
+        action: "add",
+        relation_id: VitalSignModal.id,
+        status: 1,
+        added_by: req.userId,
+      });
+    }
+
+    if (ReferenceFormModal === null) {
+      res.json({ status: 0, message: langCommon.errormessage });
+    } else {
+      console.log(req.body);
+
+      await PatientLogs.create({
+        patient_id: ReferenceFormModal.patient_id,
+        org_id: req.org_id,
+        description: "Reference form has been added ",
+        type: "reference_form",
+        action: "add",
+        relation_id: ReferenceFormModal.id,
+        status: 1,
+        added_by: req.userId,
+      });
+      res.json({
+        status: 1,
+        message: "Reference Form Added successfully", //langPatientModule.ReferenceForm.add,
+        data: "",
+      });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+exports.getReferenceFormByID = async (req, res) => {
+  try {
+    let getData = [],
+      results;
+    ReferenceFormModal = await ReferenceForm.findOne({
+      attributes: [
+        "id",
+        "patient_id",
+        "org_id",
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("ReferenceForm.arrivalDateTime"),
+            "%d/%m/%Y %H:%i"
+          ),
+          "date_time",
+        ],
+        "transferDateTime",
+        "transferReason",
+        "clinicalSummary",
+        "providedTreatment",
+        "urgencyLevel",
+        "targetOrganisationType",
+        "targetServiceType",
+        "transportationMean",
+        "care_person_name",
+        "care_person_qualification",
+        "ouverture_des_yeux",
+        "reponse_verbale",
+        "reponse_motrice",
+        "gcs_total",
+        "status",
+        "added_by",
+        "updated_by",
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("ReferenceForm.createdAt"),
+            "%d/%m/%Y %H:%i"
+          ),
+          "createdAt",
+        ],
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("ReferenceForm.updatedAt"),
+            "%d/%m/%Y %H:%i"
+          ),
+          "updatedAt",
+        ],
+      ],
+      where: { id: req.params.reference_form_id },
+    });
+    if (ReferenceFormModal === null) {
+      res.json({ status: 0, message: langCommon.nodatafound });
+    } else {
+      res.json({
+        status: 1,
+        message: langPatientModule.clinical_notes.individual,
+        data: ReferenceFormModal,
+      });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+exports.addMiseEnObservation = async (req, res) => {
+  try {
+    let patientID = req.body.patient_id;
+    let MiseEnObservation_data = req.body.mise_en_observation;
+
+    let VitalSign_data = req.body.vital_sign;
+    const Evolutionarray = MiseEnObservation_data.evolutions;
+    const EvolutionarrayString = Evolutionarray.join(", ");
+    PatientModal = await Patient.findOne({ where: { id: patientID } });
+    MiseEnObservationModal = await MiseEnObservation.create({
+      patient_id: patientID,
+      org_id: req.org_id,
+      MiseenObservation: MiseEnObservation_data.MiseenObservation,
+      arrivalDateTime: MiseEnObservation_data.arrivalDateTime,
+      clinicalSummary: MiseEnObservation_data.clinicalSummary,
+      requestedTests: MiseEnObservation_data.requestedTests,
+      providedTreatment: MiseEnObservation_data.providedTreatment,
+      observation: MiseEnObservation_data.observation,
+      evolutions: EvolutionarrayString,
+      status: 1,
+      added_by: req.userId,
+    });
+
+    if (VitalSign_data != null) {
+      VitalSignModal = await VitalSign.create({
+        patient: patientID,
+        clinical_id: null,
+        id_organisation: req.org_id,
+        prescripteur: VitalSign_data.prescripteur,
+        frequenceRespiratoire: VitalSign_data.frequenceRespiratoire,
+        frequenceCardiaque: VitalSign_data.frequenceCardiaque,
+        saturationArterielle: VitalSign_data.saturationArterielle,
+        temperature: VitalSign_data.temperature,
+        systolique: VitalSign_data.systolique,
+        diastolique: VitalSign_data.diastolique,
+        tensionArterielle: VitalSign_data.tensionArterielle,
+        weight: VitalSign_data.weight,
+        blood_sugar: VitalSign_data.blood_sugar,
+        height: VitalSign_data.height,
+        body_mass_index: VitalSign_data.body_mass_index,
+        ion_user_id: req.userId, //loggedin id
+        add_date: moment(VitalSign_data.add_date).format("YYYY-MM-DD"),
+        patient_name: "",
+        patient_address: "",
+        patient_phone: "",
+        date_string: moment().format("DD-MM-YYYY"),
+        date: moment().unix(),
+        added_by: req.userId,
+        status: 1,
+      });
+      await PatientLogs.create({
+        patient_id: VitalSignModal.patient,
+        org_id: req.org_id,
+        description: "New Vital Sign has been Added.",
+        type: "vital_sign",
+        action: "add",
+        relation_id: VitalSignModal.id,
+        status: 1,
+        added_by: req.userId,
+      });
+    }
+
+    if (MiseEnObservationModal === null) {
+      res.json({ status: 0, message: langCommon.errormessage });
+    } else {
+      console.log(req.body);
+
+      await PatientLogs.create({
+        patient_id: MiseEnObservationModal.patient_id,
+        org_id: req.org_id,
+        description: "Mise en Observation has been added ",
+        type: "mise_en_observation",
+        action: "add",
+        relation_id: MiseEnObservationModal.id,
+        status: 1,
+        added_by: req.userId,
+      });
+      res.json({
+        status: 1,
+        message: "Mise en Observation Added successfully", //langPatientModule.MiseEnObservation.add,
+        data: "",
+      });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+exports.getMiseEnObservationByID = async (req, res) => {
+  try {
+    let getData = [],
+      results;
+    ClinicalNotesModal = await MiseEnObservation.findOne({
+      attributes: [
+        "id",
+        "patient_id",
+        "org_id",
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("MiseEnObservation.arrivalDateTime"),
+            "%d/%m/%Y %H:%i"
+          ),
+          "date_time",
+        ],
+        "MiseenObservation",
+        "arrivalDateTime",
+        "clinicalSummary",
+        "requestedTests",
+        "providedTreatment",
+        "observation",
+        "evolutions",
+        "status",
+        "added_by",
+        "updated_by",
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("MiseEnObservation.createdAt"),
+            "%d/%m/%Y %H:%i"
+          ),
+          "createdAt",
+        ],
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("MiseEnObservation.updatedAt"),
+            "%d/%m/%Y %H:%i"
+          ),
+          "updatedAt",
+        ],
+      ],
+      where: { id: req.params.mise_en_id },
+    });
+    if (ClinicalNotesModal === null) {
+      res.json({ status: 0, message: langCommon.nodatafound });
+    } else {
+      res.json({
+        status: 1,
+        message: langPatientModule.clinical_notes.individual,
+        data: ClinicalNotesModal,
       });
     }
   } catch (error) {
