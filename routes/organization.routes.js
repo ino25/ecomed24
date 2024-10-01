@@ -50,7 +50,11 @@ router.get('/get-assurance-by-organization/:orgId', organizationController.getAs
 // Payment
 router.get('/payment/:org_id', organizationController.getPaymentOrganisation);
 router.get('/payment/ordres/:serviceID', organizationController.getPaymentOrdresOrganisation);
-
+router.post(
+    "/listautresactes",
+    VerifyToken,
+    organizationController.getActeDemandeAutresActes
+  );
 
 
 

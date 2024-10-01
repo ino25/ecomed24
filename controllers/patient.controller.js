@@ -6616,3 +6616,4 @@ exports.addTransaction = async (req, res) => {
     res.status(500).json({ status: 0, message: "Erreur interne du serveur." });
   }
 };
+
