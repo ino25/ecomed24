@@ -37,19 +37,17 @@ exports.getActeDemande = async (req, res) => {
     const paymentData = await sequelize.query(
       `SELECT * FROM payment 
        WHERE (id_organisation = ${sequelize.escape(id_organisation)} 
-       OR (etat = 1 AND organisation_destinataire = ${sequelize.escape(
-         id_organisation
-       )}))
+       OR (etat = 1 AND organisation_destinataire = ${sequelize.escape(id_organisation)}))
        ORDER BY date_string DESC`,
       { type: sequelize.QueryTypes.SELECT }
     );
 
-    // Step 2: Extract unique organisation_destinataire IDs
+    // Step 2: Extract unique organisation_destinataire and id_organisation IDs
     const organisationIds = [
-      ...new Set(paymentData.map((p) => p.organisation_destinataire)),
+      ...new Set(paymentData.map((p) => p.organisation_destinataire).concat(paymentData.map((p) => p.id_organisation)))
     ];
 
-    // Step 3: Fetch organisation destinataire information
+    // Step 3: Fetch organisation information (both destinataire and emetteur)
     const organisationsData = await sequelize.query(
       `SELECT * FROM organisation WHERE id IN (${organisationIds
         .map((id) => sequelize.escape(id))
@@ -184,15 +182,15 @@ exports.getActeDemande = async (req, res) => {
             (service.name_service === "Laboratoire d'Analyses Médicales" ||
               service.name_service === "Biologie médicale")
           ) {
-            const organisationInfo =
-              organisationMap[payment.organisation_destinataire];
+            const organisationDestinataireInfo = organisationMap[payment.organisation_destinataire];
+            const organisationEmetteurInfo = organisationMap[payment.id_organisation];
             labData.push({
               id_payment: payment.id,
               payment_code: payment.code,
               amount: payment.amount,
               payment_etat: payment.etat,
               payment_etatlight: payment.etatlight,
-              organnisation_destinataire: payment.organisation_destinataire,
+              organisation_destinataire: payment.organisation_destinataire,
               code: payment.code + category.id,
               date_string: payment.date_string,
               patient_name: payment.patient_name,
@@ -218,11 +216,26 @@ exports.getActeDemande = async (req, res) => {
               motifVoyage: payment.motifVoyage,
 
               // Add organisation destinataire information
-              organisation_destinataire_info: organisationInfo
+              organisation_destinataire_info: organisationDestinataireInfo
                 ? {
-                    id: organisationInfo.id,
-                    name: organisationInfo.name,
-                    address: organisationInfo.address,
+                    id: organisationDestinataireInfo.id,
+                    nom: organisationDestinataireInfo.nom,
+                    nom_commercial: organisationDestinataireInfo.nom_commercial,
+                    adresse: organisationDestinataireInfo.adresse,
+                    entete: organisationDestinataireInfo.entete,
+                    footer: organisationDestinataireInfo.footer,
+                  }
+                : null,
+
+              // Add organisation emetteur information
+              organisation_emetteur_info: organisationEmetteurInfo
+                ? {
+                    id: organisationEmetteurInfo.id,
+                    nom: organisationEmetteurInfo.nom,
+                    nom_commercial: organisationEmetteurInfo.nom_commercial,
+                    adresse: organisationEmetteurInfo.adresse,
+                    entete: organisationEmetteurInfo.entete,
+                    footer: organisationEmetteurInfo.footer,
                   }
                 : null,
             });
@@ -246,6 +259,7 @@ exports.getActeDemande = async (req, res) => {
   }
 };
 
+
 //afficher la liste des actes demandés non biologie médicale
 
 exports.getActeDemandeAutresActes = async (req, res) => {
@@ -256,17 +270,13 @@ exports.getActeDemandeAutresActes = async (req, res) => {
     const paymentData = await sequelize.query(
       `SELECT * FROM payment 
        WHERE (id_organisation = ${sequelize.escape(id_organisation)} 
-       OR (etat = 1 AND organisation_destinataire = ${sequelize.escape(
-         id_organisation
-       )}))
+       OR (etat = 1 AND organisation_destinataire = ${sequelize.escape(id_organisation)}))
        ORDER BY date_string DESC`,
       { type: sequelize.QueryTypes.SELECT }
     );
 
     // Step 2: Extract unique organisation_destinataire IDs
-    const organisationIds = [
-      ...new Set(paymentData.map((p) => p.organisation_destinataire)),
-    ];
+    const organisationIds = [...new Set(paymentData.map((p) => p.organisation_destinataire))];
 
     // Step 3: Fetch organisation destinataire information
     const organisationsData = await sequelize.query(
@@ -403,8 +413,7 @@ exports.getActeDemandeAutresActes = async (req, res) => {
             service.name_service !== "Laboratoire d'Analyses Médicales" &&
             service.name_service !== "Biologie médicale"
           ) {
-            const organisationInfo =
-              organisationMap[payment.organisation_destinataire];
+            const organisationInfo = organisationMap[payment.organisation_destinataire];
             labData.push({
               id_payment: payment.id,
               payment_code: payment.code,
@@ -465,9 +474,10 @@ exports.getActeDemandeAutresActes = async (req, res) => {
   }
 };
 
+
 //obtenir le nombre de spécialité en cours ou effectué
 
-exports.getStats = async (req, res) => {
+exports.getStats = async (req, res) => { 
   const id_organisation = req.body.id_organisation;
 
   try {
@@ -491,33 +501,22 @@ exports.getStats = async (req, res) => {
 
         // Récupération des données de la catégorie
         const categoryData = await sequelize.query(
-          `SELECT id, prestation, id_service,	id_spe  FROM payment_category WHERE id = ${sequelize.escape(
-            id_prestation
-          )}`,
+          `SELECT id, prestation, id_service,	id_spe  FROM payment_category WHERE id = ${sequelize.escape(id_prestation)}`,
           { type: sequelize.QueryTypes.SELECT }
         );
 
         if (categoryData[0]) {
           // Récupérer le nom du service pour filtrer les catégories
           const serviceData = await sequelize.query(
-            `SELECT name_service FROM setting_service WHERE idservice = ${sequelize.escape(
-              categoryData[0].id_service
-            )}`,
+            `SELECT name_service FROM setting_service WHERE idservice = ${sequelize.escape(categoryData[0].id_service)}`,
             { type: sequelize.QueryTypes.SELECT }
           );
 
-          if (
-            serviceData[0] &&
-            (serviceData[0].name_service ===
-              "Laboratoire d'Analyses Médicales" ||
-              serviceData[0].name_service === "Biologie médicale")
-          ) {
+          if (serviceData[0] && (serviceData[0].name_service === "Laboratoire d'Analyses Médicales" || serviceData[0].name_service === "Biologie médicale")) {
             // Si le service correspond à ceux demandés, continuer
             // Récupération du nom de la spécialité
             const specialiteData = await sequelize.query(
-              `SELECT name_specialite FROM setting_service_specialite WHERE idspe = ${sequelize.escape(
-                categoryData[0].id_spe
-              )}`,
+              `SELECT name_specialite FROM setting_service_specialite WHERE idspe = ${sequelize.escape(categoryData[0].id_spe)}`,
               { type: sequelize.QueryTypes.SELECT }
             );
 
@@ -552,7 +551,7 @@ exports.getStats = async (req, res) => {
     }, {});
 
     stats = Object.values(stats);
-
+    
     // Trier les stats par name_specialite
     stats.sort((a, b) => a.name_specialite.localeCompare(b.name_specialite));
 
@@ -563,9 +562,7 @@ exports.getStats = async (req, res) => {
     }
   } catch (error) {
     console.error("Erreur :", error);
-    res
-      .status(500)
-      .send("Une erreur s'est produite lors de la récupération des données");
+    res.status(500).send("Une erreur s'est produite lors de la récupération des données");
   }
 };
 
@@ -1052,7 +1049,7 @@ exports.envoiPdf = async (req, res) => {
   const { email, pdfFilePath } = req.body;
 
   const fileName = path.basename(pdfFilePath);
-  const filePath = path.join("..", "uploads", "invoicefile", fileName);
+  const filePath = path.join('..', 'uploads', 'invoicefile', fileName);
 
   // Log pour déboguer
   console.log(`Chemin du fichier PDF : ${filePath}`);
@@ -1100,6 +1097,7 @@ exports.envoiPdf = async (req, res) => {
   });
 };
 
+
 // Add this function to your controller file
 exports.getPatientTestHistory = async (req, res) => {
   const { id_patient, id_organisation } = req.params;
@@ -1126,6 +1124,7 @@ exports.getPatientTestHistory = async (req, res) => {
         .join(", ")}) AND status = 3`,
       { type: Sequelize.QueryTypes.SELECT }
     );
+    
 
     // Combine lab and lab_data records into a comprehensive response
     const response = labRecords.map((lab) => ({
