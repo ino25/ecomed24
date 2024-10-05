@@ -562,5 +562,11 @@ router.post(
   VerifyToken,
   patientController.addTransaction
 );
+router.post(
+  "/update/status",
+  VerifyToken,
+  patientController.updateCategoryNameStatus
+);
+
 
 module.exports = router;

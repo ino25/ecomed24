@@ -1650,26 +1650,16 @@ WHERE pc.id NOT IN (
 };
 
 exports.createOrUpdatePriceGridsAndDetails = async (req, res) => {
-  const { organizationID, lastModifiedBy, prestations } = req.body; // Extraction des paramètres de la requête
+  const { organizationID, lastModifiedBy, prestations } = req.body;
 
-  console.log("la requete organization ", organizationID);
-  console.log("tableau ", prestations);
-
-  if (
-    !organizationID ||
-    !Array.isArray(prestations) ||
-    prestations.length === 0
-  ) {
+  if (!organizationID || !Array.isArray(prestations) || prestations.length === 0) {
     return res.status(400).json({
       status: 0,
-      message:
-        "Invalid input. Please provide organizationID and a list of IDs.",
+      message: "Invalid input. Please provide organizationID and a list of IDs.",
     });
   }
 
   try {
-    console.log("Checking if Assurance grid exists...");
-    // Vérifier si un grid pour Assurance existe déjà
     let assuranceGrid = await PriceGrids.findOne({
       where: {
         organizationID: organizationID,
@@ -1677,8 +1667,6 @@ exports.createOrUpdatePriceGridsAndDetails = async (req, res) => {
       },
     });
 
-    console.log("Checking if IPM grid exists...");
-    // Vérifier si un grid pour IPM existe déjà
     let ipmGrid = await PriceGrids.findOne({
       where: {
         organizationID: organizationID,
@@ -1687,8 +1675,6 @@ exports.createOrUpdatePriceGridsAndDetails = async (req, res) => {
     });
 
     if (!assuranceGrid) {
-      console.log("Creating Assurance grid...");
-      // Créer le price grid pour Assurance si non existant
       assuranceGrid = await PriceGrids.create({
         organizationID: organizationID,
         gridName: "Assurance",
@@ -1704,8 +1690,6 @@ exports.createOrUpdatePriceGridsAndDetails = async (req, res) => {
     }
 
     if (!ipmGrid) {
-      console.log("Creating IPM grid...");
-      // Créer le price grid pour IPM si non existant
       ipmGrid = await PriceGrids.create({
         organizationID: organizationID,
         gridName: "IPM",
@@ -1720,8 +1704,6 @@ exports.createOrUpdatePriceGridsAndDetails = async (req, res) => {
       });
     }
 
-    console.log("Fetching payment categories...");
-    // Récupérer les catégories de paiement basées sur les IDs fournis
     const paymentCategoryIds = prestations.map((item) => item.id);
     const paymentCategories = await PaymentCategory.findAll({
       where: {
@@ -1729,70 +1711,65 @@ exports.createOrUpdatePriceGridsAndDetails = async (req, res) => {
       },
     });
 
-    console.log("Creating or updating price grid details...");
-    // Parcourir chaque catégorie de paiement pour créer ou mettre à jour les détails des price grids
     for (const category of paymentCategories) {
       const tiersPayant = await TiersPayant.findOne({
         where: { code: category.cotation },
       });
 
+      const coefficient = parseFloat(category.coefficient) || 0;
+      let adjustedPriceAssurance = 0;
+      let adjustedPriceIPM = 0;
+
+      // Calculate adjusted prices if `tiersPayant` exists
       if (tiersPayant) {
-        const coefficient = parseFloat(category.coefficient) || 0;
         const prixAssurance = parseFloat(tiersPayant.prix_assurance) || 0;
         const prixIPM = parseFloat(tiersPayant.prix_ipm) || 0;
-        const adjustedPriceAssurance =
-          Math.round(coefficient * prixAssurance) || 0;
-        const adjustedPriceIPM = Math.round(coefficient * prixIPM) || 0;
+        adjustedPriceAssurance = Math.round(coefficient * prixAssurance);
+        adjustedPriceIPM = Math.round(coefficient * prixIPM);
+      }
 
-        // Vérifier et ajouter uniquement les nouveaux productID pour Assurance
-        const existingAssuranceDetail = await PriceGridDetails.findOne({
-          where: {
-            gridID: assuranceGrid.gridID,
-            productID: category.id,
-          },
+      // Create Assurance grid detail
+      const existingAssuranceDetail = await PriceGridDetails.findOne({
+        where: {
+          gridID: assuranceGrid.gridID,
+          productID: category.id,
+        },
+      });
+
+      if (!existingAssuranceDetail) {
+        await PriceGridDetails.create({
+          gridID: assuranceGrid.gridID,
+          productID: category.id,
+          adjustedPrice: adjustedPriceAssurance, // Use 0 if no `tiersPayant` or coefficient found
+          adjustmentType: "increasePercent",
+          adjustmentValue: 0,
+          effectiveDate: new Date(),
+          expiryDate: null,
+          status: "actived",
+          organizationID: organizationID,
         });
+      }
 
-        if (!existingAssuranceDetail) {
-          console.log(
-            `Creating new Assurance detail for productID: ${category.id} with status: actived`
-          );
-          await PriceGridDetails.create({
-            gridID: assuranceGrid.gridID,
-            productID: category.id,
-            adjustedPrice: adjustedPriceAssurance,
-            adjustmentType: "increasePercent",
-            adjustmentValue: 0,
-            effectiveDate: new Date(),
-            expiryDate: null,
-            status: "actived",
-            organizationID: organizationID,
-          });
-        }
+      // Create IPM grid detail
+      const existingIPMDetail = await PriceGridDetails.findOne({
+        where: {
+          gridID: ipmGrid.gridID,
+          productID: category.id,
+        },
+      });
 
-        // Vérifier et ajouter uniquement les nouveaux productID pour IPM
-        const existingIPMDetail = await PriceGridDetails.findOne({
-          where: {
-            gridID: ipmGrid.gridID,
-            productID: category.id,
-          },
+      if (!existingIPMDetail) {
+        await PriceGridDetails.create({
+          gridID: ipmGrid.gridID,
+          productID: category.id,
+          adjustedPrice: adjustedPriceIPM, // Use 0 if no `tiersPayant` or coefficient found
+          adjustmentType: "increasePercent",
+          adjustmentValue: 0,
+          effectiveDate: new Date(),
+          expiryDate: null,
+          status: "actived",
+          organizationID: organizationID,
         });
-
-        if (!existingIPMDetail) {
-          console.log(
-            `Creating new IPM detail for productID: ${category.id} with status: actived`
-          );
-          await PriceGridDetails.create({
-            gridID: ipmGrid.gridID,
-            productID: category.id,
-            adjustedPrice: adjustedPriceIPM,
-            adjustmentType: "increasePercent",
-            adjustmentValue: 0,
-            effectiveDate: new Date(),
-            expiryDate: null,
-            status: "actived",
-            organizationID: organizationID, // Mettre à jour le statut à "actived"
-          });
-        }
       }
     }
 
@@ -1808,24 +1785,20 @@ exports.createOrUpdatePriceGridsAndDetails = async (req, res) => {
     if (error.name === "SequelizeUniqueConstraintError") {
       res.status(400).json({
         status: 0,
-        message:
-          "Erreur de saisie en double. Le nom du grille tarifaire existe déjà au sein de l'organisation",
+        message: "Erreur de saisie en double. Le nom du grille tarifaire existe déjà au sein de l'organisation",
         error: error.message,
       });
     } else {
-      console.error(
-        "Error creating or updating price grids and details:",
-        error
-      );
+      console.error("Error creating or updating price grids and details:", error);
       res.status(500).json({
         status: 0,
-        message:
-          "Erreur lors de la création ou de la mise à jour des grilles de prix et des détails",
+        message: "Erreur lors de la création ou de la mise à jour des grilles de prix et des détails",
         error: error.message,
       });
     }
   }
 };
+
 
 exports.updatePriceGridDetails = async (req, res) => {
   try {
@@ -1936,11 +1909,19 @@ exports.getPrestationImported = async (req, res) => {
   console.log("la recuperation de limport ", req.params.org_id);
   try {
     const Prestation = await Database.query(
-      `select id, name_service, name_specialite, prestation, pricegriddetails.status from payment_category 
-join setting_service_specialite on setting_service_specialite.idspe = payment_category.id_spe
- join setting_service on setting_service_specialite.id_service = setting_service.idservice
- join pricegriddetails on  pricegriddetails.productID = payment_category.id
- where pricegriddetails.organizationID=${req.params.org_id} group by pricegriddetails.productID  order by pricegriddetails.detailID DESC`,
+      `SELECT 
+      payment_category.id, 
+      setting_service.name_service, 
+      setting_service_specialite.name_specialite, 
+      payment_category.prestation, 
+      pricegriddetails.status 
+    FROM payment_category
+    JOIN setting_service_specialite ON setting_service_specialite.idspe = payment_category.id_spe
+    JOIN setting_service ON setting_service_specialite.id_service = setting_service.idservice
+    JOIN pricegriddetails ON pricegriddetails.productID = payment_category.id
+    WHERE pricegriddetails.organizationID = ${req.params.org_id} 
+    GROUP BY payment_category.id, setting_service.name_service, setting_service_specialite.name_specialite, payment_category.prestation, pricegriddetails.status
+    ORDER BY pricegriddetails.detailID DESC`,
       { type: Database.QueryTypes.SELECT }
     );
     if (Prestation === null) {
@@ -2246,14 +2227,14 @@ exports.getActeDemandeAutresActes = async (req, res) => {
 
   try {
     // Fetching initial payment data
-    const paymentData = await sequelize.query(
+    const paymentData = await Database.query(
       `SELECT * FROM payment 
-       WHERE (id_organisation = ${sequelize.escape(id_organisation)} 
-       OR (etat = 1 AND organisation_destinataire = ${sequelize.escape(
+       WHERE (id_organisation = ${Database.escape(id_organisation)} 
+       OR (etat = 1 AND organisation_destinataire = ${Database.escape(
          id_organisation
        )}))
        ORDER BY date_string DESC`,
-      { type: sequelize.QueryTypes.SELECT }
+      { type: Database.QueryTypes.SELECT }
     );
 
     // Step 2: Extract unique organisation_destinataire IDs
@@ -2262,11 +2243,11 @@ exports.getActeDemandeAutresActes = async (req, res) => {
     ];
 
     // Step 3: Fetch organisation destinataire information
-    const organisationsData = await sequelize.query(
+    const organisationsData = await Database.query(
       `SELECT * FROM organisation WHERE id IN (${organisationIds
-        .map((id) => sequelize.escape(id))
+        .map((id) => Database.escape(id))
         .join(", ")})`,
-      { type: sequelize.QueryTypes.SELECT }
+      { type: Database.QueryTypes.SELECT }
     );
 
     // Step 4: Create organisation mapping for quick lookup
@@ -2295,43 +2276,43 @@ exports.getActeDemandeAutresActes = async (req, res) => {
       labsData,
       allLabData,
     ] = await Promise.all([
-      sequelize.query(
+      Database.query(
         `SELECT * FROM payment_category WHERE id IN (${[...categoryIds]
-          .map((id) => sequelize.escape(id))
+          .map((id) => Database.escape(id))
           .join(", ")})`,
-        { type: sequelize.QueryTypes.SELECT }
+        { type: Database.QueryTypes.SELECT }
       ),
-      sequelize.query(`SELECT * FROM setting_service`, {
-        type: sequelize.QueryTypes.SELECT,
+      Database.query(`SELECT * FROM setting_service`, {
+        type: Database.QueryTypes.SELECT,
       }),
-      sequelize.query(`SELECT * FROM setting_service_specialite`, {
-        type: sequelize.QueryTypes.SELECT,
+      Database.query(`SELECT * FROM setting_service_specialite`, {
+        type: Database.QueryTypes.SELECT,
       }),
-      sequelize.query(
+      Database.query(
         `SELECT * FROM payment_category_parametre WHERE id_prestation IN (${[
           ...categoryIds,
         ]
-          .map((id) => sequelize.escape(id))
+          .map((id) => Database.escape(id))
           .join(", ")})`,
-        { type: sequelize.QueryTypes.SELECT }
+        { type: Database.QueryTypes.SELECT }
       ),
-      sequelize.query(
+      Database.query(
         `SELECT * FROM patient WHERE id IN (${paymentData
-          .map((p) => sequelize.escape(p.patient))
+          .map((p) => Database.escape(p.patient))
           .join(", ")})`,
-        { type: sequelize.QueryTypes.SELECT }
+        { type: Database.QueryTypes.SELECT }
       ),
-      sequelize.query(
+      Database.query(
         `SELECT * FROM lab WHERE payment IN (${paymentData
-          .map((p) => sequelize.escape(p.id))
+          .map((p) => Database.escape(p.id))
           .join(", ")})`,
-        { type: sequelize.QueryTypes.SELECT }
+        { type: Database.QueryTypes.SELECT }
       ),
-      sequelize.query(
+      Database.query(
         `SELECT * FROM lab_data WHERE id_payment IN (${paymentData
-          .map((p) => sequelize.escape(p.id))
+          .map((p) => Database.escape(p.id))
           .join(", ")})`,
-        { type: sequelize.QueryTypes.SELECT }
+        { type: Database.QueryTypes.SELECT }
       ),
     ]);
 
@@ -2420,7 +2401,7 @@ exports.getActeDemandeAutresActes = async (req, res) => {
               doctor_name: payment.doctor_name,
               status_number: status_number,
               status:
-                ["UNKNOWN", "EN COURS", "EFFECTUÉ", "VALIDÉ"][status_number] ||
+                ["UNKNOWN", "EN ATTENTE", "EN COURS", "TERMINÉ"][status_number] ||
                 "UNKNOWN",
               date_prelevement: lab ? lab.date_prelevement : null,
               clinique: payment.renseignementClinique,
@@ -2446,7 +2427,11 @@ exports.getActeDemandeAutresActes = async (req, res) => {
     // Sorting and sending response
     labData.sort((a, b) => new Date(b.date_string) - new Date(a.date_string));
     if (labData.length > 0) {
-      res.json(labData);
+      res.json({
+        status: 1,
+        message: "Act non labo",
+        data: labData,
+      });
     } else {
       res.status(404).send("Pas de données trouvées pour cet id_organisation");
     }

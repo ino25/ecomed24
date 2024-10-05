@@ -6617,3 +6617,48 @@ exports.addTransaction = async (req, res) => {
   }
 };
 
+exports.updateCategoryNameStatus = async (req, res) => {
+  const { paymentID, status, prestationID } = req.body;
+
+  console.log('req.body', req.body);
+
+  try {
+    // Fetch the payment record with the provided paymentID
+    const paymentRecord = await Payment.findOne({ where: { id: paymentID } });
+
+    if (!paymentRecord) {
+      return res.json({ status: 0, message: 'Payment record not found.' });
+    }
+
+    let { category_name } = paymentRecord;
+
+    // Split the category_name into individual prestation segments
+    const prestations = category_name.split(',');
+
+    // Iterate over each prestation segment to find and modify the target one
+    const updatedPrestations = prestations.map((segment) => {
+      const parts = segment.split('*');
+
+      // Check if the prestation ID in the segment matches the provided prestationID
+      if (parts[0] == prestationID) {
+        // Modify the status (last number before "service")
+        parts[parts.length - 2] = status; // This updates the second last element
+      }
+
+      // Reconstruct the segment
+      return parts.join('*');
+    });
+
+    // Join the updated prestations back into a string
+    const updatedCategoryName = updatedPrestations.join(',');
+
+    // Update the payment record with the modified category_name
+    paymentRecord.category_name = updatedCategoryName;
+    await paymentRecord.save();
+
+    return res.json({ status: 1, message: 'Category name updated successfully.', data: paymentRecord });
+  } catch (error) {
+    console.error('Error updating category name:', error);
+    return res.json({ status: 0, message: 'Error updating category name.', error: error.message });
+  }
+};
