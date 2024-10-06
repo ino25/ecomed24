@@ -10,6 +10,7 @@ const levenshtein = require("fast-levenshtein");
 const path = require("path");
 const nodemailer = require("nodemailer");
 
+
 var User = require("../models/User");
 var Patient = require("../models/Patient");
 var Region = require("../models/Region");
@@ -49,12 +50,17 @@ var TestRequests = require("../models/TestRequests");
 var Illness = require("../models/Illness");
 var NosologieIllness = require("../models/NosologieIllness");
 var IllnessConsultation = require("../models/IllnessConsultation");
+var PartenariatSanteAssurance = require("../models/PartenariatSanteAssurance");
 var TestItems = require("../models/TestItems");
 var PrescribedMedicins = require("../models/PrescribedMedicins");
 var ClinicalDesease = require("../models/ClinicalDesease");
+var ServiceRequest = require('../models/ServiceRequest'); 
+var ServiceInstance = require('../models/ServiceInstance');
+var PaymentBIS = require('../models/PaymentBis');
 const multer = require("multer");
 const fs = require("fs");
 const Docmosis = require("../helpers/DocmosisHelper");
+var Transaction = require('../models/Transaction');
 //////Modal Relationship
 
 Patient.belongsTo(Region, { as: "region_details", foreignKey: "region" });
@@ -643,7 +649,19 @@ exports.addPatient = async (req, res) => {
         },
         { where: { id: PatientModal.id } }
       );
-      res.json({ status: 1, message: langPatientModule.patientAdd, data: "" });
+      res.json({
+        status: 1,
+        message: langPatientModule.patientAdd,
+        data: {
+          id: PatientModal.id,
+          name: PatientModal.name,
+          last_name: PatientModal.last_name,
+          unique_id: PatientModal.country +
+          "01" +
+          PatientModal.id_organisation +
+          PatientModal.id,
+        },
+      });
     }
   } catch (error) {
     throw error;
@@ -661,6 +679,7 @@ exports.getGeneralInfo = async (req, res) => {
         "last_name",
         ["patient_id", "code"],
         ["sex", "gender"],
+        "sex",
         "age",
         "email",
         "phone",
@@ -763,6 +782,66 @@ exports.getGeneralInfo = async (req, res) => {
         data: PatientModal,
         next_appointment: next_appointment,
         last_appointment: last_appointment,
+      });
+    }
+  } catch (error) {
+    res.json({ status: 0, message: error, data: "" });
+    // throw error;
+  }
+};
+
+exports.getDetailsPatient = async (req, res) => {
+  try {
+    let getData = {};
+    PatientModal = await Patient.findOne({
+      attributes: [
+        "id",
+        "unique_id",
+        "name",
+        "last_name",
+        ["patient_id", "code"],
+        ["sex", "gender"],
+        "age",
+        "email",
+        "phone",
+        "address",
+        "country",
+        "region",
+        "district",
+        ["registration_time", "register"],
+        "grade",
+        "estCivil",
+        "passport",
+        "matricule",
+        ["bloodgroup", "blood_type"],
+        "birthdate",
+        ["birth_position", "birth_place"],
+        "religion",
+        "img_url",
+        ["nom_contact", "emergency_contact_name"],
+        ["phone_contact", "emergency_contact_no"],
+      ],
+      where: { id: req.params.id },
+    });
+    // console.log(PatientModal.birthdate);
+    // PatientModal.birthdate = moment(PatientModal.birthdate).format('d/m/Y')
+    // console.log(PatientModal);
+    if (PatientModal === null) {
+      res.json({ status: 0, message: langCommon.nodatafound });
+    } else {
+      if (PatientModal.img_url) {
+        PatientModal.img_url =
+          APP_URL + "/uploads/imgUsers/" + PatientModal.img_url;
+      } else {
+        PatientModal.img_url =
+          APP_URL + "/uploads/user-profile-placeholder.png";
+      }
+
+      // console.log(PatientModal.dataValues);
+      res.json({
+        status: 1,
+        message: langPatientModule.patientGeneralInfo,
+        data: PatientModal,
       });
     }
   } catch (error) {
@@ -1502,7 +1581,8 @@ exports.getLightOrgInvoicePayments = async (req, res) => {
     throw error;
   }
 };
-exports.getPaymentDetailsInvoicePayments = async (req, res) => {
+//getPaymentDetailsPriceGrids
+exports.getPaymentDetailsPriceGrids = async (req, res) => {
   let data = {};
   data.labs = [];
   data.patient = await Patient.findOne({
@@ -1695,6 +1775,190 @@ exports.getPaymentDetailsInvoicePayments = async (req, res) => {
     data: data,
   });
 };
+
+
+exports.getPaymentDetailsInvoicePayments = async (req, res) => {
+  try {
+    let data = {};
+    data.labs = [];
+
+    // Récupération des informations du patient
+    data.patient = await Patient.findOne({
+      where: { id: req.params.patient_id },
+    });
+
+    // Récupération des paramètres de réglages
+    const SettingsModal = await Settings.findOne({ attributes: ["discount"] });
+    data.discount_type = SettingsModal ? SettingsModal.discount : null;
+
+    // Récupération des informations de l'utilisateur actuel
+    data.currentuser = await User.findOne({
+      attributes: [
+        "id",
+        ["id_organisation", "org_id"],
+        "first_name",
+        "last_name",
+        "username",
+        "email",
+      ],
+      where: { id: req.userId },
+    });
+
+    // Récupération des informations des mutuelles du patient
+    data.mutuelles = await PatientMutuelle.findAll({
+      attributes: [
+        ["idpm", "id"],
+        ["pm_idmutuelle", "payer_name"],
+        "pm_idmutuelle",
+        "pm_numpolice",
+        "pm_charge",
+        "pm_datevalid",
+        "added_by",
+        "updated_by",
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("PatientMutuelle.createdAt"),
+            "%d-%m-%Y %H:%i:%s"
+          ),
+          "createdAt",
+        ],
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("PatientMutuelle.updatedAt"),
+            "%d-%m-%Y %H:%i:%s"
+          ),
+          "updatedAt",
+        ],
+      ],
+      where: { pm_idpatent: req.params.patient_id, pm_status: 1 },
+      order: [["id", "DESC"]],
+      include: [
+        {
+          model: User,
+          attributes: [
+            "id",
+            ["id_organisation", "org_id"],
+            "first_name",
+            "last_name",
+            "username",
+            "email",
+          ],
+          as: "addedby_details",
+        },
+        {
+          model: User,
+          attributes: [
+            "id",
+            ["id_organisation", "org_id"],
+            "first_name",
+            "last_name",
+            "username",
+            "email",
+          ],
+          as: "updatedby_details",
+        },
+        {
+          model: Organisation,
+          attributes: ["id", "nom", "email", "adresse", "type"],
+          as: "org_details",
+        },
+        {
+          model: Organisation,
+          attributes: ["id", "nom", "email", "adresse", "type"],
+          as: "nom_mutuelle_details",
+        },
+      ],
+    });
+
+    // Détermination du type de l'organisation
+    let organisationType = 'PAF'; // Valeur par défaut
+    if (data.mutuelles.length > 0) {
+      organisationType = data.mutuelles[0].nom_mutuelle_details?.type || 'PAF';
+    }
+
+    // Construction de la requête SQL en fonction du type d'organisation
+    let query = '';
+    const id_organisation = req.org_id;
+
+    if (organisationType === 'IPM') {
+      query = `
+        SELECT 
+          pricegriddetails.productID AS id, 
+          payment_category.prestation, 
+          pricegriddetails.adjustedPrice AS tarif_public, 
+          pricegrids.gridName, 
+          setting_service_specialite.name_specialite 
+        FROM 
+          pricegriddetails 
+        JOIN payment_category ON payment_category.id = pricegriddetails.productID 
+        JOIN pricegrids ON pricegrids.gridID = pricegriddetails.gridID 
+        JOIN setting_service_specialite ON setting_service_specialite.idspe = payment_category.id_spe 
+        JOIN organisation ON organisation.id = pricegrids.organizationID 
+        WHERE 
+          pricegrids.gridName = 'IPM' 
+          AND pricegrids.organizationID = ${id_organisation}`;
+    } else if (organisationType === 'Assurance') {
+      query = `
+        SELECT 
+          pricegriddetails.productID AS id, 
+          payment_category.prestation, 
+          pricegriddetails.adjustedPrice AS tarif_public, 
+          pricegrids.gridName, 
+          setting_service_specialite.name_specialite 
+        FROM 
+          pricegriddetails 
+        JOIN payment_category ON payment_category.id = pricegriddetails.productID 
+        JOIN pricegrids ON pricegrids.gridID = pricegriddetails.gridID 
+        JOIN setting_service_specialite ON setting_service_specialite.idspe = payment_category.id_spe 
+        JOIN organisation ON organisation.id = pricegrids.organizationID 
+        WHERE 
+          pricegrids.gridName = 'Assurance' 
+          AND pricegrids.organizationID = ${id_organisation}`;
+    } else {
+      query = `
+        SELECT 
+          pricegriddetails.productID AS id, 
+          payment_category.prestation, 
+          pricegriddetails.adjustedPrice AS tarif_public, 
+          pricegrids.gridName, 
+          setting_service_specialite.name_specialite 
+        FROM 
+          pricegriddetails 
+        JOIN payment_category ON payment_category.id = pricegriddetails.productID 
+        JOIN pricegrids ON pricegrids.gridID = pricegriddetails.gridID 
+        JOIN setting_service_specialite ON setting_service_specialite.idspe = payment_category.id_spe 
+        JOIN organisation ON organisation.id = pricegrids.organizationID 
+        WHERE 
+          pricegrids.organizationID = ${id_organisation} 
+          AND organisation.pricing_category = pricegrids.gridID`;
+    }
+
+    // Exécution de la requête
+    data.services = await Database.query(query, {
+      type: Database.QueryTypes.SELECT,
+    });
+
+    // Récupération des tests de laboratoire
+    data.labs = await LabTest.findAll({ where: { id_organisation: req.org_id } });
+
+    // Retour des données au format JSON
+    res.json({
+      status: 1,
+      message: 'Détails du paiement récupérés avec succès.',
+      data: data,
+    });
+  } catch (error) {
+    console.error("Erreur lors de la récupération des détails du paiement :", error);
+    res.status(500).json({
+      status: 0,
+      message: 'Une erreur est survenue lors de la récupération des détails du paiement.',
+      error: error.message,
+    });
+  }
+};
+
 exports.addPayments = async (req, res) => {
   try {
     let getData = [],
@@ -1743,11 +2007,11 @@ exports.addPayments = async (req, res) => {
       hospital_amount: req.body.hospital_amount,
       doctor_amount: req.body.doctor_amount,
       user: req.userId,
-      patient_name: PatientModal.name + "" + PatientModal.last_name,
+      patient_name: PatientModal.name + " " + PatientModal.last_name,
       patient_phone: PatientModal.phone,
       patient_address: PatientModal.address,
       doctor_name: "",
-      date_string: moment().format("d/m/Y H:i"),
+      date_string: moment().format("DD/MM/YYYY HH:mm"),
       id_organisation: req.org_id,
       remarks: req.body.remarks,
       charge_mutuelle: req.body.charge_mutuelle,
@@ -1810,10 +2074,6 @@ exports.addPayments = async (req, res) => {
         );
       }
 
-      /*if (amount_received && $etatlight != '1' && !$destinatairelight) {
-        
-        }*/
-
       PatientDepositModal = await PatientDeposit.create({
         date: moment().unix(),
         patient: req.body.patient_id,
@@ -1836,12 +2096,21 @@ exports.addPayments = async (req, res) => {
         status: 1,
         added_by: req.userId,
       });
-      res.json({ status: 1, message: langPatientModule.payment.add, data: "" });
+      
+      // Inclure l'ID du paiement dans la réponse
+      res.json({
+        status: 1,
+        message: langPatientModule.payment.add,
+        data: {
+          paymentID: PaymentModal.id, // Ajouter l'ID du paiement ici
+        },
+      });
     }
   } catch (error) {
     throw error;
   }
 };
+
 
 // Dependants
 exports.getDependants = async (req, res) => {
@@ -2311,12 +2580,12 @@ exports.getAssurance = async (req, res) => {
         },
         {
           model: Organisation,
-          attributes: ["id", "nom", "email", "adresse"],
+          attributes: ["id", "nom", "email", "adresse", "type"],
           as: "org_details",
         },
         {
           model: Organisation,
-          attributes: ["id", "nom", "email", "adresse"],
+          attributes: ["id", "nom", "email", "adresse", "type"],
           as: "nom_mutuelle_details",
         },
       ],
@@ -2339,6 +2608,7 @@ exports.getAssuranceByID = async (req, res) => {
   try {
     let getData = [];
     getData.push(req.params.assurance_id);
+    console.log("parametre id assurance", req.params.assurance_id);
     // PatientRelationModal = await PatientRelation.findAll({where: {id: req.params.id}});
     PatientMutuelleModal = await PatientMutuelle.findOne({
       attributes: [
@@ -2378,12 +2648,12 @@ exports.getAssuranceByID = async (req, res) => {
         },
         {
           model: Organisation,
-          attributes: ["id", "nom", "email", "adresse"],
+          attributes: ["id", "nom", "email", "adresse", "type"],
           as: "org_details",
         },
         {
           model: Organisation,
-          attributes: ["id", "nom", "email", "adresse"],
+          attributes: ["id", "nom", "email", "adresse", "type"],
           as: "nom_mutuelle_details",
         },
       ],
@@ -6434,5 +6704,277 @@ exports.getMiseEnObservationByID = async (req, res) => {
     }
   } catch (error) {
     throw error;
+  }
+};
+exports.getPatient = async (req, res) => {
+  try {
+    patientAll = await Patient.findAll({
+      attributes: [
+        "id",
+        "name",
+        "last_name",
+        "phone",
+        "patient_id",
+        "unique_id",
+      ],
+      where: { id_organisation: req.params.orgId },
+      order: [["id", "DESC"]],
+    });
+    if (patientAll === null) {
+      res.json({ status: 0, message: "No Data Found" });
+    } else {
+      res.json({
+        status: 1,
+        message: "Patient List",
+        data: patientAll,
+      });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+exports.createServiceRequestWithInstances = async (req, res) => {
+  const {
+    patientID,
+    organisationID,
+    partenaireID,
+    noteClinique,
+    prescripteur,
+    status,
+    instances,
+    amount,
+    walletType,
+    amountDue,
+    paymentID
+  } = req.body;
+
+  try {
+    // Créer le ServiceRequest
+    const newServiceRequest = await ServiceRequest.create({
+      patientID,
+      organisationID,
+      partenaireID,
+      status,
+      noteClinique,
+      prescripteur,
+      lastModifiedBy: req.userId,
+      paymentID
+    });
+
+    if (!newServiceRequest) {
+      return res
+        .status(400)
+        .json({ status: 0, message: "Échec de la création de la demande de service." });
+    }
+
+    // Créer les instances de service associées
+    const serviceID = newServiceRequest.requestID;
+    const serviceInstancesData = instances.map((instance) => ({
+      serviceID,
+      organisationID: instance.organisationID,
+      patientID: instance.patientID,
+      status: instance.status,
+      productID: instance.productID,
+      priceProduct: instance.priceProduct,
+      lastModifiedBy: req.userId,
+    }));
+
+    const newServiceInstances = await ServiceInstance.bulkCreate(serviceInstancesData);
+
+    if (!newServiceInstances) {
+      return res
+        .status(400)
+        .json({ status: 0, message: "Échec de la création des instances de service." });
+    }
+
+    // Créer le paiement associé
+    const newPayment = await PaymentBIS.create({
+      serviceRequestID: newServiceRequest.requestID,
+      amount,
+      amountDue,
+      walletType,
+      date_created: new Date(),
+    });
+
+    if (!newPayment) {
+      return res
+        .status(400)
+        .json({ status: 0, message: "Échec de la création du paiement." });
+    }
+
+    const OrganisationModal = await Organisation.findOne({
+      where: { id: organisationID },
+    });
+    // Récupérer les informations détaillées du patient
+    const patientDetails = await Patient.findOne({
+      attributes: [
+        "id",
+        "unique_id",
+        "name",
+        "last_name",
+        ["patient_id", "code"],
+        ["sex", "gender"],
+        "sex",
+        "age",
+        "email",
+        "phone",
+        "address",
+        "country",
+        "region",
+        "district",
+        ["registration_time", "register"],
+        "grade",
+        "estCivil",
+        "passport",
+        "matricule",
+        ["bloodgroup", "blood_type"],
+        "birthdate",
+        ["birth_position", "birth_place"],
+        "religion",
+        "img_url",
+        ["nom_contact", "emergency_contact_name"],
+        ["phone_contact", "emergency_contact_no"],
+      ],
+      where: { id: patientID },
+      include: [
+        {
+          model: Region,
+          attributes: ["id", "name"],
+          as: "region_details",
+        },
+        {
+          model: District,
+          attributes: ["id", "name"],
+          as: "district_details",
+        },
+      ],
+    });
+
+    if (!patientDetails) {
+      return res
+        .status(400)
+        .json({ status: 0, message: "Patient non trouvé." });
+    }
+
+    // Récupérer les noms des prestations pour chaque productID
+    const prestationNames = await Promise.all(
+      newServiceInstances.map(async (instance) => {
+        const prestation = await PaymentCategory.findOne({
+          where: { id: instance.productID },
+        });
+        return {
+          ...instance.dataValues,
+          prestationName: prestation ? prestation.prestation : "N/A",
+        };
+      })
+    );
+
+    // Inclure toutes les informations dans la réponse
+    res.json({
+      status: 1,
+      message: "Demande de service, instances et paiement créés avec succès.",
+      data: {
+        serviceRequest: newServiceRequest,
+        patientDetails,
+        serviceInstances: prestationNames,
+        payment: newPayment,
+        organisationDetails: OrganisationModal,
+      },
+    });
+  } catch (error) {
+    console.error("Erreur lors de la création du service, des instances et du paiement:", error);
+    res.status(500).json({ status: 0, message: "Erreur interne du serveur." });
+  }
+};
+
+exports.addTransaction = async (req, res) => {
+  const {
+    id_payment,
+    instances,
+    amount_received,
+    totalSupport,
+    id_patient_payeur,
+    id_organisation_origine,
+    id_organisation_assurance_ipm,
+  } = req.body;
+
+  try {
+    // Préparer les données de transactions pour chaque instance
+    const transactionData = instances.map((instance) => ({
+      id_payment: id_payment,
+      id_prestation_organisation: instance.productID,
+      amount: instance.amount_received,
+      to_Pay: instance.totalSupport,
+      id_patient_payeur: id_patient_payeur,
+      id_patient_parent: null, // Ajuster en fonction de votre logique
+      id_organisation_origine: id_organisation_origine,
+      id_organisation_destinataire: instance.id_organisation_destinataire || null,
+      id_organisation_light: instance.id_organisation_light || null,
+      id_organisation_assurance_ipm: id_organisation_assurance_ipm,
+      type: instance.type || null,
+      status: "En Cours", // Statut par défaut
+    }));
+
+    // Insertion des transactions dans la base de données
+    const newTransactions = await Transaction.bulkCreate(transactionData);
+
+    if (!newTransactions) {
+      return res.status(400).json({ status: 0, message: "Échec de la création des transactions." });
+    }
+
+    res.json({
+      status: 1,
+      message: "Transactions créées avec succès.",
+      data: newTransactions,
+    });
+  } catch (error) {
+    console.error("Erreur lors de la création des transactions :", error);
+    res.status(500).json({ status: 0, message: "Erreur interne du serveur." });
+  }
+};
+
+exports.updateCategoryNameStatus = async (req, res) => {
+  const { paymentID, status, prestationID } = req.body;
+
+  console.log('req.body', req.body);
+
+  try {
+    // Fetch the payment record with the provided paymentID
+    const paymentRecord = await Payment.findOne({ where: { id: paymentID } });
+
+    if (!paymentRecord) {
+      return res.json({ status: 0, message: 'Payment record not found.' });
+    }
+
+    let { category_name } = paymentRecord;
+
+    // Split the category_name into individual prestation segments
+    const prestations = category_name.split(',');
+
+    // Iterate over each prestation segment to find and modify the target one
+    const updatedPrestations = prestations.map((segment) => {
+      const parts = segment.split('*');
+
+      // Check if the prestation ID in the segment matches the provided prestationID
+      if (parts[0] == prestationID) {
+        // Modify the status (last number before "service")
+        parts[parts.length - 2] = status; // This updates the second last element
+      }
+
+      // Reconstruct the segment
+      return parts.join('*');
+    });
+
+    // Join the updated prestations back into a string
+    const updatedCategoryName = updatedPrestations.join(',');
+
+    // Update the payment record with the modified category_name
+    paymentRecord.category_name = updatedCategoryName;
+    await paymentRecord.save();
+
+    return res.json({ status: 1, message: 'Category name updated successfully.', data: paymentRecord });
+  } catch (error) {
+    console.error('Error updating category name:', error);
+    return res.json({ status: 0, message: 'Error updating category name.', error: error.message });
   }
 };
