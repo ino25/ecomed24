@@ -4521,101 +4521,110 @@ exports.getClinicalNotesByID = async (req, res) => {
 };
 exports.addClinicalNotes = async (req, res) => {
   try {
-    let patientID = req.body.patient_id;
-    let clinicalNotes_data = req.body.clinical_notes;
-    let appointment_data = req.body.appointment;
-    let VitalSign_data = req.body.vital_sign;
-    let lab_data = req.body.lab;
-    let imaging_data = req.body.imaging;
-    let Prescription_data = req.body.prescription;
-    let hospitalization_data = req.body.hospitalization;
+    const {
+      patient_id: patientID,
+      clinical_notes: clinicalNotesData,
+      appointment: appointmentData,
+      vital_sign: vitalSignData,
+      lab: labData,
+      imaging: imagingData,
+      prescription: prescriptionData,
+      hospitalization: hospitalizationData,
+    } = req.body;
 
-    const dci_diseases = clinicalNotes_data.desease;
-    const nosology_diseases = clinicalNotes_data.nosologie;
-    const motivearray = clinicalNotes_data.motive;
-    const motivearrayString = motivearray.join(", ");
-    PatientModal = await Patient.findOne({ where: { id: patientID } });
-    ClinicalNotesModal = await ClinicalNotes.create({
+    // Retrieve patient data
+    const PatientModal = await Patient.findOne({ where: { id: patientID } });
+    if (!PatientModal) {
+      return res.json({ status: 0, message: "Patient not found" });
+    }
+
+    // Prepare motive array
+    const motiveArray = Array.isArray(clinicalNotesData.motive) ? clinicalNotesData.motive : [];
+    const motiveArrayString = motiveArray.join(", ");
+
+    // Create clinical notes
+    const ClinicalNotesModal = await ClinicalNotes.create({
       patient_id: patientID,
       org_id: req.org_id,
-      date_time: clinicalNotes_data.date_time,
-      channel: clinicalNotes_data.channel,
-      motive: motivearrayString,
-      known_health_issues: clinicalNotes_data.known_health_issues,
-      desease_history: clinicalNotes_data.desease_history,
-      consultation: clinicalNotes_data.consultation,
-      diagnostic: clinicalNotes_data.diagnostic,
-      treatment: clinicalNotes_data.treatment,
-      observation: clinicalNotes_data.observation,
-      desease: clinicalNotes_data.desease,
-      nosologie: clinicalNotes_data.nosologie,
+      date_time: clinicalNotesData.date_time,
+      channel: clinicalNotesData.channel,
+      motive: motiveArrayString,
+      known_health_issues: clinicalNotesData.known_health_issues,
+      desease_history: clinicalNotesData.desease_history,
+      consultation: clinicalNotesData.consultation,
+      diagnostic: clinicalNotesData.diagnostic,
+      treatment: clinicalNotesData.treatment,
+      observation: clinicalNotesData.observation,
+      desease: clinicalNotesData.desease,
+      nosologie: clinicalNotesData.nosologie,
       status: 1,
       added_by: req.userId,
     });
 
-    dci_diseases.map(async (desease) => {
-      await ClinicalDesease.create({
-        patient_id: patientID,
-        org_id: req.org_id,
-        clinical_id: ClinicalNotesModal.id,
-        disease_id: desease.id,
-        name: desease.desease_name,
-        type: "dci",
-        status: 1,
-        added_by: req.userId,
+    // Add DCI and nosology diseases
+    if (clinicalNotesData.desease) {
+      clinicalNotesData.desease.forEach(async (desease) => {
+        await ClinicalDesease.create({
+          patient_id: patientID,
+          org_id: req.org_id,
+          clinical_id: ClinicalNotesModal.id,
+          disease_id: desease.id,
+          name: desease.desease_name,
+          type: "dci",
+          status: 1,
+          added_by: req.userId,
+        });
       });
-    });
+    }
 
-    nosology_diseases.map(async (desease) => {
-      await ClinicalDesease.create({
-        patient_id: patientID,
-        org_id: req.org_id,
-        clinical_id: ClinicalNotesModal.id,
-        disease_id: desease.id,
-        name: desease.desease_name,
-        type: "nosologie",
-        status: 1,
-        added_by: req.userId,
+    if (clinicalNotesData.nosologie) {
+      clinicalNotesData.nosologie.forEach(async (desease) => {
+        await ClinicalDesease.create({
+          patient_id: patientID,
+          org_id: req.org_id,
+          clinical_id: ClinicalNotesModal.id,
+          disease_id: desease.id,
+          name: desease.desease_name,
+          type: "nosologie",
+          status: 1,
+          added_by: req.userId,
+        });
       });
-    });
+    }
 
-    if (appointment_data != null) {
-      // Appointment
-      let room_id =
-        "teleconsulation_ecomed24-" +
-        PatientModal.phone +
-        "-" +
-        Math.floor(Math.random() * 444444 + 1000000);
-      let live_meeting_link =
-        "https://teleconsultation.ecomed24.com/" + room_id;
+    // Handle appointments
+    if (appointmentData) {
+      const roomID = `teleconsultation_ecomed24-${PatientModal.phone}-${Math.floor(Math.random() * 444444 + 1000000)}`;
+      const liveMeetingLink = `https://teleconsultation.ecomed24.com/${roomID}`;
 
-      AppointmentModal = await Appointment.create({
+      const AppointmentModal = await Appointment.create({
         patient: patientID,
         clinical_id: ClinicalNotesModal.id,
-        code: appointment_data.code,
+        code: appointmentData.code,
         id_organisation: req.org_id,
-        doctor: appointment_data.doctor,
-        date: moment(appointment_data.date).unix(),
-        time_slot: appointment_data.time_slot,
-        s_time: appointment_data.s_time,
-        e_time: appointment_data.e_time,
-        remarks: appointment_data.remarks,
+        doctor: appointmentData.doctor,
+        date: moment(appointmentData.date).unix(),
+        time_slot: appointmentData.time_slot,
+        s_time: appointmentData.s_time,
+        e_time: appointmentData.e_time,
+        remarks: appointmentData.remarks,
         add_date: moment().format("MM/DD/YYYY"),
         registration_time: moment().unix(),
-        s_time_key: appointment_data.s_time_key,
-        status: appointment_data.status,
+        s_time_key: appointmentData.s_time_key,
+        status: appointmentData.status,
         user: req.userId,
-        request: appointment_data.request,
-        patientname: appointment_data.patientname,
-        doctorname: appointment_data.doctorname,
-        service: appointment_data.service,
-        servicename: appointment_data.servicename,
-        room_id: room_id,
-        live_meeting_link: live_meeting_link,
-        appointment_date: moment(appointment_data.date).format("YYYY-MM-DD"),
-        tele_consultation: appointment_data.tele_consultation == 1 ? 1 : 0,
+        request: appointmentData.request,
+        patientname: appointmentData.patientname,
+        doctorname: appointmentData.doctorname,
+        service: appointmentData.service,
+        servicename: appointmentData.servicename,
+        room_id: roomID,
+        live_meeting_link: liveMeetingLink,
+        appointment_date: moment(appointmentData.date).format("YYYY-MM-DD"),
+        tele_consultation: appointmentData.tele_consultation == 1 ? 1 : 0,
         added_by: req.userId,
       });
+
       await PatientLogs.create({
         patient_id: AppointmentModal.patient,
         org_id: req.org_id,
@@ -4628,37 +4637,36 @@ exports.addClinicalNotes = async (req, res) => {
       });
     }
 
-    if (VitalSign_data != null) {
-      VitalSignModal = await VitalSign.create({
+    // Handle Vital Signs
+    if (vitalSignData) {
+      const VitalSignModal = await VitalSign.create({
         patient: patientID,
         clinical_id: ClinicalNotesModal.id,
         id_organisation: req.org_id,
-        prescripteur: VitalSign_data.prescripteur,
-        frequenceRespiratoire: VitalSign_data.frequenceRespiratoire,
-        frequenceCardiaque: VitalSign_data.frequenceCardiaque,
-        saturationArterielle: VitalSign_data.saturationArterielle,
-        temperature: VitalSign_data.temperature,
-        systolique: VitalSign_data.systolique,
-        diastolique: VitalSign_data.diastolique,
-        tensionArterielle: VitalSign_data.tensionArterielle,
-        weight: VitalSign_data.weight,
-        blood_sugar: VitalSign_data.blood_sugar,
-        height: VitalSign_data.height,
-        body_mass_index: VitalSign_data.body_mass_index,
-        ion_user_id: req.userId, //loggedin id
-        add_date: moment(VitalSign_data.add_date).format("YYYY-MM-DD"),
-        patient_name: "",
-        patient_address: "",
-        patient_phone: "",
+        prescripteur: vitalSignData.prescripteur,
+        frequenceRespiratoire: vitalSignData.frequenceRespiratoire,
+        frequenceCardiaque: vitalSignData.frequenceCardiaque,
+        saturationArterielle: vitalSignData.saturationArterielle,
+        temperature: vitalSignData.temperature,
+        systolique: vitalSignData.systolique,
+        diastolique: vitalSignData.diastolique,
+        tensionArterielle: vitalSignData.tensionArterielle,
+        weight: vitalSignData.weight,
+        blood_sugar: vitalSignData.blood_sugar,
+        height: vitalSignData.height,
+        body_mass_index: vitalSignData.body_mass_index,
+        ion_user_id: req.userId,
+        add_date: moment(vitalSignData.add_date).format("YYYY-MM-DD"),
         date_string: moment().format("DD-MM-YYYY"),
         date: moment().unix(),
         added_by: req.userId,
         status: 1,
       });
+
       await PatientLogs.create({
         patient_id: VitalSignModal.patient,
         org_id: req.org_id,
-        description: "New Vital Sign has been Added.",
+        description: "New Vital Sign has been added.",
         type: "vital_sign",
         action: "add",
         relation_id: VitalSignModal.id,
@@ -4667,55 +4675,23 @@ exports.addClinicalNotes = async (req, res) => {
       });
     }
 
-    if (lab_data != null) {
-      TestRequestsModal = await TestRequests.create({
-        patient_id: patientID,
-        clinical_id: ClinicalNotesModal.id,
-        org_id: req.org_id,
-        type: "lab",
-        advice: req.body.advice,
-        reports: lab_data.reports,
-        status: 0,
-        added_by: req.userId,
-      });
-      const Labreports = req.body.reports;
-      Labreports.map(async (report) => {
-        await TestItems.create({
-          patient_id: patientID,
-          org_id: req.org_id,
-          request_id: TestRequestsModal.id,
-          test_id: report.id,
-          name: report.name,
-          type: report.type,
-          status: 1,
-          added_by: req.userId,
-        });
-      });
-      await PatientLogs.create({
-        patient_id: TestRequestsModal.patient_id,
-        org_id: req.org_id,
-        description: "New Lab Request has been added ",
-        type: "lab",
-        action: "add",
-        relation_id: TestRequestsModal.id,
-        status: 1,
-        added_by: req.userId,
-      });
-    }
+    // Handle Lab and Imaging Data
+    const handleLabOrImagingData = async (data, type) => {
+      if (!data) return;
 
-    if (imaging_data != null) {
-      TestRequestsModal = await TestRequests.create({
+      const TestRequestsModal = await TestRequests.create({
         patient_id: patientID,
         clinical_id: ClinicalNotesModal.id,
         org_id: req.org_id,
-        type: "imaging",
+        type: type,
         advice: req.body.advice,
-        reports: imaging_data.reports,
+        reports: data.reports,
         status: 0,
         added_by: req.userId,
       });
-      const Imagingreports = req.body.reports;
-      Imagingreports.map(async (report) => {
+
+      const reports = req.body.reports;
+      reports.forEach(async (report) => {
         await TestItems.create({
           patient_id: patientID,
           org_id: req.org_id,
@@ -4731,32 +4707,35 @@ exports.addClinicalNotes = async (req, res) => {
       await PatientLogs.create({
         patient_id: TestRequestsModal.patient_id,
         org_id: req.org_id,
-        description: "New Imaging Request has been added ",
-        type: "imaging_request",
+        description: `New ${type === "lab" ? "Lab" : "Imaging"} Request has been added`,
+        type: type,
         action: "add",
         relation_id: TestRequestsModal.id,
         status: 1,
         added_by: req.userId,
       });
-    }
-    if (Prescription_data != null) {
-      PrescriptionsModal = await Prescriptions.create({
+    };
+
+    await handleLabOrImagingData(labData, "lab");
+    await handleLabOrImagingData(imagingData, "imaging");
+
+    // Handle Prescription
+    if (prescriptionData) {
+      const PrescriptionsModal = await Prescriptions.create({
         patient_id: patientID,
         org_id: req.org_id,
         clinical_id: ClinicalNotesModal.id,
-        patient_name: PatientModal.name + " " + PatientModal.last_name,
+        patient_name: `${PatientModal.name} ${PatientModal.last_name}`,
         patient_gender: PatientModal.sex,
         patient_age: PatientModal.age,
         patient_dob: PatientModal.birthdate,
-
-        advice: Prescription_data.advice,
-        medicin: Prescription_data.medicin,
-
+        advice: prescriptionData.advice,
+        medicin: prescriptionData.medicin,
         status: 1,
         added_by: req.userId,
       });
-      const medicins = Prescription_data.medicin;
-      medicins.map(async (medicin) => {
+
+      prescriptionData.medicin.forEach(async (medicin) => {
         await PrescribedMedicins.create({
           patient_id: PrescriptionsModal.patient_id,
           org_id: req.org_id,
@@ -4770,10 +4749,11 @@ exports.addClinicalNotes = async (req, res) => {
           added_by: req.userId,
         });
       });
+
       await PatientLogs.create({
         patient_id: PrescriptionsModal.patient_id,
         org_id: req.org_id,
-        description: "New prescription has been added ",
+        description: "New prescription has been added",
         type: "prescription",
         action: "add",
         relation_id: PrescriptionsModal.id,
@@ -4781,30 +4761,29 @@ exports.addClinicalNotes = async (req, res) => {
         added_by: req.userId,
       });
     }
-    if (hospitalization_data != null) {
-      PatientHospitalizationModal = await PatientHospitalization.create({
+
+    // Handle Hospitalization
+    if (hospitalizationData) {
+      const PatientHospitalizationModal = await PatientHospitalization.create({
         patient_id: patientID,
         org_id: req.org_id,
         clinical_id: ClinicalNotesModal.id,
-
-        patient_name: PatientModal.name + " " + PatientModal.last_name,
+        patient_name: `${PatientModal.name} ${PatientModal.last_name}`,
         patient_dob: PatientModal.birthdate,
         patient_age: PatientModal.age,
         patient_gender: PatientModal.sex,
         patient_phone: PatientModal.phone_contact,
         patient_address: PatientModal.address,
-
-        channel: hospitalization_data.channel,
-        motive: hospitalization_data.motive,
-        desease_history: hospitalization_data.desease_history,
-        consultation: hospitalization_data.consultation,
-        diagnostic: hospitalization_data.diagnostic,
-        treatment: hospitalization_data.treatment,
-        referredby: hospitalization_data.referredby,
-        referred_type: hospitalization_data.referred_type,
-        hospitalization_date: hospitalization_data.hospitalization_date,
-        hospitalization_time: hospitalization_data.hospitalization_time,
-
+        channel: hospitalizationData.channel,
+        motive: hospitalizationData.motive,
+        desease_history: hospitalizationData.desease_history,
+        consultation: hospitalizationData.consultation,
+        diagnostic: hospitalizationData.diagnostic,
+        treatment: hospitalizationData.treatment,
+        referredby: hospitalizationData.referredby,
+        referred_type: hospitalizationData.referred_type,
+        hospitalization_date: hospitalizationData.hospitalization_date,
+        hospitalization_time: hospitalizationData.hospitalization_time,
         status: 1,
         added_by: req.userId,
       });
@@ -4812,9 +4791,7 @@ exports.addClinicalNotes = async (req, res) => {
       await PatientLogs.create({
         patient_id: PatientHospitalizationModal.patient_id,
         org_id: req.org_id,
-        description:
-          "Patient Has been hospitalized on " +
-          PatientHospitalizationModal.hospitalization_date,
+        description: `Patient has been hospitalized on ${PatientHospitalizationModal.hospitalization_date}`,
         type: "hospitalization",
         action: "add",
         relation_id: PatientHospitalizationModal.id,
@@ -4822,31 +4799,31 @@ exports.addClinicalNotes = async (req, res) => {
         added_by: req.userId,
       });
     }
-    if (ClinicalNotesModal === null) {
-      res.json({ status: 0, message: langCommon.errormessage });
-    } else {
-      console.log(req.body);
 
-      await PatientLogs.create({
-        patient_id: ClinicalNotesModal.patient_id,
-        org_id: req.org_id,
-        description: "Patient New clinical notes has been added ",
-        type: "clinical_notes",
-        action: "add",
-        relation_id: ClinicalNotesModal.id,
-        status: 1,
-        added_by: req.userId,
-      });
-      res.json({
-        status: 1,
-        message: langPatientModule.clinical_notes.add,
-        data: "",
-      });
-    }
+    // Log clinical notes addition
+    await PatientLogs.create({
+      patient_id: ClinicalNotesModal.patient_id,
+      org_id: req.org_id,
+      description: "Patient New clinical notes has been added",
+      type: "clinical_notes",
+      action: "add",
+      relation_id: ClinicalNotesModal.id,
+      status: 1,
+      added_by: req.userId,
+    });
+
+    return res.json({
+      status: 1,
+      message: "Clinical notes added successfully",
+      data: "",
+    });
+
   } catch (error) {
-    throw error;
+    console.error("Error adding clinical notes:", error);
+    return res.status(500).json({ status: 0, message: "An error occurred", error: error.message });
   }
 };
+
 exports.updateClinicalNotes = async (req, res) => {
   try {
     let getData = [],

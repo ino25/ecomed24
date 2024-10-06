@@ -37,6 +37,7 @@ router.get("/", VerifyToken, patientController.getAllPatients);
 router.get("/update-unique-id", VerifyToken, patientController.updateUniqueID);
 router.get("/patient-all/:orgId", patientController.getPatient);
 
+
 const PProfileUpload = upload.fields([{ name: "profile", maxCount: 1 }]);
 router.post(
   "/add",
@@ -545,26 +546,28 @@ router.get(
   patientController.getPaymentDepositLogs
 );
 
-router.post(
-  "/reference-form/add",
-  VerifyToken,
-  patientController.addReferenceForm
-);
-
 router.get(
-  "/reference-form/by-id/:reference_form_id",
+  "/invoice-price-grid/:patient_id",
   VerifyToken,
-  patientController.getReferenceFormByID
+  patientController.getPaymentDetailsPriceGrids
 );
 
 router.post(
-  "/mise-en-observation/add",
+  "/service-request/add",
   VerifyToken,
-  patientController.addMiseEnObservation
+  patientController.createServiceRequestWithInstances
 );
-router.get(
-  "/mise-en-observation/by-id/:mise_en_id",
+
+router.post(
+  "/transaction/add",
   VerifyToken,
-  patientController.getMiseEnObservationByID
+  patientController.addTransaction
 );
+router.post(
+  "/update/status",
+  VerifyToken,
+  patientController.updateCategoryNameStatus
+);
+
+
 module.exports = router;
