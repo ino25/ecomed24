@@ -266,12 +266,12 @@ exports.getActeDemandeAutresActes = async (req, res) => {
   const id_organisation = req.body.id_organisation;
 
   try {
-    // Fetching initial payment data
+    // Fetching initial payment data, sorted by `date` column
     const paymentData = await sequelize.query(
       `SELECT * FROM payment 
        WHERE (id_organisation = ${sequelize.escape(id_organisation)} 
        OR (etat = 1 AND organisation_destinataire = ${sequelize.escape(id_organisation)}))
-       ORDER BY date_string DESC`,
+       ORDER BY date DESC`,  // Using the `date` column for ordering
       { type: sequelize.QueryTypes.SELECT }
     );
 
@@ -422,7 +422,8 @@ exports.getActeDemandeAutresActes = async (req, res) => {
               payment_etatlight: payment.etatlight,
               organnisation_destinataire: payment.organisation_destinataire,
               code: payment.code + category.id,
-              date_string: payment.date_string,
+              date_string: payment.date_string, // This will hold the raw date string
+              date: payment.date,  // Using this as the primary date for ordering
               patient_name: payment.patient_name,
               id_service: category.id_service,
               name_service: service ? service.name_service : null,
@@ -436,7 +437,7 @@ exports.getActeDemandeAutresActes = async (req, res) => {
               doctor_name: payment.doctor_name,
               status_number: status_number,
               status:
-                ["UNKNOWN", "EN COURS", "EFFECTUÉ", "VALIDÉ"][status_number] ||
+                ["UNKNOWN", "EN ATTENTE", "EN COURS", "TERMINÉ"][status_number] ||
                 "UNKNOWN",
               date_prelevement: lab ? lab.date_prelevement : null,
               clinique: payment.renseignementClinique,
@@ -459,8 +460,7 @@ exports.getActeDemandeAutresActes = async (req, res) => {
       });
     });
 
-    // Sorting and sending response
-    labData.sort((a, b) => new Date(b.date_string) - new Date(a.date_string));
+    // Sorting is now handled by the SQL query's ORDER BY clause, no need for additional sorting in JavaScript.
     if (labData.length > 0) {
       res.json(labData);
     } else {
@@ -473,6 +473,8 @@ exports.getActeDemandeAutresActes = async (req, res) => {
       .send("Une erreur s'est produite lors de la récupération des données");
   }
 };
+
+
 
 
 //obtenir le nombre de spécialité en cours ou effectué
@@ -560,7 +562,7 @@ exports.getStats = async (req, res) => {
     } else {
       res.status(404).send("Pas de données trouvées pour cet id_organisation");
     }
-  } catch (error) {
+  } catch (error) { 
     console.error("Erreur :", error);
     res.status(500).send("Une erreur s'est produite lors de la récupération des données");
   }
@@ -568,8 +570,8 @@ exports.getStats = async (req, res) => {
 
 exports.LabData = async (req, res) => {
   const record = req.body;
-  console.log(req.body); // Pour voir ce que contient le corps de la requête
-  console.log(req.body.lab); // Pour vérifier si l'objet 'lab' existe
+ // console.log(req.body); // Pour voir ce que contient le corps de la requête
+ // console.log(req.body.lab); // Pour vérifier si l'objet 'lab' existe
   try {
     const existingRecord = await sequelize.query(
       `SELECT * FROM lab WHERE payment = ${sequelize.escape(
@@ -728,13 +730,13 @@ exports.Validation = async (req, res) => {
           if (splitString[0] == id_prestations[j]) {
             splitString[4] = status;
             category_name[i] = splitString.join("*");
-            console.log("category_name after update: ", category_name); // Add logging
+         //   console.log("category_name after update: ", category_name); // Add logging
             break;
           }
         }
       }
       category_name = category_name.join(",");
-      console.log("Final category_name: ", category_name); // Add logging
+     // console.log("Final category_name: ", category_name); // Add logging
       await sequelize.query(
         `UPDATE payment SET category_name = ${sequelize.escape(
           category_name
@@ -1016,7 +1018,7 @@ exports.savePDF = (req, res) => {
 
     DocmosisTestLab(type, id_payment, data)
       .then(async (response) => {
-        console.log(response);
+     //   console.log(response);
         if (response.status) {
           res.json({
             status: 1,
@@ -1029,7 +1031,7 @@ exports.savePDF = (req, res) => {
             message: "Server Error, Please Try Againg Later!!",
           });
         }
-        console.log("Response:", response, req.body.type, req.body.id_payment);
+     //   console.log("Response:", response, req.body.type, req.body.id_payment);
       })
       .catch((error) => {
         console.error("Error:", error);

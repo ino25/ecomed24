@@ -1969,7 +1969,7 @@ exports.addPayments = async (req, res) => {
       ? req.body.amount_received
       : 0;
     let services = req.body.services;
-    console.log(req);
+  ///  console.log(req);
     for (var i = 0; i < services.length; i++) {
       if (services[i].type == "service") {
         items[i] =
