@@ -35,6 +35,8 @@ const DocumentUpload = multer({ storage: Documentstorage });
 console.log(DocumentUpload);
 router.get("/", VerifyToken, patientController.getAllPatients);
 router.get("/update-unique-id", VerifyToken, patientController.updateUniqueID);
+router.get("/patient-all/:orgId", patientController.getPatient);
+
 
 const PProfileUpload = upload.fields([{ name: "profile", maxCount: 1 }]);
 router.post(
@@ -52,6 +54,11 @@ router.post(
   [VerifyToken, PProfileUpload],
   patientController.updateGeneralInfo
 );
+router.get("/general-details-patient/:id", patientController.getDetailsPatient);
+router.get("/", VerifyToken, patientController.getAllPatients);
+router.get("/update-unique-id", VerifyToken, patientController.updateUniqueID);
+
+//const PProfileUpload = upload.fields([{ name: "profile", maxCount: 1 }]);
 
 // Appointments
 router.get(
@@ -174,16 +181,16 @@ router.get(
   patientController.getAssuranceByID
 );
 router.get(
+  "/get-assurance/by-infos/:assurance_id",
+  patientController.getAssuranceByID
+);
+router.get(
   "/assurance/organizations",
   VerifyToken,
   patientController.getAssuranceOrg
 );
 router.post("/assurance/add", VerifyToken, patientController.addAssurance);
-router.patch(
-  "/assurance/update/:id",
-  VerifyToken,
-  patientController.updateAssurance
-);
+router.patch("/assurance/update/:id", patientController.updateAssurance);
 router.delete(
   "/assurance/delete/:id",
   VerifyToken,
@@ -539,26 +546,28 @@ router.get(
   patientController.getPaymentDepositLogs
 );
 
-router.post(
-  "/reference-form/add",
-  VerifyToken,
-  patientController.addReferenceForm
-);
-
 router.get(
-  "/reference-form/by-id/:reference_form_id",
+  "/invoice-price-grid/:patient_id",
   VerifyToken,
-  patientController.getReferenceFormByID
+  patientController.getPaymentDetailsPriceGrids
 );
 
 router.post(
-  "/mise-en-observation/add",
+  "/service-request/add",
   VerifyToken,
-  patientController.addMiseEnObservation
+  patientController.createServiceRequestWithInstances
 );
-router.get(
-  "/mise-en-observation/by-id/:mise_en_id",
+
+router.post(
+  "/transaction/add",
   VerifyToken,
-  patientController.getMiseEnObservationByID
+  patientController.addTransaction
 );
+router.post(
+  "/update/status",
+  VerifyToken,
+  patientController.updateCategoryNameStatus
+);
+
+
 module.exports = router;
