@@ -1,6 +1,6 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../config");
-const HelpCategory = require("./HelpCategory");
+const Module = require("./Module");
 
 const HelpTopic = sequelize.define(
   "HelpTopic",
@@ -10,6 +10,10 @@ const HelpTopic = sequelize.define(
       primaryKey: true,
       autoIncrement: true,
     },
+    category: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
     name: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -18,107 +22,64 @@ const HelpTopic = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: false,
     },
+    searchCount: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    viewsCount: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    lastAccessed: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    modifiedBy: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    author: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
     status: {
-      type: DataTypes.ENUM,
-      values: ["active", "inactive"],
-      defaultValue: "active",
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "draft",
     },
-    added_by: {
+    ratings: {
+      type: DataTypes.FLOAT,
+      defaultValue: 0,
+    },
+    feedbackCount: {
       type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    tags: {
+      type: DataTypes.JSON,
       allowNull: true,
     },
-    updated_by: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-    },
-    categoryId: {
+    // Foreign key to associate with Module
+    moduleId: {
       type: DataTypes.INTEGER,
       references: {
-        model: HelpCategory,
+        model: "Module", // Table name
         key: "id",
       },
+      onUpdate: "CASCADE",
+      onDelete: "SET NULL",
     },
   },
   {
-    tableName: "HelpTopics",
-    timestamps: true,
+    tableName: "help_topic",
+    timestamps: false, // Disable Sequelize's default timestamps
   }
 );
 
-HelpTopic.associate = (models) => {
-  const { DataTypes } = require("sequelize");
-  const sequelize = require("../config").sequelize;
-
-  const HelpTopic = sequelize.define(
-    "HelpTopic",
-    {
-      id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true,
-      },
-      category: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      name: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      helpText: {
-        type: DataTypes.TEXT,
-        allowNull: false,
-      },
-      searchCount: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0,
-      },
-      viewsCount: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0,
-      },
-      lastAccessed: {
-        type: DataTypes.DATE,
-        allowNull: true,
-      },
-      modifiedBy: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-      author: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      status: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        defaultValue: "draft",
-      },
-      ratings: {
-        type: DataTypes.FLOAT,
-        defaultValue: 0,
-      },
-      feedbackCount: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0,
-      },
-      tags: {
-        type: DataTypes.JSON,
-        allowNull: true,
-      },
-    },
-    {
-      tableName: "help_topic",
-      timestamps: false, // Disable Sequelize's default timestamps
-    }
-  );
-
-  module.exports = HelpTopic;
-
-  HelpTopic.belongsTo(models.HelpCategory, {
-    foreignKey: "categoryId",
-    as: "category",
-  });
-};
+// Define association between HelpTopic and Module
+/*HelpTopic.belongsTo(Module, {
+  foreignKey: "moduleId",
+  as: "module", // Alias for the association
+});*/
 
 module.exports = HelpTopic;

@@ -1,191 +1,39 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config').sequelize;
+const { DataTypes } = require("sequelize");
+const sequelize = require("../config").sequelize; // Ensure this path is correct
 
-const Organisation = sequelize.define('Organisation', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
+const Inventory = sequelize.define(
+  "Inventory",
+  {
+    id: {
+      type: DataTypes.BIGINT, // Use BIGINT if referencing BIGINT columns in foreign tables
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    tenantId: {
+      type: DataTypes.BIGINT, // Use BIGINT to match the 'id' column of the 'organisation' table
+      allowNull: false,
+      references: {
+        model: "organisation", // Ensure that the reference matches the exact table name in the DB
+        key: "id",
+      },
+      onUpdate: "CASCADE",
+      onDelete: "CASCADE",
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+      allowNull: false,
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+      allowNull: false,
+    },
   },
-  code: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  nom: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  nom_commercial: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  path_logo: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  entete: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  footer: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  signature: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  adresse: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  region: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  departement: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  arrondissement: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  collectivite: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  pays: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  email: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  numero_fixe: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  prenom_responsable_legal: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  nom_responsable_legal: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  portable_responsable_legal: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  fonction_responsable_legal: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  description_courte_responsable_legal: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  prenom_responsable_legal2: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  nom_responsable_legal2: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  portable_responsable_legal2: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  fonction_responsable_legal2: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  description_courte_responsable_legal2: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  id_partenaire_zuuluPay: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  pin_partenaire_zuuluPay_encrypted: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  type: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  est_active: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  date_creation: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  date_mise_a_jour: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  description_courte_activite: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  description_courte_services: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  slogan: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  horaires_ouverture: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  is_transfert: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  is_light: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  is_whatsapp: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  other_emails: {
-    type: DataTypes.JSON,
-    allowNull: true
-  },
-  pricing_category: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  status: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  added_by: {
-    type: DataTypes.INTEGER,
-    allowNull: true
-  },
-  updated_by: {
-    type: DataTypes.INTEGER,
-    allowNull: true
-  },
-  
-}, {
-  tableName: 'organisation',
-  timestamps: true // Disable Sequelize's default timestamps
-});
+  {
+    tableName: "inventories", // Ensures the correct table name
+    timestamps: true, // Enable Sequelize's default timestamps
+  }
+);
 
-module.exports = Organisation;
-
-
-
+module.exports = Inventory;

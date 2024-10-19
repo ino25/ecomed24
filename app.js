@@ -82,6 +82,9 @@ const rolesRoutes = require("./routes/role.routes");
 const permisssionRoutes = require("./routes/permission.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const reportRoutes = require("./routes/report.routes");
+const helpRoutes = require("./routes/helpTopic.routes");
+const moduleRoutes = require("./routes/module.routes");
+const drugRoutes = require("./routes/drug.routes");
 
 if (app.get("env") === "production") {
   app.use(morgan("combined"));
@@ -121,6 +124,9 @@ app.use("/roles", rolesRoutes);
 app.use("/permissions", permisssionRoutes);
 app.use("/dashboard", dashboardRoutes);
 app.use("/report", reportRoutes);
+app.use("/help", helpRoutes);
+app.use("/modules", moduleRoutes);
+app.use("/drugs", drugRoutes);
 
 // Start server
 const PORT = process.env.PORT || 3001;
