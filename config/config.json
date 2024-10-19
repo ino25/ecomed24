@@ -1,0 +1,23 @@
+{
+  "development": {
+    "username": "admin",
+    "password": "1TdHaN6b0bB1VPw0YvDg",
+    "database": "ecomed24",
+    "host": "ecomedtest240.czszvxooo21r.us-east-1.rds.amazonaws.com",
+    "dialect": "mysql"
+  },
+  "test": {
+    "username": "admin",
+    "password": "1TdHaN6b0bB1VPw0YvDg",
+    "database": "database_test",
+    "host": "ecomedtest240.czszvxooo21r.us-east-1.rds.amazonaws.com",
+    "dialect": "mysql"
+  },
+  "production": {
+    "username": "admin",
+    "password": "1TdHaN6b0bB1VPw0YvDg",
+    "database": "database_production",
+    "host": "ecomedtest240.czszvxooo21r.us-east-1.rds.amazonaws.com",
+    "dialect": "mysql"
+  }
+}
