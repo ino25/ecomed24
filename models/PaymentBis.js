@@ -34,6 +34,11 @@ const PaymentBis = sequelize.define('PaymentBis', {
     type: DataTypes.STRING(255), 
     allowNull: true
   },
+  referenceTransaction: {
+    type: DataTypes.STRING(255), 
+    allowNull: true
+  }
+  
   
 }, {
   tableName: 'paymentbis',

@@ -6722,9 +6722,10 @@ exports.createServiceRequestWithInstances = async (req, res) => {
     amount,
     walletType,
     amountDue,
-    paymentID
+    paymentID,
+    referenceTransaction
   } = req.body;
-
+  console.log('les paiements ', req.body)
   try {
     // Créer le ServiceRequest
     const newServiceRequest = await ServiceRequest.create({
@@ -6735,9 +6736,10 @@ exports.createServiceRequestWithInstances = async (req, res) => {
       noteClinique,
       prescripteur,
       lastModifiedBy: req.userId,
-      paymentID
+      paymentID,
+      referenceTransaction
     });
-
+   
     if (!newServiceRequest) {
       return res
         .status(400)
@@ -6770,6 +6772,7 @@ exports.createServiceRequestWithInstances = async (req, res) => {
       amount,
       amountDue,
       walletType,
+      referenceTransaction,
       date_created: new Date(),
     });
 
