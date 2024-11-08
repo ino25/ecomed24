@@ -52,7 +52,7 @@ const PriceGrids = sequelize.define('PriceGrids', {
     allowNull: true
   },
 }, {
-  tableName: 'priceGrids',
+  tableName: 'pricegrids',
   timestamps: false
 });
 
