@@ -84,7 +84,11 @@ const dashboardRoutes = require("./routes/dashboard.routes");
 const reportRoutes = require("./routes/report.routes");
 const helpRoutes = require("./routes/helpTopic.routes");
 const moduleRoutes = require("./routes/module.routes");
-// const drugRoutes = require("./routes/drug.routes");
+const OHADAAccountsRoutes = require("./routes/OHADAAccounts.routes");
+const OHADATransactionRoutes = require("./routes/OHADATransactions.routes");
+const transactionScenarioRoutes = require("./routes/transactionScenario.routes");
+const paymentMethodRoutes = require("./routes/paymentMethod.routes");
+const drugRoutes = require("./routes/drug.routes");
 
 if (app.get("env") === "production") {
   app.use(morgan("combined"));
@@ -126,10 +130,14 @@ app.use("/dashboard", dashboardRoutes);
 app.use("/report", reportRoutes);
 app.use("/help", helpRoutes);
 app.use("/modules", moduleRoutes);
-// app.use("/drugs", drugRoutes);
+app.use("/accounts", OHADAAccountsRoutes);
+app.use("/transactions", OHADATransactionRoutes);
+app.use("/scenarios", transactionScenarioRoutes);
+app.use("/payment-methods", paymentMethodRoutes);
+app.use("/drugs", drugRoutes);
 
 // Start server
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 7001;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
