@@ -8,7 +8,7 @@ const moment = require("moment");
 moment.locale("en");
 const path = require("path");
 const nodemailer = require("nodemailer");
-
+const langPatientModule = i18n.__("patientModule");
 var User = require("../models/User");
 var Appointment = require("../models/Appointment");
 var Organisation = require("../models/Organisation");
@@ -39,15 +39,15 @@ exports.getList = async (req, res) => {
       datalimit = 5;
     }
     const { count, rows } = await Appointment.findAndCountAll({
-      where: { patient: req.params.patient_id },
+      where: { id_organisation: req.org_id },
     });
 
     let whereClause = {
-      patient: req.params.patient_id,
+      id_organisation: req.org_id,
     };
 
-    await appointmentAPI(`/appointment/list`,'get',data={});
-
+    const datafromapi = await appointmentAPI(`/list`,'get',data={});
+    console.log(datafromapi);
     AppointmentModal = await Appointment.findAll({
       attributes: [
         "id",
@@ -85,7 +85,7 @@ exports.getList = async (req, res) => {
           "updatedAt",
         ],
       ],
-      where: { patient: req.params.patient_id },
+      where: { id_organisation: req.org_id },
       order: [["id", "DESC"]],
       limit: datalimit,
       offset: offsetdata,
@@ -180,6 +180,7 @@ exports.add = async (req, res) => {
     if (AppointmentModal === null) {
       res.json({ status: 0, message: langCommon.errormessage });
     } else {
+      const datafromapi = await appointmentAPI(`/list`,'get',data={});
       await PatientLogs.create({
         patient_id: AppointmentModal.patient,
         org_id: req.org_id,

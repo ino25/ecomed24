@@ -10,15 +10,10 @@ const BASEURL = process.env.SITE_URL;
 const BASEPATH = process.env.BASE_PATH;
 const APPOINTMENT_APIURL = process.env.APPOINTMENT_APIURL;
 const apiKey = process.env.APPOINTMENT_APIKEY;
-async function getAppointments(object) {
-  return new Promise((resolve, reject) => {
-    const formData = data;
-    
-    
-  });
-}
+const axios = require('axios');
 // Utility function to call third-party API with axios
 async function appointmentAPI (url, method, data = null) {
+
   const options = {
     method,
     url: `${APPOINTMENT_APIURL}${url}`,
@@ -28,13 +23,13 @@ async function appointmentAPI (url, method, data = null) {
     },
     data,
   };
-
+  console.log(options);
   try {
     const response = await axios(options);
     return response.data;
   } catch (error) {
     console.error(`Error in ${method} ${url}:`, error.response ? error.response.data : error.message);
-    throw error;
+    // throw error;
   }
 };
 module.exports = {
