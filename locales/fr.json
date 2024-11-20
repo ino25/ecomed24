@@ -228,5 +228,13 @@
         "deleted": "Patient mis en observation supprimé avec succès !",
         "individual": "Détails du patient mis en observation récupérés !",
         "list": "Liste des patients mis en observation récupérée !"
+    },
+    "Slots": {
+        "add": "New Slot has been added.",
+        "update": "Slot successfully updated.",
+        "status": "Status has been updated successfull!",
+        "deleted": "Slot has been deleted successfully!",
+        "list": "Slots successfull fetched",
+        "individual": "Slot details fetched"
     }
 }

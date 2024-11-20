@@ -61,6 +61,7 @@ const multer = require("multer");
 const fs = require("fs");
 const Docmosis = require("../helpers/DocmosisHelper");
 var Transaction = require('../models/Transaction');
+var Drug = require('../models/Drug');
 //////Modal Relationship
 
 Patient.belongsTo(Region, { as: "region_details", foreignKey: "region" });
@@ -928,22 +929,6 @@ exports.getAppontments = async (req, res) => {
       patient: req.params.patient_id,
     };
 
-    // if (search && search.trim() !== "") {
-    //   whereClause = {
-    //     ...whereClause,
-    //     [Op.or]: [
-    //       Sequelize.where(
-    //         Sequelize.fn('concat', Sequelize.col('name'), ' ', Sequelize.col('last_name')),
-    //         {
-    //           [Op.like]: `%${search}%`
-    //         }
-    //       ),
-    //       { email: { [Op.like]: `%${search}%` } },
-    //       { phone: { [Op.like]: `%${search}%` } },
-    //       { unique_id: { [Op.like]: `%${search}%` } },
-    //     ],
-    //   };
-    // }
     AppointmentModal = await Appointment.findAll({
       attributes: [
         "id",
@@ -5770,31 +5755,46 @@ exports.deleteImagingRequest = async (req, res) => {
   }
 };
 
-// Helper
 exports.medicinList = async (req, res) => {
   try {
     let getData = [],
       results;
+    
 
-    MasterMedicineModal = await MasterMedicine.findAll({
-      attributes: [
-        "id",
-        "name",
-        "category",
-        "dosage",
-        "type",
-        "generic",
-        "company",
-        "description",
-      ],
-      where: { status: "Active" },
-    });
+      const whereClause = {
+        status: "active"
+      };
+      
+      // Add the dci filter only if `search` is not empty
+      if (req.query.search) {
+        whereClause.dci = { [Op.like]: `${req.query.search}%` };
+      }
+      
+      const MasterMedicineModal = await Drug.findAll({
+        attributes: [
+          "id",
+          "therapeuticClass",
+          "dci",
+          "commercialName",
+          "dosage",
+          "administrationRoute",
+          "presentation",
+          "publicPrice",
+          "referencePrice",
+          "currency",
+          "laboratory",
+          "status",
+          "drugScope"
+        ],
+        where: whereClause,
+        limit: 50,
+      });
     if (MasterMedicineModal === null) {
       res.json({ status: 0, message: langCommon.nodatafound });
     } else {
       res.json({
         status: 1,
-        message: langPatientModule.helper.medicinlist,
+        message: langPatientModule.helper.deseaselist,
         data: MasterMedicineModal,
       });
     }
@@ -5802,6 +5802,8 @@ exports.medicinList = async (req, res) => {
     throw error;
   }
 };
+// Helper
+
 exports.deseaseList = async (req, res) => {
   try {
     let getData = [],
