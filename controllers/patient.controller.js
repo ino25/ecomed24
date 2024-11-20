@@ -6723,11 +6723,19 @@ exports.createServiceRequestWithInstances = async (req, res) => {
     walletType,
     amountDue,
     paymentID,
-    referenceTransaction
+    referenceTransaction,
+    total_amount,
+    discount_amount,
+    insured_amount,
+    net_amount,
+    amount_paid,
+    remaining_balance,
   } = req.body;
-  console.log('les paiements ', req.body)
+
+  console.log("Les paiements reçus:", req.body);
+
   try {
-    // Créer le ServiceRequest
+    // Étape 1 : Créer le ServiceRequest avec les champs supplémentaires
     const newServiceRequest = await ServiceRequest.create({
       patientID,
       organisationID,
@@ -6735,18 +6743,24 @@ exports.createServiceRequestWithInstances = async (req, res) => {
       status,
       noteClinique,
       prescripteur,
-      lastModifiedBy: req.userId,
       paymentID,
-      referenceTransaction
+      referenceTransaction,
+      total_amount,
+      discount_amount,
+      insured_amount,
+      net_amount,
+      amount_paid,
+      remaining_balance,
+      lastModifiedBy: req.userId,
     });
-   
+
     if (!newServiceRequest) {
       return res
         .status(400)
         .json({ status: 0, message: "Échec de la création de la demande de service." });
     }
 
-    // Créer les instances de service associées
+    // Étape 2 : Créer les instances de service associées
     const serviceID = newServiceRequest.requestID;
     const serviceInstancesData = instances.map((instance) => ({
       serviceID,
@@ -6766,7 +6780,7 @@ exports.createServiceRequestWithInstances = async (req, res) => {
         .json({ status: 0, message: "Échec de la création des instances de service." });
     }
 
-    // Créer le paiement associé
+    // Étape 3 : Créer le paiement associé
     const newPayment = await PaymentBIS.create({
       serviceRequestID: newServiceRequest.requestID,
       amount,
@@ -6782,10 +6796,12 @@ exports.createServiceRequestWithInstances = async (req, res) => {
         .json({ status: 0, message: "Échec de la création du paiement." });
     }
 
+    // Étape 4 : Récupérer les informations de l'organisation
     const OrganisationModal = await Organisation.findOne({
       where: { id: organisationID },
     });
-    // Récupérer les informations détaillées du patient
+
+    // Étape 5 : Récupérer les informations détaillées du patient
     const patientDetails = await Patient.findOne({
       attributes: [
         "id",
@@ -6831,12 +6847,10 @@ exports.createServiceRequestWithInstances = async (req, res) => {
     });
 
     if (!patientDetails) {
-      return res
-        .status(400)
-        .json({ status: 0, message: "Patient non trouvé." });
+      return res.status(400).json({ status: 0, message: "Patient non trouvé." });
     }
 
-    // Récupérer les noms des prestations pour chaque productID
+    // Étape 6 : Récupérer les noms des prestations pour chaque productID
     const prestationNames = await Promise.all(
       newServiceInstances.map(async (instance) => {
         const prestation = await PaymentCategory.findOne({
@@ -6849,7 +6863,7 @@ exports.createServiceRequestWithInstances = async (req, res) => {
       })
     );
 
-    // Inclure toutes les informations dans la réponse
+    // Étape 7 : Inclure toutes les informations dans la réponse
     res.json({
       status: 1,
       message: "Demande de service, instances et paiement créés avec succès.",
@@ -6862,10 +6876,14 @@ exports.createServiceRequestWithInstances = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Erreur lors de la création du service, des instances et du paiement:", error);
+    console.error(
+      "Erreur lors de la création du service, des instances et du paiement:",
+      error
+    );
     res.status(500).json({ status: 0, message: "Erreur interne du serveur." });
   }
 };
+
 
 exports.addTransaction = async (req, res) => {
   const {
