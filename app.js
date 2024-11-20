@@ -86,6 +86,7 @@ const helpRoutes = require("./routes/helpTopic.routes");
 const moduleRoutes = require("./routes/module.routes");
 const OHADAAccountsRoutes = require("./routes/OHADAAccounts.routes");
 const OHADATransactionRoutes = require("./routes/OHADATransactions.routes");
+const transactionHandlerRoutes = require("./routes/transactionHandler.routes");
 const transactionScenarioRoutes = require("./routes/transactionScenario.routes");
 const paymentMethodRoutes = require("./routes/paymentMethod.routes");
 const drugRoutes = require("./routes/drug.routes");
@@ -133,8 +134,9 @@ app.use("/modules", moduleRoutes);
 app.use("/accounts", OHADAAccountsRoutes);
 app.use("/transactions", OHADATransactionRoutes);
 app.use("/scenarios", transactionScenarioRoutes);
-app.use("/payment-methods", paymentMethodRoutes);
 app.use("/drugs", drugRoutes);
+app.use("/transactionHandler", transactionHandlerRoutes);
+app.use("/payment-methods", paymentMethodRoutes);
 
 // Start server
 const PORT = process.env.PORT || 7001;

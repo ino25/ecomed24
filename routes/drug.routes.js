@@ -6,24 +6,24 @@ const {
   updateDrug,
   deleteDrug,
   setDrugStatus,
-  bulkUploadDrugs,
   getDrugInfo,
   updateDrugInfo,
   requestDrugListing,
   checkAndFetchDrugInfo,
+  bulkUploadDrugs,
 } = require("../controllers/drugController");
 
 const router = express.Router();
 
 router.get("/getAllDrugs", getAllDrugs);
-router.get("/:id", getDrugById);
-router.post("/", addDrug);
-router.put("/:id", updateDrug);
-router.delete("/:id", deleteDrug);
+router.get("get/:id", getDrugById);
+router.post("add/", addDrug);
+router.put("update/:id", updateDrug);
+router.delete("delete/:id", deleteDrug);
 router.patch("/:id/status", setDrugStatus);
-router.post("/bulk-upload", bulkUploadDrugs);
+router.post("/upload", bulkUploadDrugs);
 router.get("/:id/info", getDrugInfo);
-router.put("/:id/info", updateDrugInfo);
+router.put("/:id/updateInfo", updateDrugInfo);
 router.post("/request", requestDrugListing);
 router.post("/check-and-fetch-info", checkAndFetchDrugInfo);
 

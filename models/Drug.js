@@ -39,6 +39,11 @@ const Drug = sequelize.define(
       allowNull: true,
       defaultValue: "Non Disponible",
     },
+    galenicForm: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      defaultValue: "Non Disponible",
+    },
     publicPrice: {
       type: DataTypes.FLOAT,
       allowNull: true,
@@ -80,6 +85,7 @@ const Drug = sequelize.define(
           "dosage",
           "administrationRoute",
           "presentation",
+          "galenicForm",
           "laboratory",
         ],
         name: "unique_drug_combination",
