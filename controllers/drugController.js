@@ -1,6 +1,8 @@
 const axios = require("axios");
 const Drug = require("../models/Drug");
 const DrugInfo = require("../models/DrugInfo");
+const XLSX = require("xlsx");
+const multer = require("multer");
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY; // Ensure this is set in your environment variables
 
@@ -33,44 +35,6 @@ exports.getDrugById = async (req, res) => {
   }
 };
 
-/*exports.addDrug = async (req, res) => {
-  try {
-    const {
-      dci,
-      commercialName,
-      dosage,
-      administrationRoute,
-      presentation,
-      laboratory,
-    } = req.body;
-
-    console.log("Adding drug: ", req.body);
-
-    // Check for duplicates
-    const existingDrug = await Drug.findOne({
-      where: {
-        dci,
-        commercialName,
-        dosage,
-        administrationRoute,
-        presentation,
-        laboratory,
-      },
-    });
-
-    if (existingDrug) {
-      console.error("Drug already exists");
-      return res.status(400).json({ error: "Drug already exists" });
-    }
-
-    const drug = await Drug.create(req.body);
-    console.log("Drug added successfully: ", drug);
-    res.json(drug);
-  } catch (error) {
-    console.error("Error adding drug: ", error);
-    res.status(500).send("Error adding drug");
-  }
-};*/
 exports.addDrug = async (req, res) => {
   try {
     const {
@@ -131,100 +95,142 @@ exports.addDrug = async (req, res) => {
   }
 };
 
-/*exports.bulkUploadDrugs = async (req, res) => {
-  const drugs = req.body.drugs; // Assuming drugs are sent in the body as an array
-
-  console.log("Bulk uploading drugs: ", drugs);
-
-  const results = [];
-  for (const drug of drugs) {
-    const {
-      dci,
-      commercialName,
-      dosage,
-      administrationRoute,
-      presentation,
-      laboratory,
-    } = drug;
-
-    console.log("Processing drug: ", drug);
-
-    // Check for duplicates
-    const existingDrug = await Drug.findOne({
-      where: {
-        dci,
-        commercialName,
-        dosage,
-        administrationRoute,
-        presentation,
-        laboratory,
-      },
-    });
-
-    if (existingDrug) {
-      console.log("Duplicate drug found: ", drug);
-      results.push({ ...drug, status: "duplicate" });
-      continue;
-    }
-
-    // If no duplicate, create new drug
-    const newDrug = await Drug.create(drug);
-    console.log("Drug inserted successfully: ", newDrug);
-    results.push({ ...drug, status: "inserted" });
-  }
-
-  console.log("Bulk upload results: ", results);
-  return res.status(201).json(results);
-};*/
-
 exports.bulkUploadDrugs = async (req, res) => {
-  const drugs = req.body.drugs;
+  try {
+    console.log("Starting bulk upload of drugs...");
+    const file = req.file; // The uploaded file from the request
+    if (!file) {
+      console.error("No file uploaded.");
+      return res.status(400).json({ error: "No file uploaded" });
+    }
 
-  console.log("Bulk uploading drugs: ", drugs);
+    // Parse the Excel file
+    console.log("Parsing uploaded Excel file...");
+    const workbook = XLSX.read(file.buffer, { type: "buffer" });
+    const sheetName = workbook.SheetNames[0]; // Read the first sheet
+    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+    console.log(`Parsed ${rows.length} rows from the Excel file.`);
 
-  const results = [];
-  for (const drug of drugs) {
-    const {
-      dci,
-      commercialName,
-      dosage,
-      administrationRoute,
-      presentation,
-      laboratory,
-    } = drug;
-
-    console.log("Processing drug: ", drug);
-
-    // Check for duplicates
-    const existingDrug = await Drug.findOne({
-      where: {
+    const results = [];
+    for (const [index, row] of rows.entries()) {
+      console.log(`Processing row ${index + 1}:`, row);
+      const {
+        id,
         dci,
         commercialName,
         dosage,
         administrationRoute,
         presentation,
         laboratory,
-      },
-    });
+        drugScope,
+      } = row;
 
-    if (existingDrug) {
-      console.log("Duplicate drug found: ", drug);
-      results.push({ ...drug, status: "duplicate" });
-      continue;
+      if (id) {
+        console.log(`Row ${index + 1}: Checking existing drug with ID: ${id}`);
+        // Update existing drug
+        const existingDrug = await Drug.findByPk(id);
+        if (existingDrug) {
+          console.log(`Row ${index + 1}: Found existing drug:`, existingDrug);
+          // Check for changes
+          const fieldsToUpdate = {};
+          if (dci && existingDrug.dci !== dci) fieldsToUpdate.dci = dci;
+          if (commercialName && existingDrug.commercialName !== commercialName)
+            fieldsToUpdate.commercialName = commercialName;
+          if (dosage && existingDrug.dosage !== dosage)
+            fieldsToUpdate.dosage = dosage;
+          if (
+            administrationRoute &&
+            existingDrug.administrationRoute !== administrationRoute
+          )
+            fieldsToUpdate.administrationRoute = administrationRoute;
+          if (presentation && existingDrug.presentation !== presentation)
+            fieldsToUpdate.presentation = presentation;
+          if (laboratory && existingDrug.laboratory !== laboratory)
+            fieldsToUpdate.laboratory = laboratory;
+
+          if (Object.keys(fieldsToUpdate).length > 0) {
+            console.log(`Row ${index + 1}: Updating fields:`, fieldsToUpdate);
+            await existingDrug.update(fieldsToUpdate);
+            results.push({
+              row: row,
+              status: "updated",
+              message: "Existing drug updated successfully",
+            });
+          } else {
+            console.log(`Row ${index + 1}: No changes detected for this drug.`);
+            results.push({
+              row: row,
+              status: "unchanged",
+              message: "No changes detected for existing drug",
+            });
+          }
+        } else {
+          console.error(
+            `Row ${index + 1}: Drug ID ${id} not found for update.`
+          );
+          results.push({
+            row: row,
+            status: "failed",
+            message: "Drug ID not found for update",
+          });
+        }
+      } else {
+        // Insert new drug
+        console.log(
+          `Row ${index + 1}: No ID provided, checking for duplicates...`
+        );
+        const duplicateDrug = await Drug.findOne({
+          where: {
+            dci,
+            commercialName,
+            dosage,
+            administrationRoute,
+            presentation,
+            laboratory,
+            drugScope,
+          },
+        });
+
+        if (duplicateDrug) {
+          console.warn(
+            `Row ${index + 1}: Duplicate drug found, skipping insertion.`
+          );
+          results.push({
+            row: row,
+            status: "duplicate",
+            message: "Duplicate drug found, skipped insertion",
+          });
+        } else {
+          console.log(
+            `Row ${index + 1}: No duplicate found, adding new drug...`
+          );
+          await Drug.create({
+            dci,
+            commercialName,
+            dosage,
+            administrationRoute,
+            presentation,
+            laboratory,
+            drugScope,
+          });
+          results.push({
+            row: row,
+            status: "inserted",
+            message: "New drug added successfully",
+          });
+        }
+      }
     }
 
-    // If no duplicate, create new drug
-    const newDrug = await Drug.create(drug);
-    console.log("Drug inserted successfully: ", newDrug);
-
-    // Create the drug information after the drug is added
-    await createDrugInfo(newDrug);
-
-    results.push({ ...drug, status: "inserted" });
+    console.log("Bulk upload completed. Results:", results);
+    res.status(200).json({
+      message: "Drug upload processed",
+      results,
+    });
+  } catch (error) {
+    console.error("Error processing drug upload:", error);
+    res.status(500).json({ error: "Error processing drug upload" });
   }
-
-  console.log("Bulk upload results: ", results);
-  return res.status(201).json(results);
 };
 
 exports.updateDrug = async (req, res) => {
