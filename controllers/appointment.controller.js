@@ -11,6 +11,7 @@ const nodemailer = require("nodemailer");
 const langPatientModule = i18n.__("patientModule");
 var User = require("../models/User");
 var Appointment = require("../models/Appointment");
+var Patient = require("../models/Patient");
 var Organisation = require("../models/Organisation");
 var PatientLogs = require("../models/PatientLogs");
 //////Modal Relationship
@@ -180,13 +181,27 @@ exports.add = async (req, res) => {
     if (AppointmentModal === null) {
       res.json({ status: 0, message: langCommon.errormessage });
     } else {
-      const datafromapi = await appointmentAPI(`/list`,'get',data={});
+      const datafromapi = await appointmentAPI(`/add`,'post',data={
+        "appointment_date":moment(req.body.date).format("YYYY-MM-DD"),
+        "start_time":req.body.s_time,
+        "end_time":req.body.e_time,
+        "service_provider_id":1,
+        "service_provider_name":"Dr Sagar Sharma",
+        "service_provider_email":"sagar@sukritinfotech.com",
+        "service_provider_phone":"9999999999",
+        "service_id":req.body.service,
+        "service_name":req.body.servicename,
+        "client_id":req.body.uniqueID,
+        "client_name":PatientModal.name,
+        "client_email":"sagar@sukritinfotech.com",
+        "client_phone":PatientModal.phone
+    });
       await PatientLogs.create({
         patient_id: AppointmentModal.patient,
         org_id: req.org_id,
         description: "New Appointment has been generated.",
         type: "appointment",
-        action: "add",
+        action: "add", 
         relation_id: AppointmentModal.id,
         status: 1,
         added_by: req.userId,
