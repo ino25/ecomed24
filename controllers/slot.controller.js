@@ -135,7 +135,7 @@ exports.add = async (req, res) => {
     let doctor_id = req.body.doctor_id ? req.body.doctor_id : req.userId;
 
     SlotModalExists = await Slot.findOne({
-      where: { doctor_id: doctor_id, org_id: req.org_id },
+      where: { doctor_id: doctor_id,weekday: req.body.weekday,start_time: req.body.start_time,end_time: req.body.end_time, org_id: req.org_id },
     });
     if (SlotModalExists === null) {
       
@@ -188,7 +188,7 @@ exports.update = async (req, res) => {
 };
 exports.delete = async (req, res) => {
   try {
-    RoleModal = await RolePermissionsMap.destroy({
+    RoleModal = await Slot.destroy({
       where: { role_id: req.params.id },
     });
 

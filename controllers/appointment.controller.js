@@ -42,30 +42,111 @@ exports.getList = async (req, res) => {
     const { count, rows } = await Appointment.findAndCountAll({
       where: { id_organisation: req.org_id },
     });
+    let updatedCurrentDate;
+    const type = req.query.type ? req.query.type : 'month';
+    const direction = req.query.direction ? req.query.direction : null;
+    let startDate, endDate;
+    const currentDate = req.query.currentDate ? req.query.currentDate : moment().format('YYYY-MM-DD');
+// Parse the current date
+const baseDate = moment(currentDate, "YYYY-MM-DD");
 
-    let whereClause = {
+// Determine range and new current date based on type and direction
+switch (type) {
+  case "month":
+    if (direction === "next") {
+      updatedCurrentDate = baseDate.clone().add(1, "month");
+      startDate = updatedCurrentDate.clone().startOf("month").format('YYYY-MM-DD');
+      endDate = updatedCurrentDate.clone().endOf("month").format('YYYY-MM-DD');
+    } else if (direction === "previous") {
+      updatedCurrentDate = baseDate.clone().subtract(1, "month");
+      startDate = updatedCurrentDate.clone().startOf("month").format('YYYY-MM-DD');
+      endDate = updatedCurrentDate.clone().endOf("month").format('YYYY-MM-DD');
+    } else {
+      updatedCurrentDate = baseDate.clone();
+      startDate = updatedCurrentDate.clone().startOf("month").format('YYYY-MM-DD');
+      endDate = updatedCurrentDate.clone().endOf("month").format('YYYY-MM-DD');
+    }
+    break;
+
+  case "week":
+    if (direction === "next") {
+      updatedCurrentDate = baseDate.clone().add(1, "week");
+      startDate = updatedCurrentDate.clone().startOf("week").format('YYYY-MM-DD');
+      endDate = updatedCurrentDate.clone().endOf("week").format('YYYY-MM-DD');
+    } else if (direction === "previous") {
+      updatedCurrentDate = baseDate.clone().subtract(1, "week");
+      startDate = updatedCurrentDate.clone().startOf("week").format('YYYY-MM-DD');
+      endDate = updatedCurrentDate.clone().endOf("week").format('YYYY-MM-DD');
+    } else {
+      updatedCurrentDate = baseDate.clone();
+      startDate = updatedCurrentDate.clone().startOf("week").format('YYYY-MM-DD');
+      endDate = updatedCurrentDate.clone().endOf("week").format('YYYY-MM-DD');
+    }
+    break;
+
+  case "day":
+    if (direction === "next") {
+      updatedCurrentDate = baseDate.clone().add(1, "day");
+      startDate = updatedCurrentDate.clone().startOf("day").format('YYYY-MM-DD');
+      endDate = updatedCurrentDate.clone().endOf("day").format('YYYY-MM-DD');
+    } else if (direction === "previous") {
+      updatedCurrentDate = baseDate.clone().subtract(1, "day");
+      startDate = updatedCurrentDate.clone().startOf("day").format('YYYY-MM-DD');
+      endDate = updatedCurrentDate.clone().endOf("day").format('YYYY-MM-DD');
+    } else {
+      updatedCurrentDate = baseDate.clone();
+      startDate = updatedCurrentDate.clone().startOf("day").format('YYYY-MM-DD');
+      endDate = updatedCurrentDate.clone().endOf("day").format('YYYY-MM-DD');
+    }
+    break;
+
+  case "agenda":
+    // Agenda covers only today's appointments
+    updatedCurrentDate = baseDate.clone(); // Agenda does not shift the date
+    startDate = updatedCurrentDate.clone().startOf("day").format('YYYY-MM-DD');
+    endDate = updatedCurrentDate.clone().endOf("day").format('YYYY-MM-DD');
+    break;
+
+  default:
+    // Fallback case to prevent errors
+    updatedCurrentDate = baseDate.clone();
+    startDate = updatedCurrentDate.clone().startOf("day").format('YYYY-MM-DD');
+    endDate = updatedCurrentDate.clone().endOf("day").format('YYYY-MM-DD');
+    break;
+}
+  console.log(updatedCurrentDate);
+    // Add the date range to the where clause
+    const whereClause = {
       id_organisation: req.org_id,
+      appointment_date: {
+        [Sequelize.Op.between]: [startDate, endDate],
+      },
     };
-
+    console.log(whereClause);
     const datafromapi = await appointmentAPI(`/list`,'get',data={});
     console.log(datafromapi);
     AppointmentModal = await Appointment.findAll({
       attributes: [
         "id",
+        "id_organisation",
+        "patientname",
         "date",
         "time_slot",
+        "s_time",
+        "e_time",
         "service",
         "servicename",
         "tele_consultation",
         "remarks",
         "status",
+        "appointment_date",
         [
           Sequelize.fn(
             "DATE_FORMAT",
             Sequelize.col("Appointment.appointment_date"),
             "%d/%m/%Y"
           ),
-          "appointment_date",
+          "appointment_date_formatted",
         ],
         "added_by",
         "updated_by",
@@ -86,18 +167,34 @@ exports.getList = async (req, res) => {
           "updatedAt",
         ],
       ],
-      where: { id_organisation: req.org_id },
+      where: whereClause ,
       order: [["id", "DESC"]],
       limit: datalimit,
       offset: offsetdata,
     });
+    const formattedData = AppointmentModal.map(appointment => ({
+      id: appointment.id,
+      title: appointment.servicename,
+      appointment_date_formatted: appointment.appointment_date_formatted,
+      start: moment(appointment.appointment_date +' '+ appointment.s_time).format('YYYY-MM-DD HH:mm'),
+      end: moment(appointment.appointment_date + appointment.e_time).format('YYYY-MM-DD HH:mm'),
+      doctor_id: appointment.doctor,
+      patient_id: appointment.patient,
+      id_organisation: appointment.id_organisation,
+      patient_name: appointment.patientname,
+      doctor_name: appointment.id,
+      service_name: appointment.servicename,
+      status: appointment.status,
+    }));
     if (AppointmentModal === null) {
       res.json({ status: 0, message: langCommon.nodatafound });
     } else {
       res.json({
         status: 1,
         message: langPatientModule.appointment.list,
-        data: AppointmentModal,
+        data: formattedData,
+        title: startDate +' - '+ endDate,
+        currentDate: updatedCurrentDate.format("YYYY-MM-DD"),
         total: count,
       });
     }
