@@ -142,6 +142,7 @@ exports.add = async (req, res) => {
       SlotModal = await Slot.create({
         org_id: req.org_id,
         doctor_id: doctor_id,
+        service_id: req.body.service_id,
         start_time: req.body.start_time,
         end_time: req.body.end_time,
         weekday: req.body.weekday,
@@ -155,7 +156,7 @@ exports.add = async (req, res) => {
         res.json({ status: 1, message: langSlotModule.add, data: "" });
       }
     } else {
-      res.json({ status: 0, message: "Slot Already Exists with same time frame" });
+      res.json({ status: 0, message: "Slot Already Exists with same time frame/Service" });
     }
   } catch (error) {
     throw error;

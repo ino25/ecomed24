@@ -13,7 +13,11 @@ const Slot = sequelize.define('Slot', {
   },
   doctor_id: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
+  },
+  service_id: {
+    type: DataTypes.STRING,
+    allowNull: true
   },
   start_time: {
     type: DataTypes.STRING,

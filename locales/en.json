@@ -236,5 +236,14 @@
         "deleted": "Slot has been deleted successfully!",
         "list": "Slots successfull fetched",
         "individual": "Slot details fetched"
+    },
+    "Appointment": {
+        "add": "New Appointment has been added.",
+        "rescheduled": "Appointment successfully Rescheduled.",
+        "status": "Status has been updated successfull!",
+        "deleted": "Appointment has been deleted successfully!",
+        "list": "Appointments successfull fetched",
+        "timeslots": "Patient Appointment Timeslots fetched!",
+        "individual": "Appointment details fetched"
     }
 }
