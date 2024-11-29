@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config').sequelize;
 
-const Slot = sequelize.define('Slot', {
+const ServiceSchedule = sequelize.define('ServiceSchedule', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -11,15 +11,7 @@ const Slot = sequelize.define('Slot', {
     type: DataTypes.STRING,
     allowNull: false
   },
-  doctor_id: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
   service_id: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  serviceschedule_id: {
     type: DataTypes.STRING,
     allowNull: true
   },
@@ -45,10 +37,10 @@ const Slot = sequelize.define('Slot', {
   },
   
 }, {
-  tableName: 'slots',
+  tableName: 'service_schedules',
   timestamps: true // Disable Sequelize's default timestamps
 });
 
-module.exports = Slot;
+module.exports = ServiceSchedule;
 
 
