@@ -9,11 +9,12 @@ moment.locale("en");
 
 var Slot = require("../models/Slot");
 var ServiceSchedule = require("../models/ServiceSchedule");
+var SettingService = require("../models/SettingService");
 
 //////Modal Relationship
-
-
-// Roles
+// Appointment.belongsTo(Organisation, { as: "org_details", foreignKey: "org_id" });
+ServiceSchedule.belongsTo(SettingService, { as: "service_details", foreignKey: "service_id" });
+// schedules
 exports.getList = async (req, res) => {
   try {
     let offsetdata = parseInt(
@@ -35,10 +36,10 @@ exports.getList = async (req, res) => {
     const { count, rows } = await ServiceSchedule.findAndCountAll({
       where: { org_id: req.org_id },
     });
-    SlotModal = await Slot.findAll({
+    SlotModal = await ServiceSchedule.findAll({
       attributes: [
         "id",
-        "doctor_id",
+        "service_id",
         "start_time",
         "end_time",
         "weekday",
@@ -65,6 +66,13 @@ exports.getList = async (req, res) => {
       order: [["id", "DESC"]],
       limit: datalimit,
       offset: offsetdata,
+      include: [
+        {
+          model: SettingService,
+          attributes: [["idservice","id"], "name_service"],
+          as: "service_details",
+        },
+      ],
     });
     if (SlotModal === null) {
       res.json({ status: 0, message: langCommon.nodatafound });
@@ -86,7 +94,7 @@ exports.getByID = async (req, res) => {
     SlotModal = await ServiceSchedule.findOne({
       attributes: [
         "id",
-        "doctor_id",
+        "service_id",
         "start_time",
         "end_time",
         "weekday",
@@ -109,7 +117,14 @@ exports.getByID = async (req, res) => {
           "updatedAt",
         ],
       ],
-      where: { id: req.params.id }
+      where: { id: req.params.id },
+      include: [
+        {
+          model: SettingService,
+          attributes: [["idservice","id"], "name_service"],
+          as: "service_details",
+        },
+      ],
     });
     if (SlotModal === null) {
       res.json({ status: 0, message: langCommon.nodatafound });
@@ -151,7 +166,7 @@ exports.add = async (req, res) => {
     let doctor_id = req.body.doctor_id ? req.body.doctor_id : req.userId;
 
     ServiceScheduleModalExists = await ServiceSchedule.findOne({
-      where: { org_id:req.org_id,service_id: req.body.service_id },
+      where: { org_id:req.org_id,service_id: req.body.service_id ,weekday: req.body.weekday},
     });
     
     if (ServiceScheduleModalExists === null) {
@@ -220,7 +235,6 @@ exports.update = async (req, res) => {
         // console.log(timeSlots);
       const slotsToCreate = timeSlots.map((slot) => ({
                 org_id:req.org_id,
-                doctor_id,
                 service_id:req.body.service_id,
                 serviceschedule_id:ServiceScheduleModal.id,
                 start_time: slot.start_time,
