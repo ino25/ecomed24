@@ -179,7 +179,7 @@ switch (type) {
       title: appointment.servicename,
       appointment_date_formatted: appointment.appointment_date_formatted,
       start: moment(appointment.appointment_date +' '+ appointment.s_time).format('YYYY-MM-DD HH:mm'),
-      end: moment(appointment.appointment_date + appointment.e_time).format('YYYY-MM-DD HH:mm'),
+      end: moment(appointment.appointment_date +' '+ appointment.e_time).format('YYYY-MM-DD HH:mm'),
       doctor_id: appointment.doctor,
       patient_id: appointment.patient,
       id_organisation: appointment.id_organisation,
@@ -499,10 +499,13 @@ LEFT JOIN appointment a
      )
 WHERE a.id IS NULL
   AND s.weekday = DAYOFWEEK(:appointment_date)
-  AND s.service_id = :service   
+  AND s.service_id = :service  
   AND (
-      :appointment_date > CURDATE()  
-      OR (:appointment_date = CURDATE() AND CURTIME() < s.start_time) 
+      :appointment_date > CURDATE()
+      OR (
+          :appointment_date = CURDATE()
+          AND CAST(s.start_time AS TIME) > CURTIME()
+      )
   );
 
     `, {
