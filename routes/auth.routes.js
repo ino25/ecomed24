@@ -16,6 +16,7 @@ router.post("/login-with-otp", authController.LoginWithOtp);
 router.post("/verify-otp", authController.VerifyOTP);
 router.patch("/forgot-password", authController.ForgotPassword);
 router.post("/activate", authController.AccountActivation);
+router.post("/user-activate", authController.UserAccountActivation);
 router.get("/logout", VerifyToken, authController.Logout);
 router.get("/authcheck", VerifyToken, authController.getAuthcheck);
 //Get User Permissions

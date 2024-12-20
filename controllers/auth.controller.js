@@ -538,6 +538,67 @@ exports.AccountActivation = async (req, res) => {
   }
 };
 
+exports.UserAccountActivation = async (req, res) => {
+  try {
+    if (!req.body.email) {
+      return res.json({
+        status: 0,
+        message: langAuth.badrequest,
+      });
+    }
+    var otp = Math.floor(100000 + Math.random() * 900000);
+    console.log(otp);
+    console.log("otp");
+    // var otp = "123456";
+    // let hash = crypto.createHash("md5").update(otp).digest("hex");
+    const userModal = await User.findOne({
+      where: { email: req.body.email.trim() },
+    });
+    if (userModal === null) {
+      res.json({ status: 0, message: langAuth.login.usernotexist });
+    } else {
+      //OTP Integration Here
+      //   GeneratedOtp;
+      let phone = userModal.phone;
+      let email = userModal.email;
+      let UserID = userModal.id;
+
+      let passwordReset = langAuth.forgot_password.link_sent;
+      // otpMessage = otpMessage.replace("{otp}", email);
+      TemplateModal = await AutoEmailTemplate.findOne({
+        where: { type: "reset_activation"},
+      });
+      const activation_code = moment().unix();
+      const BodyShortCodes = {
+        reset_url:
+          process.env.SITE_URL + "/auth/reset_password/" + activation_code,
+      };
+      let Message = replaceShortcodes(TemplateModal.message, BodyShortCodes);
+      EmailModal = await Email.create({
+        is_sent: null,
+        subject: TemplateModal.name,
+        date: moment().format("YYYY-MM-DD HH:mm:ss"),
+        message: Message,
+        reciepient: email,
+        attachment_path: "",
+        user: userModal.id,
+      });
+      console.log(BodyShortCodes);
+      // if user is found and valid create a Update OTP in db
+      await User.update(
+        {
+          forgotten_password_code: activation_code,
+          forgotten_password_time: moment().unix(),
+        },
+        { where: { id: userModal.id } }
+      );
+      res.json({ status: 1, message: "Mail d'activation de compte envoyé avec success" });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
 exports.getAuthcheck = async (req, res) => {
   try {
     res.json({
