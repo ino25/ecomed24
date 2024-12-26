@@ -1213,30 +1213,58 @@ exports.serviceAppontment = async (req, res) => {
 exports.timeSlotAppontment = async (req, res) => {
   try {
     let getData = [];
-    HolidaysServiceModal = await HolidaysService.findAll();
-    TimeSlotServiceModal = await TimeSlotService.findAll({
-      attributes: [
-        "id",
-        "service",
-        "s_time",
-        "e_time",
-        [
-          Sequelize.fn(
-            "CONCAT",
-            Sequelize.col(`s_time`),
-            " - ",
-            Sequelize.col(`e_time`)
-          ),
-          "time_slots",
-        ],
-      ],
-      where: {
-        service: req.body.service,
-        weekday: moment(req.body.date).format("dddd"),
-      },
-      order: [["s_time_key", "asc"]],
-    });
+    // HolidaysServiceModal = await HolidaysService.findAll();
+    // TimeSlotServiceModal = await TimeSlotService.findAll({
+    //   attributes: [
+    //     "id",
+    //     "service",
+    //     "s_time",
+    //     "e_time",
+    //     [
+    //       Sequelize.fn(
+    //         "CONCAT",
+    //         Sequelize.col(`s_time`),
+    //         " - ",
+    //         Sequelize.col(`e_time`)
+    //       ),
+    //       "time_slots",
+    //     ],
+    //   ],
+    //   where: {
+    //     service: req.body.service,
+    //     weekday: moment(req.body.date).format("dddd"),
+    //   },
+    //   order: [["s_time_key", "asc"]],
+    // });
+    TimeSlotServiceModal = await Database.query(`
+      SELECT 
+    s.id,
+    s.service_id AS service,
+    s.start_time AS s_time,
+    s.end_time AS e_time,
+    CONCAT(s.start_time, ' - ', s.end_time) AS time_slots
+FROM slots s
+LEFT JOIN appointment a 
+  ON s.weekday = DAYOFWEEK(:appointment_date)
+     AND a.appointment_date = :appointment_date
+     AND (
+         (s.start_time = a.s_time AND s.end_time = a.e_time)
+     )
+WHERE a.id IS NULL
+  AND s.weekday = DAYOFWEEK(:appointment_date)
+  AND s.service_id = :service   
+  AND (
+      :appointment_date > CURDATE()  
+      OR (:appointment_date = CURDATE() AND CURTIME() < s.start_time) 
+  );
 
+    `, {
+      replacements: {
+        service: req.body.service,
+        appointment_date: req.body.date,
+      },
+      type: Database.QueryTypes.SELECT,
+    });
     // if(HolidaysServiceModal.length === 0){
     //     AppointmentModal = await Appointment.findAll({where: {date: req.params.id,service: req.params.id}});
     //     TimeSlotServiceModal = await TimeSlotService.findAll({where: {service: req.params.id,weekday: req.params.id},order: [['s_time_key', 'asc']]});

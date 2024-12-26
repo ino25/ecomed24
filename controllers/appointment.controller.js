@@ -8,8 +8,10 @@ const moment = require("moment");
 moment.locale("en");
 const path = require("path");
 const nodemailer = require("nodemailer");
-const langPatientModule = i18n.__("patientModule");
+const langAppointment = i18n.__("Appointment");
 var User = require("../models/User");
+var HolidaysService = require("../models/HolidaysService");
+var TimeSlotService = require("../models/TimeSlotService");
 var Appointment = require("../models/Appointment");
 var Patient = require("../models/Patient");
 var Organisation = require("../models/Organisation");
@@ -177,7 +179,7 @@ switch (type) {
       title: appointment.servicename,
       appointment_date_formatted: appointment.appointment_date_formatted,
       start: moment(appointment.appointment_date +' '+ appointment.s_time).format('YYYY-MM-DD HH:mm'),
-      end: moment(appointment.appointment_date + appointment.e_time).format('YYYY-MM-DD HH:mm'),
+      end: moment(appointment.appointment_date +' '+ appointment.e_time).format('YYYY-MM-DD HH:mm'),
       doctor_id: appointment.doctor,
       patient_id: appointment.patient,
       id_organisation: appointment.id_organisation,
@@ -191,7 +193,7 @@ switch (type) {
     } else {
       res.json({
         status: 1,
-        message: langPatientModule.appointment.list,
+        message: langAppointment.list,
         data: formattedData,
         title: startDate +' - '+ endDate,
         currentDate: updatedCurrentDate.format("YYYY-MM-DD"),
@@ -231,7 +233,7 @@ exports.getByID = async (req, res) => {
     } else {
       res.json({
         status: 1,
-        message: langPatientModule.appointment.individual,
+        message: langAppointment.individual,
         data: AppointmentModal,
       });
     }
@@ -305,7 +307,7 @@ exports.add = async (req, res) => {
       });
       res.json({
         status: 1,
-        message: langPatientModule.appointment.add,
+        message: langAppointment.add,
         data: "",
       });
     }
@@ -362,7 +364,61 @@ exports.update = async (req, res) => {
       });
       res.json({
         status: 1,
-        message: langPatientModule.appointment.update,
+        message: langAppointment.update,
+        data: "",
+      });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+exports.reschedule = async (req, res) => {
+  try {
+    let getData = [],
+      getProfile = [],
+      file,
+      results;
+    // console.log();
+    // PatientModal = await Patient.findOne({where : {id:req.body.uniqueID}});
+
+    AppointmentModal = await Appointment.update(
+      {
+        date: moment(req.body.date).unix(),
+        time_slot: req.body.time_slot,
+        s_time: req.body.s_time,
+        e_time: req.body.e_time,
+        s_time_key: req.body.s_time_key,
+        status: req.body.status,
+        appointment_date: moment(req.body.date).format("YYYY-MM-DD"),
+        updated_by: req.userId
+      },
+      {
+        where: { id: req.params.appointment_id },
+      }
+    );
+
+    if (AppointmentModal === null) {
+      res.json({ status: 0, message: langCommon.errormessage });
+    } else {
+      AppointmentData = await Appointment.findOne({
+        attributes: ["id", "patient"],
+        where: { id: req.params.appointment_id },
+      });
+      console.log(AppointmentData);
+      await PatientLogs.create({
+        patient_id: AppointmentData.patient,
+        org_id: req.org_id,
+        description: "Appointment has been Rescheduled.",
+        type: "appointment",
+        action: "reschedule",
+        relation_id: AppointmentData.id,
+        status: 1,
+        added_by: req.userId,
+      });
+      res.json({
+        status: 1,
+        message: langAppointment.rescheduled,
         data: "",
       });
     }
@@ -373,14 +429,14 @@ exports.update = async (req, res) => {
 exports.delete = async (req, res) => {
   try {
     AppointmentModal = await Appointment.destroy({
-      where: { id: req.params.id },
+      where: { id: req.params.appointment_id },
     });
     if (AppointmentModal === null) {
       res.json({ status: 0, message: langCommon.errormessage });
     } else {
       res.json({
         status: 1,
-        message: langPatientModule.appointment.delete,
+        message: langAppointment.deleted,
         data: "",
       });
     }
@@ -392,12 +448,12 @@ exports.status = async (req, res) => {
   try {
     AppointmentData = await Appointment.findOne({
       attributes: ["id", "patient"],
-      where: { id: req.params.id },
+      where: { id: req.params.appointment_id },
     });
     console.log(AppointmentData);
     AppointmentModal = await Appointment.update(
       { status: req.body.status },
-      { where: { id: req.params.id } }
+      { where: { id: req.params.appointment_id } }
     );
     if (AppointmentModal === null) {
       res.json({ status: 0, message: langCommon.errormessage });
@@ -414,8 +470,60 @@ exports.status = async (req, res) => {
       });
       res.json({
         status: 1,
-        message: langPatientModule.appointment.status,
+        message: langAppointment.status,
         data: "",
+      });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+exports.timeSlotAppontment = async (req, res) => {
+  try {
+    let getData = [];
+   
+    TimeSlotServiceModal = await Database.query(`
+      SELECT 
+    s.id,
+    s.service_id AS service,
+    s.start_time AS s_time,
+    s.end_time AS e_time,
+    CONCAT(s.start_time, ' - ', s.end_time) AS time_slots
+FROM slots s
+LEFT JOIN appointment a 
+  ON s.weekday = DAYOFWEEK(:appointment_date)
+     AND a.appointment_date = :appointment_date
+     AND (
+         (s.start_time = a.s_time AND s.end_time = a.e_time)
+     )
+WHERE a.id IS NULL
+  AND s.weekday = DAYOFWEEK(:appointment_date)
+  AND s.service_id = :service  
+  AND (
+      :appointment_date > CURDATE()
+      OR (
+          :appointment_date = CURDATE()
+          AND CAST(s.start_time AS TIME) > CURTIME()
+      )
+  );
+
+    `, {
+      replacements: {
+        service: req.body.service,
+        appointment_date: req.body.date,
+      },
+      type: Database.QueryTypes.SELECT,
+    });
+     
+  
+    if (TimeSlotServiceModal === null) {
+      res.json({ status: 0, message: langCommon.nodatafound });
+    } else {
+      res.json({
+        status: 1,
+        message: langAppointment.timeslots,
+        data: TimeSlotServiceModal,
       });
     }
   } catch (error) {

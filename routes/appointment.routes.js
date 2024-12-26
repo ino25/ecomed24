@@ -5,10 +5,11 @@ const appointmentController = require("../controllers/appointment.controller");
 
 // appointmentt
 router.get("/", VerifyToken, appointmentController.getList);
-router.get("/by-id/:id", appointmentController.getByID);
+router.get("/by-id/:appointment_id", appointmentController.getByID);
 router.post("/add", VerifyToken, appointmentController.add);
-router.post("/update/:id", VerifyToken, appointmentController.update);
-router.delete("/delete/:id", VerifyToken, appointmentController.delete);
-router.patch("/status/:id", VerifyToken, appointmentController.status);
-
+router.post("/update/:appointment_id", VerifyToken, appointmentController.update);
+router.put("/reschedule/:appointment_id", VerifyToken, appointmentController.reschedule);
+router.delete("/delete/:appointment_id", VerifyToken, appointmentController.delete);
+router.patch("/status/:appointment_id", VerifyToken, appointmentController.status);
+router.post("/time-slots", VerifyToken, appointmentController.timeSlotAppontment);
 module.exports = router;
