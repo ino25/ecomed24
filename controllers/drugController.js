@@ -1,6 +1,8 @@
 const axios = require("axios");
 const Drug = require("../models/Drug");
 const DrugInfo = require("../models/DrugInfo");
+const ProductCategory = require("../models/ProductCategory");
+const Product = require("../models/Product");
 const XLSX = require("xlsx");
 const multer = require("multer");
 
@@ -45,11 +47,18 @@ exports.addDrug = async (req, res) => {
       presentation,
       laboratory,
       drugScope, // Include drugScope in the request body
+      categoryId, // Ensure the categoryId is included in the request
     } = req.body;
 
     console.log("Adding drug: ", req.body);
 
-    // Check for duplicates
+    // Validate the category
+    const category = await ProductCategory.findByPk(categoryId);
+    if (!category || category.name !== "Medications") {
+      return res.status(400).json({ error: "Invalid product category." });
+    }
+
+    // Check for duplicates in the Drug table
     const existingDrug = await Drug.findOne({
       where: {
         dci,
@@ -72,8 +81,17 @@ exports.addDrug = async (req, res) => {
       return res.status(400).json({ error: "Invalid drug scope" });
     }
 
-    // Create the drug with the provided details
+    // Create the product entry
+    const product = await Product.create({
+      name: commercialName,
+      categoryId,
+      status: "active", // Default to active for new products
+      type: "Médicament", // Fixed to "Médicament" for drugs
+    });
+
+    // Create the drug entry and associate it with the product
     const drug = await Drug.create({
+      productId: product.id, // Link the drug to the product
       dci,
       commercialName,
       dosage,
@@ -88,7 +106,7 @@ exports.addDrug = async (req, res) => {
     // Create the drug monography after the drug is added
     await createDrugInfo(drug);
 
-    res.json(drug);
+    res.status(201).json({ product, drug });
   } catch (error) {
     console.error("Error adding drug: ", error);
     res.status(500).send("Error adding drug");
@@ -111,7 +129,9 @@ exports.bulkUploadDrugs = async (req, res) => {
     const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
     console.log(`Parsed ${rows.length} rows from the Excel file.`);
 
+    const categoryId = 1; // Hardcoded categoryId for "Medications"
     const results = [];
+
     for (const [index, row] of rows.entries()) {
       console.log(`Processing row ${index + 1}:`, row);
       const {
@@ -127,11 +147,9 @@ exports.bulkUploadDrugs = async (req, res) => {
 
       if (id) {
         console.log(`Row ${index + 1}: Checking existing drug with ID: ${id}`);
-        // Update existing drug
         const existingDrug = await Drug.findByPk(id);
         if (existingDrug) {
           console.log(`Row ${index + 1}: Found existing drug:`, existingDrug);
-          // Check for changes
           const fieldsToUpdate = {};
           if (dci && existingDrug.dci !== dci) fieldsToUpdate.dci = dci;
           if (commercialName && existingDrug.commercialName !== commercialName)
@@ -152,14 +170,14 @@ exports.bulkUploadDrugs = async (req, res) => {
             console.log(`Row ${index + 1}: Updating fields:`, fieldsToUpdate);
             await existingDrug.update(fieldsToUpdate);
             results.push({
-              row: row,
+              row,
               status: "updated",
               message: "Existing drug updated successfully",
             });
           } else {
             console.log(`Row ${index + 1}: No changes detected for this drug.`);
             results.push({
-              row: row,
+              row,
               status: "unchanged",
               message: "No changes detected for existing drug",
             });
@@ -169,16 +187,14 @@ exports.bulkUploadDrugs = async (req, res) => {
             `Row ${index + 1}: Drug ID ${id} not found for update.`
           );
           results.push({
-            row: row,
+            row,
             status: "failed",
             message: "Drug ID not found for update",
           });
         }
       } else {
         // Insert new drug
-        console.log(
-          `Row ${index + 1}: No ID provided, checking for duplicates...`
-        );
+        console.log(`Row ${index + 1}: Checking for duplicates...`);
         const duplicateDrug = await Drug.findOne({
           where: {
             dci,
@@ -187,7 +203,6 @@ exports.bulkUploadDrugs = async (req, res) => {
             administrationRoute,
             presentation,
             laboratory,
-            drugScope,
           },
         });
 
@@ -196,15 +211,22 @@ exports.bulkUploadDrugs = async (req, res) => {
             `Row ${index + 1}: Duplicate drug found, skipping insertion.`
           );
           results.push({
-            row: row,
+            row,
             status: "duplicate",
             message: "Duplicate drug found, skipped insertion",
           });
         } else {
-          console.log(
-            `Row ${index + 1}: No duplicate found, adding new drug...`
-          );
+          console.log(`Row ${index + 1}: Adding new product...`);
+          const product = await Product.create({
+            name: commercialName,
+            categoryId, // Hardcoded categoryId
+            status: "active",
+            type: "Médicament",
+          });
+
+          console.log(`Row ${index + 1}: Adding new drug...`);
           await Drug.create({
+            productId: product.id,
             dci,
             commercialName,
             dosage,
@@ -213,8 +235,9 @@ exports.bulkUploadDrugs = async (req, res) => {
             laboratory,
             drugScope,
           });
+
           results.push({
-            row: row,
+            row,
             status: "inserted",
             message: "New drug added successfully",
           });
@@ -236,17 +259,71 @@ exports.bulkUploadDrugs = async (req, res) => {
 exports.updateDrug = async (req, res) => {
   try {
     console.log(`Updating drug with ID: ${req.params.id}`, req.body);
-    const drug = await Drug.findByPk(req.params.id);
-    if (drug) {
-      await drug.update(req.body);
-      console.log("Drug updated successfully: ", drug);
-      res.json(drug);
-    } else {
+
+    const drug = await Drug.findByPk(req.params.id, {
+      include: { model: Product, as: "product" },
+    });
+    if (!drug) {
       console.error("Drug not found");
-      res.status(404).send("Drug not found");
+      return res.status(404).send("Drug not found");
     }
+
+    const {
+      therapeuticClass,
+      galenicForm,
+      dci,
+      commercialName,
+      dosage,
+      administrationRoute,
+      presentation,
+      laboratory,
+      drugScope,
+      publicPrice,
+      referencePrice,
+    } = req.body;
+
+    // Update the drug-specific fields
+    const drugFieldsToUpdate = {};
+    if (therapeuticClass && drug.therapeuticClass !== therapeuticClass) {
+      drugFieldsToUpdate.therapeuticClass = therapeuticClass;
+    }
+    if (galenicForm && drug.galenicForm !== galenicForm) {
+      drugFieldsToUpdate.galenicForm = galenicForm;
+    }
+    if (dci && drug.dci !== dci) drugFieldsToUpdate.dci = dci;
+    if (commercialName && drug.commercialName !== commercialName)
+      drugFieldsToUpdate.commercialName = commercialName;
+    if (dosage && drug.dosage !== dosage) drugFieldsToUpdate.dosage = dosage;
+    if (administrationRoute && drug.administrationRoute !== administrationRoute)
+      drugFieldsToUpdate.administrationRoute = administrationRoute;
+    if (presentation && drug.presentation !== presentation)
+      drugFieldsToUpdate.presentation = presentation;
+    if (laboratory && drug.laboratory !== laboratory)
+      drugFieldsToUpdate.laboratory = laboratory;
+    if (drugScope && drug.drugScope !== drugScope)
+      drugFieldsToUpdate.drugScope = drugScope;
+
+    // Update prices if they are provided and have changed
+    if (publicPrice && drug.publicPrice !== publicPrice)
+      drugFieldsToUpdate.publicPrice = publicPrice;
+    if (referencePrice && drug.referencePrice !== referencePrice)
+      drugFieldsToUpdate.referencePrice = referencePrice;
+
+    if (Object.keys(drugFieldsToUpdate).length > 0) {
+      console.log("Updating drug fields:", drugFieldsToUpdate);
+      await drug.update(drugFieldsToUpdate);
+    }
+
+    // Update the associated product if the product name (commercialName) has changed
+    if (commercialName && drug.product.name !== commercialName) {
+      console.log("Updating associated product name...");
+      await drug.product.update({ name: commercialName });
+    }
+
+    console.log("Drug and associated product updated successfully:", drug);
+    res.json({ message: "Drug updated successfully", drug });
   } catch (error) {
-    console.error("Error updating drug: ", error);
+    console.error("Error updating drug:", error);
     res.status(500).send("Error updating drug");
   }
 };
@@ -254,17 +331,37 @@ exports.updateDrug = async (req, res) => {
 exports.deleteDrug = async (req, res) => {
   try {
     console.log(`Deleting drug with ID: ${req.params.id}`);
-    const drug = await Drug.findByPk(req.params.id);
-    if (drug) {
-      await drug.destroy();
-      console.log("Drug deleted successfully");
-      res.send("Drug deleted");
-    } else {
+
+    // Find the drug and include the associated product
+    const drug = await Drug.findByPk(req.params.id, {
+      include: { model: Product, as: "product" },
+    });
+
+    if (!drug) {
       console.error("Drug not found");
-      res.status(404).send("Drug not found");
+      return res.status(404).send("Drug not found");
     }
+
+    // Check if the drug is already marked as deleted
+    if (drug.status === "deleted") {
+      console.warn("Drug is already marked as deleted");
+      return res.status(400).json({ message: "Drug is already deleted" });
+    }
+
+    // Soft delete the drug by setting its status to "deleted"
+    console.log("Soft deleting drug...");
+    await drug.update({ status: "deleted" });
+
+    // Soft delete the associated product if it exists
+    if (drug.product) {
+      console.log("Soft deleting associated product...");
+      await drug.product.update({ status: "discontinued" });
+    }
+
+    console.log("Drug and associated product deleted successfully");
+    res.send({ message: "Drug deleted successfully" });
   } catch (error) {
-    console.error("Error deleting drug: ", error);
+    console.error("Error deleting drug:", error);
     res.status(500).send("Error deleting drug");
   }
 };
@@ -392,10 +489,15 @@ exports.getDrugInfo = async (req, res) => {
     console.log("Fetching drug information for:", drug.dci);
 
     // Fetch the drug info from the database
-    const drugInfo = await DrugInfo.findOne({ where: { drugId: id } });
+    let drugInfo = await DrugInfo.findOne({ where: { drugId: id } });
 
     if (!drugInfo) {
-      console.error("Drug information not found in the database");
+      console.log("Drug information not found. Fetching from OpenAI...");
+      await createDrugInfo(drug); // Fetch and save the information
+      drugInfo = await DrugInfo.findOne({ where: { drugId: id } });
+    }
+
+    if (!drugInfo) {
       return res.status(404).send({ error: "Drug information not found" });
     }
 
@@ -441,9 +543,7 @@ exports.updateDrugInfo = async (req, res) => {
   }
 };
 
-// Request a new drug listing
 exports.requestDrugListing = async (req, res) => {
-  console.log("Drug model:", Drug);
   try {
     const {
       dci,
@@ -455,20 +555,18 @@ exports.requestDrugListing = async (req, res) => {
       drugScope = "general",
     } = req.body;
 
-    // Validation: Ensure at least one of dci or commercialName is provided
+    // Validation: Ensure required fields
     if (!dci && !commercialName) {
       return res.status(400).json({
         error: "At least one of 'dci' or 'commercialName' must be provided.",
       });
     }
 
-    // Set missing dci or commercialName to "Non Disponible" if needed
+    // Set default values
     const validatedDCI = dci || "Non Disponible";
     const validatedCommercialName = commercialName || "Non Disponible";
 
-    console.log("Drug model:", Drug);
-
-    // Create the new drug entry with status "requested"
+    // Create a new drug in the "requested" state
     const newDrug = await Drug.create({
       dci: validatedDCI,
       commercialName: validatedCommercialName,
@@ -476,16 +574,15 @@ exports.requestDrugListing = async (req, res) => {
       administrationRoute,
       presentation,
       laboratory,
-      status: "requested", // Set status to "requested"
-      drugScope, // Default to "general" if not provided
+      status: "requested", // Default to "requested"
+      drugScope, // Default to "general"
     });
 
-    console.log("Drug requested successfully: ", newDrug);
+    console.log("Drug requested successfully:", newDrug);
 
-    // Return the created drug entry
     res.json(newDrug);
   } catch (error) {
-    console.error("Error requesting drug listing: ", error);
+    console.error("Error requesting drug listing:", error);
     res.status(500).send("Error requesting drug listing");
   }
 };
@@ -609,3 +706,85 @@ async function createDrugInfo(drug) {
     console.error("Error creating drug information:", error);
   }
 }
+exports.getFormesGalenique = async (req, res) => {
+  try {
+    const formesGalenique = [
+      "Comprimé",
+      "Capsule",
+      "Solution buvable",
+      "Injection",
+      "Pommade",
+      "Crème",
+      "Gel",
+      "Suppositoire",
+      "Patch transdermique",
+      "Suspension",
+      "Poudre",
+      "Sirop",
+      "Granulés",
+      "Gouttes ophtalmiques",
+      "Spray nasal",
+      "Inhalateur",
+      "Bain de bouche",
+      "Émulsion",
+      "Comprimé effervescent",
+      "Comprimé sublingual",
+    ];
+
+    res.json(formesGalenique);
+  } catch (error) {
+    console.error("Error fetching galenic forms: ", error);
+    res.status(500).send("Error fetching galenic forms");
+  }
+};
+
+exports.rejectDrug = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find the drug by ID
+    const drug = await Drug.findByPk(id);
+    if (!drug || drug.status !== "requested") {
+      return res.status(404).send("Drug not found or already processed.");
+    }
+
+    // Update drug status to "rejected"
+    await drug.update({ status: "rejected" });
+
+    res.json({ message: "Drug rejected successfully", drug });
+  } catch (error) {
+    console.error("Error rejecting drug:", error);
+    res.status(500).send("Error rejecting drug.");
+  }
+};
+
+exports.approveDrug = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find the drug by ID
+    const drug = await Drug.findByPk(id);
+    if (!drug || drug.status !== "requested") {
+      return res.status(404).send("Drug not found or already processed.");
+    }
+
+    // Create associated product
+    const product = await Product.create({
+      name: drug.commercialName,
+      categoryId: 1, // "Medications" category
+      status: "active",
+      type: "Médicament",
+    });
+
+    // Update drug status to "active" and link to product
+    await drug.update({ status: "active", productId: product.id });
+
+    // Fetch drug info
+    await createDrugInfo(drug);
+
+    res.json({ message: "Drug approved successfully", drug });
+  } catch (error) {
+    console.error("Error approving drug:", error);
+    res.status(500).send("Error approving drug.");
+  }
+};

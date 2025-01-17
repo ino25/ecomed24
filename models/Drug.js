@@ -1,7 +1,9 @@
 const { DataTypes } = require("sequelize");
-const sequelize = require("../config").sequelize; // Ensure the path to your sequelize config is correct
+const sequelize = require("../config").sequelize;
+const Product = require("./Product");
+const ProductCategory = require("./ProductCategory");
 
-// Define the Drug model with refined configurations
+// Define the Drug model
 const Drug = sequelize.define(
   "Drug",
   {
@@ -10,6 +12,17 @@ const Drug = sequelize.define(
       primaryKey: true,
       autoIncrement: true,
     },
+    productId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: Product, // Reference the Product model
+        key: "id",
+      },
+      onUpdate: "CASCADE",
+      onDelete: "CASCADE",
+    },
+
     therapeuticClass: {
       type: DataTypes.STRING(50),
       allowNull: true,
@@ -63,8 +76,8 @@ const Drug = sequelize.define(
       defaultValue: "Non Disponible",
     },
     status: {
-      type: DataTypes.ENUM("active", "inactive", "requested"),
-      defaultValue: "requested",
+      type: DataTypes.ENUM("active", "deleted", "inactive", "requested"),
+      defaultValue: "active",
       allowNull: false,
     },
     drugScope: {
@@ -76,29 +89,11 @@ const Drug = sequelize.define(
   {
     tableName: "drug",
     timestamps: false,
-    indexes: [
-      {
-        unique: true,
-        fields: [
-          "dci",
-          "commercialName",
-          "dosage",
-          "administrationRoute",
-          "presentation",
-          "galenicForm",
-          "laboratory",
-        ],
-        name: "unique_drug_combination",
-      },
-    ],
-    hooks: {
-      beforeUpdate: (drug) => {
-        if (drug.modifiedAt) {
-          drug.modifiedAt = new Date();
-        }
-      },
-    },
+    paranoid: true,
   }
 );
 
-module.exports = Drug; // Ensure it is directly exported
+// Establish associations
+Drug.belongsTo(Product, { foreignKey: "productId", as: "product" });
+
+module.exports = Drug;
