@@ -92,6 +92,7 @@ const OHADATransactionRoutes = require("./routes/OHADATransactions.routes");
 const transactionScenarioRoutes = require("./routes/transactionScenario.routes");
 const paymentMethodRoutes = require("./routes/paymentMethod.routes");
 const drugRoutes = require("./routes/drug.routes");
+const productRoutes = require("./routes/product.routes");
 
 if (app.get("env") === "production") {
   app.use(morgan("combined"));
@@ -139,6 +140,7 @@ app.use("/accounts", OHADAAccountsRoutes);
 app.use("/transactions", OHADATransactionRoutes);
 app.use("/scenarios", transactionScenarioRoutes);
 app.use("/drugs", drugRoutes);
+app.use("/product", productRoutes);
 // app.use("/transactionHandler", transactionHandlerRoutes);
 app.use("/payment-methods", paymentMethodRoutes);
 
