@@ -203,7 +203,7 @@ exports.getRegionList = async (req, res) => {
           "updatedAt",
         ],
       ],
-      where: { country_id: req.params.country_id },
+      // where: { country_id: req.params.country_id },
     });
     if (RegionModal === null) {
       res.json({ status: 0, message: "No Data Found" });
