@@ -190,7 +190,7 @@ router.get(
   patientController.getAssuranceOrg
 );
 router.post("/assurance/add", VerifyToken, patientController.addAssurance);
-router.patch("/assurance/update/:id", patientController.updateAssurance);
+router.patch("/assurance/update/:id/:org_id", patientController.updateAssurance);
 router.delete(
   "/assurance/delete/:id",
   VerifyToken,

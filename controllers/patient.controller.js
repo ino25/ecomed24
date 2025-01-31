@@ -2764,10 +2764,10 @@ exports.addAssurance = async (req, res) => {
 };
 exports.updateAssurance = async (req, res) => {
   try {
-    let getData = [],
-      results;
-
-    PatientMutuelleModal = await PatientMutuelle.update(
+    let results;
+    console.log("req params orgs id "+req.params.org_id)
+    // Mise à jour de l'assurance
+    const PatientMutuelleModal = await PatientMutuelle.update(
       {
         pm_idmutuelle: req.body.nom_mutuelle,
         pm_numpolice: req.body.num_police,
@@ -2778,33 +2778,45 @@ exports.updateAssurance = async (req, res) => {
       },
       { where: { idpm: req.params.id } }
     );
-    if (PatientMutuelleModal === null) {
-      res.json({ status: 0, message: langCommon.errormessage });
-    } else {
-      AssuranceD = await PatientMutuelle.findOne({
-        where: { idpm: req.params.id },
-      });
 
-      await PatientLogs.create({
-        patient_id: AssuranceD.pm_idpatent,
-        org_id: req.org_id,
-        description: "Assurance has been Updated.",
-        type: "assurance",
-        action: "update",
-        relation_id: AssuranceD.idpm,
-        status: 1,
-        added_by: req.userId,
-      });
-      res.json({
-        status: 1,
-        message: langPatientModule.assurance.update,
-        data: "",
-      });
+    if (!PatientMutuelleModal) {
+      return res.status(400).json({ status: 0, message: langCommon.errormessage });
     }
+
+    // Récupérer les détails de l'assurance mise à jour
+    const AssuranceD = await PatientMutuelle.findOne({
+      where: { idpm: req.params.id },
+    });
+
+    if (!AssuranceD) {
+      return res.status(404).json({ status: 0, message: "Assurance non trouvée" });
+    }
+
+    // Créer un log dans PatientLogs
+    await PatientLogs.create({
+      patient_id: AssuranceD.pm_idpatent,
+      org_id: req.params.org_id, // Assurez-vous que req.org_id est défini
+      description: "Assurance has been Updated.",
+      type: "assurance",
+      action: "update",
+      relation_id: AssuranceD.idpm,
+      status: 1,
+      added_by: req.userId,
+    });
+
+    return res.json({
+      status: 1,
+      message: langPatientModule.assurance.update,
+      data: "",
+    });
   } catch (error) {
-    throw error;
+    console.error("Erreur lors de la mise à jour :", error);
+    return res.status(500).json({ status: 0, message: "Erreur serveur" });
   }
 };
+
+
+
 exports.deleteAssurance = async (req, res) => {
   try {
     let getData = [],
