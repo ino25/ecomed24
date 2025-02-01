@@ -5,6 +5,7 @@ const VerifyToken = require("./VerifyToken");
 const helperController = require("../controllers/helper.controller");
 router.get("/get-patients", VerifyToken, helperController.getPatients);
 router.get("/get-doctors", VerifyToken, helperController.getDoctorsList);
+router.get("/get-doctors-list/:service_id", VerifyToken, helperController.getDoctorsListByServiceID);
 router.get("/get-services", VerifyToken, helperController.getServicesList);
 
 // Country

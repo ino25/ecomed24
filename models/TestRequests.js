@@ -19,7 +19,7 @@ const TestRequests = sequelize.define(
     },
     advice: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     reports: {
       type: DataTypes.JSON,
