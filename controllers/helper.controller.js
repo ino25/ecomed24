@@ -789,6 +789,32 @@ exports.getvisitReason = async (req, res) => {
   }
 };
 
+exports.addVisitReason = async (req, res) => {
+  try {
+    let getData = [],
+      results;
+
+    const VisitReasonModal = await VisitReason.create({
+      name: req.body.name,
+      description: req.body.description,
+      tag: req.body.tags,
+    });
+    if (VisitReasonModal === null) {
+      res.json({ status: 0, message: langCommon.errormessage });
+    } else {
+      res.json({
+        status: 1,
+        message: "Visit Reason added",
+        data: "",
+      });
+    }
+  } catch (error) {
+    // throw error;
+    console.error("Error fetching visit Reason:", error);
+    res.status(500).json({ status: 0, message: "An error occurred" });
+  }
+};
+
 exports.geturgencyLevel = async (req, res) => {
   try {
     const urgencyLeveldata = await UrgencyLevel.findAll({

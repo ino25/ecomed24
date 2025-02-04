@@ -38,6 +38,7 @@ router.post("/generate-pdf", VerifyToken, helperController.generatePDF);
 router.post("/send-document", VerifyToken, helperController.sendDocument);
 //Get visit-reason
 router.get("/get-visit-reason", VerifyToken, helperController.getvisitReason);
+router.post("/add-visit-reason", VerifyToken, helperController.addVisitReason);
 
 router.get("/get-urgency-level", VerifyToken, helperController.geturgencyLevel);
 router.get(
