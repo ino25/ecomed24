@@ -5,6 +5,7 @@ const VerifyToken = require("./VerifyToken");
 const helperController = require("../controllers/helper.controller");
 router.get("/get-patients", VerifyToken, helperController.getPatients);
 router.get("/get-doctors", VerifyToken, helperController.getDoctorsList);
+router.get("/get-doctors-list/:service_id", VerifyToken, helperController.getDoctorsListByServiceID);
 router.get("/get-services", VerifyToken, helperController.getServicesList);
 
 // Country
@@ -37,6 +38,7 @@ router.post("/generate-pdf", VerifyToken, helperController.generatePDF);
 router.post("/send-document", VerifyToken, helperController.sendDocument);
 //Get visit-reason
 router.get("/get-visit-reason", VerifyToken, helperController.getvisitReason);
+router.post("/add-visit-reason", VerifyToken, helperController.addVisitReason);
 
 router.get("/get-urgency-level", VerifyToken, helperController.geturgencyLevel);
 router.get(

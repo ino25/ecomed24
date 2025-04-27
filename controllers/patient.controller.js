@@ -4828,7 +4828,7 @@ exports.addClinicalNotes = async (req, res) => {
         added_by: req.userId,
       });
 
-      const reports = req.body.reports;
+      const reports = data.reports;
       reports.forEach(async (report) => {
         await TestItems.create({
           patient_id: patientID,
@@ -4856,9 +4856,13 @@ exports.addClinicalNotes = async (req, res) => {
       });
     };
 
-    await handleLabOrImagingData(labData, "lab");
-    await handleLabOrImagingData(imagingData, "imaging");
-
+    if(labData){
+      await handleLabOrImagingData(labData, "lab");
+    }
+    
+    if(imagingData){
+      await handleLabOrImagingData(imagingData, "imaging");
+    }
     // Handle Prescription
     if (prescriptionData) {
       const PrescriptionsModal = await Prescriptions.create({
@@ -5647,10 +5651,20 @@ exports.getLabTestByID = async (req, res) => {
 };
 exports.getLabTestList = async (req, res) => {
   try {
-    LabTestList = await Database.query(
-      "SELECT payment_category.id,payment_category.prestation,setting_service.code_service FROM setting_service LEFT JOIN setting_service_specialite ON setting_service.idservice=setting_service_specialite.id_service LEFT JOIN payment_category ON setting_service.idservice=payment_category.id_service where code_service='labo'",
-      { type: Database.QueryTypes.SELECT }
-    );
+    let search = req.query.search;
+
+    if(search){
+      LabTestList = await Database.query(
+        `SELECT payment_category.id,payment_category.prestation,setting_service.code_service FROM setting_service LEFT JOIN setting_service_specialite ON setting_service.idservice=setting_service_specialite.id_service LEFT JOIN payment_category ON setting_service.idservice=payment_category.id_service where code_service='labo' and payment_category.prestation LIKE '%${search}%' LIMIT 50;`,
+        { type: Database.QueryTypes.SELECT }
+      );
+    }else{
+      LabTestList = await Database.query(
+        "SELECT payment_category.id,payment_category.prestation,setting_service.code_service FROM setting_service LEFT JOIN setting_service_specialite ON setting_service.idservice=setting_service_specialite.id_service LEFT JOIN payment_category ON setting_service.idservice=payment_category.id_service where code_service='labo'  LIMIT 50",
+        { type: Database.QueryTypes.SELECT }
+      );
+    }
+    
     if (LabTestList === null) {
       res.json({ status: 0, message: langCommon.nodatafound });
     } else {

@@ -29,6 +29,7 @@ var CarePerson = require("../models/CarePerson");
 var crypto = require("crypto");
 var Email = require("../models/Email");
 var AutoEmailTemplate = require("../models/AutoEmailTemplate");
+const User = require("../models/User");
 const BASEURL = process.env.SITE_URL;
 const BASEPATH = process.env.BASE_PATH;
 
@@ -136,6 +137,73 @@ exports.getServicesList = async (req, res) => {
     throw error;
   }
 };
+
+exports.getDoctorsListByServiceID = async (req, res) => {
+  try {
+    let search = req.query.search;
+    let service_id = parseInt(req.params.service_id);
+    let whereClause = {
+      id_organisation: req.org_id,
+      service:service_id
+    };
+
+    if (search && search.trim() !== "") {
+      whereClause = {
+        ...whereClause,
+        [Op.or]: [
+          Sequelize.where(
+            Sequelize.fn(
+              "concat",
+              Sequelize.col("first_name"),
+              " ",
+              Sequelize.col("last_name")
+            ),
+            {
+              [Op.like]: `%${search}%`,
+            }
+          )
+        ],
+      };
+    }
+
+    const { count, rows } = await User.findAndCountAll({
+      where: {
+        id_organisation: req.org_id,
+        service:service_id
+      },
+    });
+    DoctorModal = await User.findAll({
+      attributes: [
+        "id",
+        [
+          Sequelize.fn(
+            "CONCAT",
+            Sequelize.col(`first_name`),
+            " ",
+            Sequelize.col(`last_name`)
+          ),
+          "name",
+        ],
+      ],
+      order: [["id", "DESC"]],
+      where: whereClause,
+      limit: 20,
+    });
+    if (DoctorModal === null) {
+      res.json({ status: 0, message: langCommon.nodatafound });
+    } else {
+      res.json({
+        status: 1,
+        message: "Doctors Fetched",
+        data: DoctorModal,
+        total: count,
+      });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
 
 exports.getCountryList = async (req, res) => {
   try {
@@ -716,6 +784,32 @@ exports.getvisitReason = async (req, res) => {
       });
     }
   } catch (error) {
+    console.error("Error fetching visit Reason:", error);
+    res.status(500).json({ status: 0, message: "An error occurred" });
+  }
+};
+
+exports.addVisitReason = async (req, res) => {
+  try {
+    let getData = [],
+      results;
+
+    const VisitReasonModal = await VisitReason.create({
+      name: req.body.name,
+      description: req.body.description,
+      tag: req.body.tags,
+    });
+    if (VisitReasonModal === null) {
+      res.json({ status: 0, message: langCommon.errormessage });
+    } else {
+      res.json({
+        status: 1,
+        message: "Visit Reason added",
+        data: "",
+      });
+    }
+  } catch (error) {
+    // throw error;
     console.error("Error fetching visit Reason:", error);
     res.status(500).json({ status: 0, message: "An error occurred" });
   }
