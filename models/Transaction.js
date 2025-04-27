@@ -73,6 +73,11 @@ const Transaction = sequelize.define('Transaction', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  charge_mutuelle: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  
 }, {
   tableName: 'transactions',
   timestamps: false,

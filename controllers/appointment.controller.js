@@ -13,9 +13,17 @@ var User = require("../models/User");
 var HolidaysService = require("../models/HolidaysService");
 var TimeSlotService = require("../models/TimeSlotService");
 var Appointment = require("../models/Appointment");
-var Patient = require("../models/Patient");
 var Organisation = require("../models/Organisation");
 var PatientLogs = require("../models/PatientLogs");
+
+
+// TELECONSULTATION
+const TeleconferenceLink = require('../models/TeleconferenceLink');
+const Patient = require('../models/Patient');
+const Email = require('../models/Email');
+const AutoEmailTemplate = require('../models/AutoEmailTemplate');
+const axios = require('axios');
+
 //////Modal Relationship
 const {appointmentAPI} = require("../helpers/AppointmentHelper");
 // Appointment.belongsTo(User, { as: "addedby_details", foreignKey: "added_by" });
@@ -530,3 +538,90 @@ WHERE a.id IS NULL
     throw error;
   }
 };
+
+exports.createTeleconferenceLink = async (req, res) => {
+  try {
+    const { patientId, evenementId } = req.body;
+
+    if (!patientId || !evenementId) {
+      return res.status(400).json({ status: 0, message: "Patient ID et Événement ID sont requis." });
+    }
+
+    const dailyApiKey = process.env.DAILY_API_KEY;
+
+    const response = await axios.post(
+      'https://api.daily.co/v1/rooms',
+      {
+        name: `teleconf-${Date.now()}`,
+        properties: {
+          exp: Math.floor(Date.now() / 1000) + 7200,
+          enable_screenshare: true,
+          start_video_off: false,
+          start_audio_off: false,
+          eject_at_room_exp: true
+        }
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${dailyApiKey}`,
+          'Content-Type': 'application/json',
+        }
+      }
+    );
+
+    const roomUrl = response.data.url;
+
+    const link = await TeleconferenceLink.create({
+      patient_id: patientId,
+      evenement_id: evenementId,
+      room_url: roomUrl,
+      expiration: new Date(Date.now() + 2 * 60 * 60 * 1000),
+      created_by: "system",
+    });
+
+    // Chercher l'email du patient
+    const patient = await Patient.findOne({ where: { id: patientId } });
+
+    if (patient && patient.email) {
+      // Texte fixe du mail
+      const message = `
+        Bonjour ${patient.name || ''} ${patient.last_name || ''},
+
+        Votre consultation en ligne est prête.
+
+        Veuillez cliquer sur le lien suivant pour rejoindre la visioconférence :
+
+        ${roomUrl}
+
+        Merci et à bientôt !
+
+        L'équipe médicale.
+      `;
+
+      // Créer l'email dans ta table Email
+      await Email.create({
+        is_sent: null,
+        subject: "Votre lien de téléconsultation",
+        date: moment().format("YYYY-MM-DD HH:mm:ss"),
+        message: message.trim(),
+        reciepient: patient.email,
+        attachment_path: "",
+        user: null,
+      });
+    }
+
+    res.json({
+      status: 1,
+      message: "Lien de téléconférence créé et email généré avec succès (si adresse email disponible).",
+      data: {
+        linkId: link.id,
+        roomUrl: link.room_url,
+      },
+    });
+
+  } catch (error) {
+    console.error("Erreur création lien:", error.response?.data || error.message);
+    res.status(500).json({ status: 0, message: "Erreur serveur lors de la création du lien." });
+  }
+};
+

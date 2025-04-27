@@ -140,6 +140,14 @@ router.post(
   patientController.addPayments
 );
 
+router.get(
+  "/invoice-payments/patient/partner/:partner_id",
+  VerifyToken,
+  patientController.getPrestationPartner
+);
+
+
+
 // Dependants
 router.get(
   "/dependants/:patient_id",
@@ -557,6 +565,13 @@ router.post(
   VerifyToken,
   patientController.createServiceRequestWithInstances
 );
+
+router.post(
+  "/prelevement/create",
+  patientController.createPrelevement
+);
+
+
 
 router.post(
   "/transaction/add",

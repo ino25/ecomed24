@@ -91,6 +91,10 @@ const Payment = sequelize.define('Payment', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  category_name_assurance: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   amount_received: {
     type: DataTypes.STRING,
     allowNull: true
@@ -148,6 +152,10 @@ const Payment = sequelize.define('Payment', {
     allowNull: true
   },
   etatlight: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  etat_assurance: {
     type: DataTypes.STRING,
     allowNull: true
   },

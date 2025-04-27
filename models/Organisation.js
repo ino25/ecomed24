@@ -126,9 +126,10 @@ const Organisation = sequelize.define(
       allowNull: true,
     },
     date_creation: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
+      type: DataTypes.DATE,  // Utiliser un type DATE au lieu de STRING
+      allowNull: true,  // Autoriser NULL
+      defaultValue: null, // Valeur par défaut NULL
+    },           
     date_mise_a_jour: {
       type: DataTypes.STRING,
       allowNull: true,

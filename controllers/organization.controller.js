@@ -50,6 +50,15 @@ PaymentCategoryOrganisation.belongsTo(PaymentCategory, {
 });
 PaymentCategory.belongsTo(SettingServiceSpecialite, { foreignKey: "id_spe" });
 
+Organisation.belongsTo(PriceGrids, {
+  foreignKey: "pricing_category",
+});
+
+PriceGrids.belongsTo(Organisation, {
+  foreignKey: "organizationID",
+  as: "organisation",
+});
+
 // Patient Deposit invoice
 PatientDepositInvoice.belongsTo(User, {
   as: "addedby_details",
@@ -101,6 +110,7 @@ exports.getOrganizationList = async (req, res) => {
         "portable_responsable_legal",
         "type",
         "adresse",
+        "path_logo",
         "est_active",
         "is_light",
         "other_emails",
@@ -176,6 +186,122 @@ exports.getOrganizationList = async (req, res) => {
   }
 };
 
+exports.getOrganizationLightList = async (req, res) => {
+  try {
+    let offsetdata = parseInt(req.query.offset) || 0;
+    let datalimit = parseInt(req.query.limit) || 5;
+
+    if (isNaN(offsetdata)) offsetdata = 0;
+    if (isNaN(datalimit)) datalimit = 5;
+
+    // Récupération de l'organisation à exclure via le paramètre
+    const excludedOrgId = req.query.orgId ? parseInt(req.query.orgId) : null;
+
+    const { count, rows } = await Organisation.findAndCountAll();
+    console.log("🔎 ID reçu pour la requête :", req.params.org_id);
+
+    OrganisationModal = await Organisation.findAll({
+      attributes: [
+        "id",
+        "code",
+        "nom",
+        "nom_commercial",
+        "email",
+        "portable_responsable_legal",
+        "type",
+        "adresse",
+        "path_logo",
+        "est_active",
+        "is_light",
+        "other_emails",
+        "pricing_category",
+        "is_whatsapp",
+        "status",
+        "added_by",
+        "updated_by",
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("Organisation.createdAt"),
+            "%d/%m/%Y %H:%i"
+          ),
+          "createdAt",
+        ],
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("Organisation.updatedAt"),
+            "%d/%m/%Y %H:%i"
+          ),
+          "updatedAt",
+        ],
+      ],
+      order: [["id", "DESC"]],
+      limit: datalimit,
+      offset: offsetdata,
+      where: {
+        is_light: 1,
+        pricing_category: { [Op.ne]: null }, // pricing_category not NULL
+        id: excludedOrgId ? { [Op.ne]: excludedOrgId } : { [Op.ne]: null }, // Exclure organisation passée en paramètre
+      },
+      include: [
+        {
+          model: User,
+          attributes: [
+            "id",
+            ["id_organisation", "org_id"],
+            "first_name",
+            "last_name",
+            "username",
+            "email",
+          ],
+          as: "addedby_details",
+        },
+        {
+          model: User,
+          attributes: [
+            "id",
+            ["id_organisation", "org_id"],
+            "first_name",
+            "last_name",
+            "username",
+            "email",
+          ],
+          as: "updatedby_details",
+        },
+        {
+          model: OrganisationType,
+          attributes: ["id", "name"],
+          as: "type_details",
+        },
+        {
+          model: PriceGrids,
+          required: false,
+          attributes: [],
+          where: {
+            gridID: Sequelize.col("Organisation.pricing_category"),
+            organizationID: req.params.org_id,
+          },
+        },
+      ],
+    });
+
+    if (!OrganisationModal || OrganisationModal.length === 0) {
+      return res.json({ status: 0, message: "No Data Found" });
+    }
+
+    res.json({
+      status: 1,
+      message: "Organization List",
+      data: OrganisationModal,
+      total: count,
+    });
+  } catch (error) {
+    console.error("Error fetching organizations:", error);
+    res.status(500).json({ status: 0, message: "Internal Server Error" });
+  }
+};
+
 exports.getOrganizationByID = async (req, res) => {
   try {
     OrganisationModal = await Organisation.findAll({
@@ -183,6 +309,7 @@ exports.getOrganizationByID = async (req, res) => {
         "id",
         "code",
         "nom",
+        "path_logo",
         "nom_commercial",
         "email",
         "portable_responsable_legal",
@@ -233,36 +360,69 @@ exports.getOrganizationByID = async (req, res) => {
 
 exports.addOrganization = async (req, res) => {
   try {
-    // console.log(req.body);
-    OrganisationModal = await Organisation.create({
+    console.log("📥 Requête reçue :", req.body);
+    console.log("🆔 Utilisateur ID :", req.userId);
+
+    if (!req.userId) {
+      console.error("🚨 Erreur : Utilisateur non authentifié.");
+      return res.status(401).json({
+        status: 0,
+        message: "Non autorisé. Veuillez vous reconnecter.",
+      });
+    }
+
+    // Vérification des champs requis
+    if (
+      !req.body.name ||
+      !req.body.type ||
+      !req.body.phone ||
+      !req.body.email ||
+      !req.body.pricing_category
+    ) {
+      console.error("⚠️ Champs requis manquants :", req.body);
+      return res.status(400).json({
+        status: 0,
+        message: "Tous les champs obligatoires doivent être remplis.",
+      });
+    }
+
+    // Création de l'organisation
+    const OrganisationModal = await Organisation.create({
       nom: req.body.name,
       type: req.body.type,
       portable_responsable_legal: req.body.phone,
-      is_light: req.body.is_light,
+      is_light: req.body.is_light || 1, // Valeur par défaut
       email: req.body.email,
       pricing_category: req.body.pricing_category,
       adresse: req.body.address,
-      country: req.body.country,
-      region: req.body.region,
-      district: req.body.district,
+      country: req.body.country || null,
+      region: req.body.region || null,
+      district: req.body.district || null,
+      entete: req.body.entete || "--------------------",
       added_by: req.userId,
       status: 1,
     });
-    if (OrganisationModal === null) {
-      res.json({
+
+    if (!OrganisationModal) {
+      console.error("❌ Erreur : Organisation non créée.");
+      return res.status(500).json({
         status: 0,
-        message: "Something Went Wrong, Please Try Againg Later!!",
-      });
-    } else {
-      res.json({
-        status: 1,
-        message: "New Organization Has been added.",
-        data: "",
+        message: "Erreur serveur : Impossible d'ajouter l'organisation.",
       });
     }
+
+    console.log("✅ Organisation créée avec succès :", OrganisationModal);
+    res.json({
+      status: 1,
+      message: "Nouvelle organisation ajoutée avec succès.",
+      data: OrganisationModal,
+    });
   } catch (error) {
-    res.json({ status: 0, message: "Server Error, Please Try Againg Later!!" });
-    // throw error;
+    console.error("❌ Erreur serveur :", error);
+    res.status(500).json({
+      status: 0,
+      message: "Erreur serveur : Veuillez réessayer plus tard.",
+    });
   }
 };
 
@@ -1652,10 +1812,15 @@ WHERE pc.id NOT IN (
 exports.createOrUpdatePriceGridsAndDetails = async (req, res) => {
   const { organizationID, lastModifiedBy, prestations } = req.body;
 
-  if (!organizationID || !Array.isArray(prestations) || prestations.length === 0) {
+  if (
+    !organizationID ||
+    !Array.isArray(prestations) ||
+    prestations.length === 0
+  ) {
     return res.status(400).json({
       status: 0,
-      message: "Invalid input. Please provide organizationID and a list of IDs.",
+      message:
+        "Invalid input. Please provide organizationID and a list of IDs.",
     });
   }
 
@@ -1785,20 +1950,24 @@ exports.createOrUpdatePriceGridsAndDetails = async (req, res) => {
     if (error.name === "SequelizeUniqueConstraintError") {
       res.status(400).json({
         status: 0,
-        message: "Erreur de saisie en double. Le nom du grille tarifaire existe déjà au sein de l'organisation",
+        message:
+          "Erreur de saisie en double. Le nom du grille tarifaire existe déjà au sein de l'organisation",
         error: error.message,
       });
     } else {
-      console.error("Error creating or updating price grids and details:", error);
+      console.error(
+        "Error creating or updating price grids and details:",
+        error
+      );
       res.status(500).json({
         status: 0,
-        message: "Erreur lors de la création ou de la mise à jour des grilles de prix et des détails",
+        message:
+          "Erreur lors de la création ou de la mise à jour des grilles de prix et des détails",
         error: error.message,
       });
     }
   }
 };
-
 
 exports.updatePriceGridDetails = async (req, res) => {
   try {
@@ -1910,18 +2079,24 @@ exports.getPrestationImported = async (req, res) => {
   try {
     const Prestation = await Database.query(
       `SELECT 
-      payment_category.id, 
-      setting_service.name_service, 
-      setting_service_specialite.name_specialite, 
-      payment_category.prestation, 
-      pricegriddetails.status 
-    FROM payment_category
-    JOIN setting_service_specialite ON setting_service_specialite.idspe = payment_category.id_spe
-    JOIN setting_service ON setting_service_specialite.id_service = setting_service.idservice
-    JOIN pricegriddetails ON pricegriddetails.productID = payment_category.id
-    WHERE pricegriddetails.organizationID = ${req.params.org_id} 
-    GROUP BY payment_category.id, setting_service.name_service, setting_service_specialite.name_specialite, payment_category.prestation, pricegriddetails.status
-    ORDER BY pricegriddetails.detailID DESC`,
+    payment_category.id, 
+    setting_service.name_service, 
+    setting_service_specialite.name_specialite, 
+    payment_category.prestation, 
+    pricegriddetails.status,
+    MAX(pricegriddetails.detailID) AS latest_detailID
+FROM payment_category
+JOIN setting_service_specialite ON setting_service_specialite.idspe = payment_category.id_spe
+JOIN setting_service ON setting_service_specialite.id_service = setting_service.idservice
+JOIN pricegriddetails ON pricegriddetails.productID = payment_category.id
+WHERE pricegriddetails.organizationID = ${req.params.org_id} 
+GROUP BY 
+    payment_category.id, 
+    setting_service.name_service, 
+    setting_service_specialite.name_specialite, 
+    payment_category.prestation, 
+    pricegriddetails.status
+ORDER BY latest_detailID DESC`,
       { type: Database.QueryTypes.SELECT }
     );
     if (Prestation === null) {
@@ -2401,8 +2576,9 @@ exports.getActeDemandeAutresActes = async (req, res) => {
               doctor_name: payment.doctor_name,
               status_number: status_number,
               status:
-                ["UNKNOWN", "EN ATTENTE", "EN COURS", "TERMINÉ"][status_number] ||
-                "UNKNOWN",
+                ["UNKNOWN", "EN ATTENTE", "EN COURS", "TERMINÉ"][
+                  status_number
+                ] || "UNKNOWN",
               date_prelevement: lab ? lab.date_prelevement : null,
               clinique: payment.renseignementClinique,
               patient_data: patient,

@@ -33,21 +33,21 @@ exports.getActeDemande = async (req, res) => {
   const id_organisation = req.body.id_organisation;
 
   try {
-    // Fetching initial payment data
+    // Étape 1 : Récupération des paiements de l'organisation
     const paymentData = await sequelize.query(
       `SELECT * FROM payment 
        WHERE (id_organisation = ${sequelize.escape(id_organisation)} 
        OR (etat = 1 AND organisation_destinataire = ${sequelize.escape(id_organisation)}))
-       ORDER BY date_string DESC`,
+       ORDER BY id DESC LIMIT 10`,
       { type: sequelize.QueryTypes.SELECT }
     );
 
-    // Step 2: Extract unique organisation_destinataire and id_organisation IDs
+    // Étape 2 : Extraction des IDs des organisations
     const organisationIds = [
       ...new Set(paymentData.map((p) => p.organisation_destinataire).concat(paymentData.map((p) => p.id_organisation)))
     ];
 
-    // Step 3: Fetch organisation information (both destinataire and emetteur)
+    // Étape 3 : Récupération des informations des organisations
     const organisationsData = await sequelize.query(
       `SELECT * FROM organisation WHERE id IN (${organisationIds
         .map((id) => sequelize.escape(id))
@@ -55,13 +55,13 @@ exports.getActeDemande = async (req, res) => {
       { type: sequelize.QueryTypes.SELECT }
     );
 
-    // Step 4: Create organisation mapping for quick lookup
+    // Mapping des organisations pour accès rapide
     const organisationMap = organisationsData.reduce((map, organisation) => {
       map[organisation.id] = organisation;
       return map;
     }, {});
 
-    // Fetching all needed data in parallel
+    // Étape 4 : Extraction des catégories utilisées dans les paiements
     let categoryIds = new Set();
     paymentData.forEach((payment) => {
       if (payment.category_name) {
@@ -72,6 +72,8 @@ exports.getActeDemande = async (req, res) => {
       }
     });
 
+
+    // Étape 5 : Récupération des données associées
     const [
       categoriesData,
       servicesData,
@@ -121,7 +123,8 @@ exports.getActeDemande = async (req, res) => {
       ),
     ]);
 
-    // Creating maps for quick lookup
+
+    // Création de maps pour un accès rapide
     const serviceMap = servicesData.reduce((map, service) => {
       map[service.idservice] = service;
       return map;
@@ -148,104 +151,85 @@ exports.getActeDemande = async (req, res) => {
       return map;
     }, {});
 
-    // Building the final labData array with filtering for the specified services
+    // Étape 6 : Construction des données finales
     let labData = [];
     paymentData.forEach((payment) => {
       const paymentCategories = payment.category_name
         ? payment.category_name.split(",")
         : [];
+
       paymentCategories.forEach((categoryString) => {
         const [categoryId, , , , status_number] = categoryString.split("*");
-        const category = categoriesData.find(
-          (cat) => cat.id.toString() === categoryId
-        );
-        if (category) {
-          const service = serviceMap[category.id_service];
-          const specialite = specialiteMap[category.id_spe];
-          const patient = patientMap[payment.patient];
-          const lab = labMap[payment.id];
-          const prestationParams = prestationsData
-            .filter((p) => p.id_prestation === category.id)
-            .map((p) => {
-              const labKey = `${p.idpara}-${payment.id}`;
-              return {
-                ...p,
-                prestationSaisie: labDataMap[labKey]
-                  ? labDataMap[labKey]
-                  : null,
-              };
-            });
 
-          // Filter to include only "Laboratoire d'Analyses Médicales" or "Biologie médicale"
-          if (
-            service &&
-            (service.name_service === "Laboratoire d'Analyses Médicales" ||
-              service.name_service === "Biologie médicale")
-          ) {
-            const organisationDestinataireInfo = organisationMap[payment.organisation_destinataire];
-            const organisationEmetteurInfo = organisationMap[payment.id_organisation];
-            labData.push({
-              id_payment: payment.id,
-              payment_code: payment.code,
-              amount: payment.amount,
-              payment_etat: payment.etat,
-              payment_etatlight: payment.etatlight,
-              organisation_destinataire: payment.organisation_destinataire,
-              code: payment.code + category.id,
-              date_string: payment.date_string,
-              patient_name: payment.patient_name,
-              id_service: category.id_service,
-              name_service: service ? service.name_service : null,
-              id_specialite: category.id_spe,
-              name_specialite: specialite ? specialite.name_specialite : null,
-              code_specialite: specialite ? specialite.code_specialite : null,
-              id_prestation: category.id,
-              prestation: category.prestation,
-              id_organisation: payment.id_organisation,
-              id_doctor: payment.doctor,
-              doctor_name: payment.doctor_name,
-              status_number: status_number,
-              status:
-                ["UNKNOWN", "EN COURS", "EFFECTUÉ", "VALIDÉ"][status_number] ||
-                "UNKNOWN",
-              date_prelevement: lab ? lab.date_prelevement : null,
-              clinique: payment.renseignementClinique,
-              patient_data: patient,
-              prestationDetails: prestationParams,
-              lab: lab,
-              motifVoyage: payment.motifVoyage,
+        
+        const category = categoriesData.find(cat => cat.id.toString() === categoryId);
 
-              // Add organisation destinataire information
-              organisation_destinataire_info: organisationDestinataireInfo
-                ? {
-                    id: organisationDestinataireInfo.id,
-                    nom: organisationDestinataireInfo.nom,
-                    nom_commercial: organisationDestinataireInfo.nom_commercial,
-                    adresse: organisationDestinataireInfo.adresse,
-                    entete: organisationDestinataireInfo.entete,
-                    footer: organisationDestinataireInfo.footer,
-                  }
-                : null,
+        if (!category) {
+          console.error(`🚨 Erreur: La catégorie avec l'ID ${categoryId} est introuvable.`);
+          return;
+        }
 
-              // Add organisation emetteur information
-              organisation_emetteur_info: organisationEmetteurInfo
-                ? {
-                    id: organisationEmetteurInfo.id,
-                    nom: organisationEmetteurInfo.nom,
-                    nom_commercial: organisationEmetteurInfo.nom_commercial,
-                    adresse: organisationEmetteurInfo.adresse,
-                    entete: organisationEmetteurInfo.entete,
-                    footer: organisationEmetteurInfo.footer,
-                  }
-                : null,
-            });
-          }
+        const service = serviceMap[category.id_service];
+        const specialite = specialiteMap[category.id_spe];
+        const patient = patientMap[payment.patient];
+        const lab = labMap[payment.id];
+
+        const prestationParams = prestationsData
+          .filter((p) => p.id_prestation === category.id)
+          .map((p) => {
+            const labKey = `${p.idpara}-${payment.id}`;
+            return {
+              ...p,
+              prestationSaisie: labDataMap[labKey] ? labDataMap[labKey] : null,
+            };
+          });
+
+        // Filtrage pour inclure uniquement certains services
+        if (
+          service &&
+          (service.name_service === "Laboratoire d'Analyses Médicales" ||
+            service.name_service === "Biologie médicale")
+        ) {
+          const organisationDestinataireInfo = organisationMap[payment.organisation_destinataire];
+          const organisationEmetteurInfo = organisationMap[payment.id_organisation];
+
+          labData.push({
+            id_payment: payment.id,
+            payment_code: payment.code,
+            amount: payment.amount,
+            payment_etat: payment.etat,
+            payment_etatlight: payment.etatlight,
+            organisation_destinataire: payment.organisation_destinataire,
+            code: payment.code + category.id,
+            date_string: payment.date_string,
+            patient_name: payment.patient_name,
+            id_service: category.id_service,
+            name_service: service ? service.name_service : null,
+            id_specialite: category.id_spe,
+            name_specialite: specialite ? specialite.name_specialite : null,
+            id_prestation: category.id,
+            prestation: category.prestation,
+            id_organisation: payment.id_organisation,
+            id_doctor: payment.doctor,
+            doctor_name: payment.doctor_name,
+            status_number: status_number,
+            status: ["UNKNOWN", "EN COURS", "EFFECTUÉ", "VALIDÉ"][status_number] || "UNKNOWN",
+            date_prelevement: lab ? lab.date_prelevement : null,
+            clinique: payment.renseignementClinique,
+            patient_data: patient,
+            prestationDetails: prestationParams,
+            lab: lab,
+            motifVoyage: payment.motifVoyage,
+            organisation_destinataire_info: organisationDestinataireInfo || null,
+            organisation_emetteur_info: organisationEmetteurInfo || null,
+          });
         }
       });
     });
 
-    // Sorting and sending response
+    // Tri et envoi de la réponse
     labData.sort((a, b) => new Date(b.date_string) - new Date(a.date_string));
+
     if (labData.length > 0) {
       res.json(labData);
     } else {
@@ -253,9 +237,7 @@ exports.getActeDemande = async (req, res) => {
     }
   } catch (error) {
     console.error("Erreur :", error);
-    res
-      .status(500)
-      .send("Une erreur s'est produite lors de la récupération des données");
+    res.status(500).send("Une erreur s'est produite lors de la récupération des données");
   }
 };
 
@@ -488,7 +470,7 @@ exports.getStats = async (req, res) => {
        FROM payment
        WHERE payment.id_organisation = ${sequelize.escape(id_organisation)}
        ORDER BY payment.date_string DESC`,
-      { type: sequelize.QueryTypes.SELECT }
+      { type: sequelize.QueryTypes.SELECT, logging: false }
     );
 
     let labData = [];
@@ -504,14 +486,14 @@ exports.getStats = async (req, res) => {
         // Récupération des données de la catégorie
         const categoryData = await sequelize.query(
           `SELECT id, prestation, id_service,	id_spe  FROM payment_category WHERE id = ${sequelize.escape(id_prestation)}`,
-          { type: sequelize.QueryTypes.SELECT }
+          { type: sequelize.QueryTypes.SELECT, logging: false }
         );
 
         if (categoryData[0]) {
           // Récupérer le nom du service pour filtrer les catégories
           const serviceData = await sequelize.query(
             `SELECT name_service FROM setting_service WHERE idservice = ${sequelize.escape(categoryData[0].id_service)}`,
-            { type: sequelize.QueryTypes.SELECT }
+            { type: sequelize.QueryTypes.SELECT, logging: false }
           );
 
           if (serviceData[0] && (serviceData[0].name_service === "Laboratoire d'Analyses Médicales" || serviceData[0].name_service === "Biologie médicale")) {
@@ -519,7 +501,7 @@ exports.getStats = async (req, res) => {
             // Récupération du nom de la spécialité
             const specialiteData = await sequelize.query(
               `SELECT name_specialite FROM setting_service_specialite WHERE idspe = ${sequelize.escape(categoryData[0].id_spe)}`,
-              { type: sequelize.QueryTypes.SELECT }
+              { type: sequelize.QueryTypes.SELECT, logging: false }
             );
 
             if (specialiteData[0]) {
@@ -798,7 +780,7 @@ exports.getResultatById = async (req, res) => {
           `SELECT id, prestation, id_service,	id_spe  FROM payment_category WHERE id = ${sequelize.escape(
             category_id
           )}`,
-          { type: sequelize.QueryTypes.SELECT }
+          { type: sequelize.QueryTypes.SELECT, logging: false }
         );
 
         if (categoryData[0]) {
@@ -820,7 +802,7 @@ exports.getResultatById = async (req, res) => {
             `SELECT * FROM payment_category_parametre WHERE id_prestation = ${sequelize.escape(
               categoryData[0].id
             )}`,
-            { type: sequelize.QueryTypes.SELECT }
+            { type: sequelize.QueryTypes.SELECT, logging: false }
           );
 
           let prestationParam = await Promise.all(

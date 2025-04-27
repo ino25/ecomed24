@@ -6,7 +6,8 @@ const organizationController = require("../controllers/organization.controller")
 
 // Organizations
 router.get('/',VerifyToken, organizationController.getOrganizationList);
-router.get('/get-org-byid/:org_id',VerifyToken, organizationController.getOrganizationByID);
+router.get('/get-org-light/:org_id',VerifyToken, organizationController.getOrganizationByID);
+router.get('/get-org-byid/:org_id',VerifyToken, organizationController.getOrganizationLightList);
 router.post('/add',VerifyToken, organizationController.addOrganization);
 router.post('/update/:org_id',VerifyToken, organizationController.updateOrganization);
 router.patch('/status/:id',VerifyToken, organizationController.statusOrganization);
