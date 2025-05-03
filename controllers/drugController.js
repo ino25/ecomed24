@@ -6,20 +6,63 @@ const Product = require("../models/Product");
 const XLSX = require("xlsx");
 const multer = require("multer");
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY; // Ensure this is set in your environment variables
+
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
+// exports.getAllDrugs = async (req, res) => {
+//   try {
+//     console.log("Fetching all drugs...");
+//     const drugs = await Drug.findAll();
+//     console.log("Fetched drugs: ", drugs);
+//     res.json(drugs);
+//   } catch (error) {
+//     console.error("Error retrieving drugs: ", error);
+//     res.status(500).send("Error retrieving drugs");
+//   }
+// };
 
 exports.getAllDrugs = async (req, res) => {
   try {
-    console.log("Fetching all drugs...");
-    const drugs = await Drug.findAll();
-    console.log("Fetched drugs: ", drugs);
-    res.json(drugs);
+    const drugs = await Drug.findAll({
+      attributes: [
+        "id",
+        "therapeuticClass",
+        "dci",
+        "commercialName",
+        "dosage",
+        "administrationRoute",
+        "presentation",
+        "publicPrice",
+        "referencePrice",
+        "currency",
+        "laboratory",
+        "status",
+        "drugScope",
+      ],
+      where: { id: req.params.id },
+    });
+
+    if (!drugs || drugs.length === 0) {
+      return res.json({
+        status: 0,
+        message: "No drugs found",
+        data: [],
+      });
+    }
+    return res.json({
+      status: 1,
+      message: "List of Drugs",
+      data: drugs,
+    });
   } catch (error) {
-    console.error("Error retrieving drugs: ", error);
-    res.status(500).send("Error retrieving drugs");
+    console.error("Error fetching drugs:", error);
+    return res.status(500).json({
+      status: 0,
+      message: "Internal Server Error",
+      data: [],
+    });
   }
 };
-
 exports.getDrugById = async (req, res) => {
   try {
     console.log(`Fetching drug by ID: ${req.params.id}`);
@@ -36,6 +79,7 @@ exports.getDrugById = async (req, res) => {
     res.status(500).send("Error retrieving drug");
   }
 };
+
 
 exports.addDrug = async (req, res) => {
   try {
