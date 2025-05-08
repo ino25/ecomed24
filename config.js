@@ -25,6 +25,7 @@ const sequelize = new Sequelize(
   process.env.PASS,
   {
     host: process.env.HOST,
+    port: process.env.DB_PORT || 3307,
     dialect: "mysql",
   }
 );

@@ -15,6 +15,8 @@ const http = require("http");
 const https = require("https");
 const fs = require("fs");
 const { emailSchedule } = require("./controllers/cron.controller");
+const depenseTypeRoutes = require('./routes/depenseType.routes');
+
 
 if (process.env.NODE_ENV === "production") {
   cron.schedule("*/5 * * * * *", emailSchedule);
@@ -143,6 +145,10 @@ app.use("/drugs", drugRoutes);
 app.use("/product", productRoutes);
 // app.use("/transactionHandler", transactionHandlerRoutes);
 app.use("/payment-methods", paymentMethodRoutes);
+
+app.use('/api/depense-types', require('./routes/depenseType.routes'));
+
+
 
 // Start server
 const PORT = process.env.PORT || 7001;
