@@ -1,63 +1,66 @@
-// const  Prescriptions  = require("../models/Prescriptions"); // adjust path as per your setup
-// const PrescribedMedicins =require("../models/PrescribedMedicins");
-// // GET: Fetch All Prescriptions
 
-// exports.getAllPrescriptions = async (req, res) => {
-//   try {
-//     const prescriptions = await Prescriptions.findAll({
-//       include: [
-//         {
-//           model: PrescribedMedicins,
-//           as: "medicins",
-//         },
-//       ],
-//       order: [["createdAt", "DESC"]],
-//     });
-
-//     return res.status(200).json({
-//       status: 1,
-//       message: "All prescriptions fetched successfully",
-//       data: prescriptions,
-//     });
-//   } catch (error) {
-//     console.error("Error fetching prescriptions:", error);
-//     return res.status(500).json({
-//       status: 0,
-//       message: "Failed to fetch prescriptions",
-//       error: error.message,
-//     });
-//   }
-// };
 
 const Prescriptions = require("../models/Prescriptions");
 const PrescribedMedicins = require("../models/PrescribedMedicins");
 
-// Export all controller functions
-exports.getAllPrescriptions = async (req, res) => {
+exports.getPrescription = async (req, res) => {
   try {
-    const prescriptions = await Prescriptions.findAll({
-      include: [
-        {
-          model: PrescribedMedicins,
-          as: "medicins",
-        },
-      ],
-      order: [["createdAt", "DESC"]],
+    let offsetdata = parseInt(
+      req.query.offset
+        ? req.query.offset == undefined || req.query.offset == 1
+          ? 0
+          : req.query.offset
+        : 0
+    );
+    if (isNaN(offsetdata)) {
+      offsetdata = 0;
+    }
+    let datalimit = parseInt(
+      req.query.limit ? (req.query.limit == undefined ? 5 : req.query.limit) : 5
+    );
+    if (isNaN(datalimit)) {
+      datalimit = 5;
+    }
+    const { count, rows } = await Prescriptions.findAndCountAll({
+     // where: { patient_id: req.params.patient_id },
     });
 
-    return res.status(200).json({
-      status: 1,
-      message: "All prescriptions fetched successfully",
-      data: prescriptions,
+    PrescriptionsModal = await Prescriptions.findAll({
+      limit: datalimit,
+      offset: offsetdata,
     });
+    if (PrescriptionsModal === null) {
+      res.json({ status: 0, message: langCommon.nodatafound });
+    } else {
+      res.json({
+        status: 1,
+        message:" Prescription list fetch successfully",
+        data: PrescriptionsModal,
+        total: count,
+      });
+    }
   } catch (error) {
-    console.error("Error fetching prescriptions:", error);
-    return res.status(500).json({
-      status: 0,
-      message: "Failed to fetch prescriptions",
-      error: error.message,
+    throw error;
+  }
+};
+exports.getPrescriptionByID = async (req, res) => {
+  try {
+    let getData = [],
+      results;
+    PrescriptionsModal = await Prescriptions.findOne({
     });
+    if (PrescriptionsModal === null) {
+      res.json({ status: 0, message: langCommon.nodatafound });
+    } else {
+      res.json({
+        status: 1,
+        message: langPatientModule.precription.individual,
+        data: PrescriptionsModal,
+        url: BASEURL + "/uploads/invoicefile/",
+      });
+    }
+  } catch (error) {
+    throw error;
   }
 };
 
-// Add other controller functions as needed
