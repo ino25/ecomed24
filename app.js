@@ -144,7 +144,7 @@ app.use("/drugs", drugRoutes);
 app.use("/product", productRoutes);
 // app.use("/transactionHandler", transactionHandlerRoutes);
 app.use("/payment-methods", paymentMethodRoutes);
-app.use("/prescriptions", prescriptionRoutes)
+app.use("/prescriptions", prescriptionRoutes);
 
 // Start server
 const PORT = process.env.PORT || 7001;

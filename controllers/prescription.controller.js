@@ -1,7 +1,4 @@
-
-
 const Prescriptions = require("../models/Prescriptions");
-const PrescribedMedicins = require("../models/PrescribedMedicins");
 
 exports.getPrescription = async (req, res) => {
   try {
@@ -21,9 +18,7 @@ exports.getPrescription = async (req, res) => {
     if (isNaN(datalimit)) {
       datalimit = 5;
     }
-    const { count, rows } = await Prescriptions.findAndCountAll({
-     // where: { patient_id: req.params.patient_id },
-    });
+    const { count, rows } = await Prescriptions.findAndCountAll({});
 
     PrescriptionsModal = await Prescriptions.findAll({
       limit: datalimit,
@@ -34,7 +29,7 @@ exports.getPrescription = async (req, res) => {
     } else {
       res.json({
         status: 1,
-        message:" Prescription list fetch successfully",
+        message: " Prescription list fetched successfully",
         data: PrescriptionsModal,
         total: count,
       });
@@ -47,14 +42,13 @@ exports.getPrescriptionByID = async (req, res) => {
   try {
     let getData = [],
       results;
-    PrescriptionsModal = await Prescriptions.findOne({
-    });
+    PrescriptionsModal = await Prescriptions.findOne({});
     if (PrescriptionsModal === null) {
-      res.json({ status: 0, message: langCommon.nodatafound });
+      res.json({ status: 0, message: "Not found"});
     } else {
       res.json({
         status: 1,
-        message: langPatientModule.precription.individual,
+        message: "Prescription fetched successfully",
         data: PrescriptionsModal,
         url: BASEURL + "/uploads/invoicefile/",
       });
@@ -63,4 +57,3 @@ exports.getPrescriptionByID = async (req, res) => {
     throw error;
   }
 };
-
