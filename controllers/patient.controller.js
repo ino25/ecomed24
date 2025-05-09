@@ -4969,6 +4969,85 @@ exports.addClinicalNotes = async (req, res) => {
   }
 };
 
+//get Prescriptions api
+
+// exports.getPrescriptions = async (req, res) => {
+//   try {
+//     const { patient_id, prescription_id } = req.query;
+    
+//     // Build query conditions
+//     const whereConditions = {
+//       org_id: req.org_id,
+//       status: 1
+//     };
+
+//     // If patient_id is provided, filter by patient
+//     if (patient_id) {
+//       whereConditions.patient_id = patient_id;
+//     }
+
+//     // If prescription_id is provided, get specific prescription
+//     if (prescription_id) {
+//       whereConditions.id = prescription_id;
+//     }
+
+//     // Get prescriptions with basic information
+//     // const prescriptions = await Prescriptions.findAll({
+//     //   where: whereConditions,
+//     //   order: [['createdAt', 'DESC']],
+//     //   include: [
+//     //     {
+//     //       model: Patient,
+//     //       as: 'patient',
+//     //       attributes: ['id', 'name', 'last_name', 'sex', 'age', 'birthdate', 'phone']
+//     //     },
+//     //     {
+//     //       model: User,
+//     //       as: 'doctor',
+//     //       attributes: ['id', 'name', 'last_name']
+//     //     }
+//     //   ]
+//     // });
+
+//     if (!prescriptions || prescriptions.length === 0) {
+//       return res.json({ 
+//         status: 0, 
+//         message: prescription_id ? "Prescription not found" : "No prescriptions found" 
+//       });
+//     }
+
+//     // Get medication details for each prescription
+//     const prescriptionsWithMedicines = await Promise.all(prescriptions.map(async (prescription) => {
+//       const prescriptionData = prescription.toJSON();
+      
+//       // Get prescribed medicines for this prescription
+//       const medicines = await PrescribedMedicins.findAll({
+//         where: {
+//           prescription_id: prescription.id,
+//           status: 1
+//         }
+//       });
+      
+//       // Add medicines to prescription data
+//       prescriptionData.medicin = medicines;
+      
+//       return prescriptionData;
+//     }));
+
+//     return res.json({
+//       status: 1,
+//       message: "Prescriptions retrieved successfully",
+//       data: prescriptionsWithMedicines,
+//       count: prescriptionsWithMedicines.length
+//     });
+//   } catch (error) {
+//     console.error("Error retrieving prescriptions:", error);
+//     return res
+//       .status(500)
+//       .json({ status: 0, message: "An error occurred", error: error.message });
+//   }
+// };
+
 exports.updateClinicalNotes = async (req, res) => {
   try {
     let getData = [],

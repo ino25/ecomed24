@@ -39,7 +39,6 @@ exports.getAllDrugs = async (req, res) => {
         "status",
         "drugScope",
       ],
-      where: { id: req.params.id },
     });
 
     if (!drugs || drugs.length === 0) {
