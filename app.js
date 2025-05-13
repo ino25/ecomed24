@@ -93,6 +93,7 @@ const transactionScenarioRoutes = require("./routes/transactionScenario.routes")
 const paymentMethodRoutes = require("./routes/paymentMethod.routes");
 const drugRoutes = require("./routes/drug.routes");
 const productRoutes = require("./routes/product.routes");
+const prescriptionRoutes=require("./routes/prescription.routes");
 
 if (app.get("env") === "production") {
   app.use(morgan("combined"));
@@ -143,6 +144,7 @@ app.use("/drugs", drugRoutes);
 app.use("/product", productRoutes);
 // app.use("/transactionHandler", transactionHandlerRoutes);
 app.use("/payment-methods", paymentMethodRoutes);
+app.use("/prescriptions", prescriptionRoutes);
 
 // Start server
 const PORT = process.env.PORT || 7001;
