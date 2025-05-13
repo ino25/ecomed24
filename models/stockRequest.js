@@ -1,9 +1,6 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config").sequelize;
-const Product = require("./Product");
-const ProductCategory = require("./ProductCategory");
 
-// Define the Drug model
 const StockRequest = sequelize.define(
   "StockRequest",
   {
@@ -11,16 +8,6 @@ const StockRequest = sequelize.define(
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
-    },
-    productId: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      references: {
-        model: Product, // Reference the Product model
-        key: "id",
-      },
-      onUpdate: "CASCADE",
-      onDelete: "CASCADE",
     },
 
     therapeuticClass: {
@@ -75,25 +62,36 @@ const StockRequest = sequelize.define(
       allowNull: true,
       defaultValue: "Non Disponible",
     },
+
     status: {
-      type: DataTypes.ENUM("accepted", "rejected", "requested"),
-      defaultValue: "requested",
+      type: DataTypes.INTEGER, // 0 = requested, 1 = accepted, 2 = rejected
+      defaultValue: 0,
       allowNull: false,
+      validate: {
+        isIn: [[0, 1, 2]],
+      },
     },
+
     drugScope: {
       type: DataTypes.ENUM("general", "IB"),
       allowNull: false,
       defaultValue: "general",
     },
+
+    createdBy: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    updatedBy: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
   },
   {
-    tableName: "stock_request",
-    timestamps: false,
-    paranoid: true,
+    tableName: "stock_requests",
+    timestamps: true, // adds createdAt and updatedAt 
+    paranoid: true,   // adds deletedAt (soft delete)
   }
 );
-
-// Establish associations
-StockRequest.belongsTo(Product, { foreignKey: "productId", as: "product" });
 
 module.exports = StockRequest;
