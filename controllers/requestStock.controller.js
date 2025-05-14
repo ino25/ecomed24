@@ -1,5 +1,13 @@
 const StockRequest = require("../models/stockRequest");
+var User = require("../models/User");
 
+//Modal Relationship
+
+StockRequest.belongsTo(User, { as: "addedby_details", foreignKey: "added_by" });
+StockRequest.belongsTo(User, {
+  as: "updatedby_details",
+  foreignKey: "updated_by",
+});
 exports.createStockRequest = async (req, res) => {
   try {
     const {
@@ -16,7 +24,6 @@ exports.createStockRequest = async (req, res) => {
       laboratory,
       status,
       drugScope,
-
     } = req.body;
 
     // Validate required fields
@@ -28,7 +35,7 @@ exports.createStockRequest = async (req, res) => {
       });
     }
 
-     const userId = req.user?.id || null;
+    //  const userId = req.user?.id || null;
 
     const newRequest = await StockRequest.create({
       therapeuticClass,
@@ -44,8 +51,8 @@ exports.createStockRequest = async (req, res) => {
       laboratory,
       status,
       drugScope,
-      createdBy: userId,
-      updatedBy: userId,
+      added_by: req.userId,
+      updated_by: req.userId,
     });
 
     return res.status(201).json({
@@ -121,7 +128,8 @@ exports.patchStockRequestStatus = async (req, res) => {
     if (![0, 1, 2].includes(status)) {
       return res.status(400).json({
         status: 0,
-        message: "Invalid status value. Must be 0 (requested), 1 (accepted), or 2 (rejected).",
+        message:
+          "Invalid status value. Must be 0 (requested), 1 (accepted), or 2 (rejected).",
         data: [],
       });
     }
@@ -150,6 +158,40 @@ exports.patchStockRequestStatus = async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating stock request status:", error);
+    return res.status(500).json({
+      status: 0,
+      message: "Internal Server Error",
+      data: [],
+    });
+  }
+};
+
+exports.delete = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find the stock request by ID
+    const stockRequest = await StockRequest.findByPk(id);
+
+    if (!stockRequest) {
+      return res.status(404).json({
+        status: 0,
+        message: "Stock request not found.",
+        data: [],
+      });
+    }
+
+    // Delete the stock request
+    await stockRequest.update({ is_deleted: 1 });
+    await stockRequest.destroy();
+
+    return res.status(200).json({
+      status: 1,
+      message: "Stock request deleted successfully.",
+      data: [],
+    });
+  } catch (error) {
+    console.error("Error deleting stock request:", error);
     return res.status(500).json({
       status: 0,
       message: "Internal Server Error",

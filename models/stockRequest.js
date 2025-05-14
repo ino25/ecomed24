@@ -78,19 +78,25 @@ const StockRequest = sequelize.define(
       defaultValue: "general",
     },
 
-    createdBy: {
+   added_by: {
       type: DataTypes.INTEGER,
       allowNull: true,
     },
-    updatedBy: {
+    updated_by: {
       type: DataTypes.INTEGER,
       allowNull: true,
+    },
+     is_deleted: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
     },
   },
   {
     tableName: "stock_requests",
     timestamps: true, // adds createdAt and updatedAt 
     paranoid: true,   // adds deletedAt (soft delete)
+    deletedAt: 'deletedAt'
   }
 );
 
