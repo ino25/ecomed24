@@ -93,6 +93,8 @@ const transactionScenarioRoutes = require("./routes/transactionScenario.routes")
 const paymentMethodRoutes = require("./routes/paymentMethod.routes");
 const drugRoutes = require("./routes/drug.routes");
 const productRoutes = require("./routes/product.routes");
+const stockRoutes = require("./routes/stockManagement.routes");
+const  RequestStock = require("./routes/requestStock.routes");
 const prescriptionRoutes=require("./routes/prescription.routes");
 
 if (app.get("env") === "production") {
@@ -144,6 +146,8 @@ app.use("/drugs", drugRoutes);
 app.use("/product", productRoutes);
 // app.use("/transactionHandler", transactionHandlerRoutes);
 app.use("/payment-methods", paymentMethodRoutes);
+app.use("/stock", stockRoutes);
+app.use("/stocks", RequestStock);
 app.use("/prescriptions", prescriptionRoutes);
 
 // Start server
