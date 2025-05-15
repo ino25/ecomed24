@@ -42,7 +42,7 @@ exports.getByID = async (req, res) => {
   try {
     let getData = [],
       results;
-    PrescriptionsModal = await Prescriptions.findOne({id: req.params.id});
+    PrescriptionsModal = await Prescriptions.findOne({where: { id: req.params.prescription_id }});
     if (PrescriptionsModal === null) {
       res.json({ status: 0, message: "Not found"});
     } else {
