@@ -1,6 +1,6 @@
 const Prescriptions = require("../models/Prescriptions");
-
-exports.getPrescription = async (req, res) => {
+const BASEURL = process.env.SITE_URL;
+exports.getList = async (req, res) => {
   try {
     let offsetdata = parseInt(
       req.query.offset
@@ -38,11 +38,11 @@ exports.getPrescription = async (req, res) => {
     throw error;
   }
 };
-exports.getPrescriptionByID = async (req, res) => {
+exports.getByID = async (req, res) => {
   try {
     let getData = [],
       results;
-    PrescriptionsModal = await Prescriptions.findOne({});
+    PrescriptionsModal = await Prescriptions.findOne({id: req.params.id});
     if (PrescriptionsModal === null) {
       res.json({ status: 0, message: "Not found"});
     } else {
