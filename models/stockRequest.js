@@ -9,7 +9,10 @@ const StockRequest = sequelize.define(
       primaryKey: true,
       autoIncrement: true,
     },
-
+    org_id: {
+      type: DataTypes.STRING(45),
+      allowNull: true,
+    },
     therapeuticClass: {
       type: DataTypes.STRING(45),
       allowNull: true,
@@ -64,12 +67,9 @@ const StockRequest = sequelize.define(
     },
 
     status: {
-      type: DataTypes.INTEGER, // 0 = requested, 1 = accepted, 2 = rejected
+      type: DataTypes.INTEGER, // 0 = requested, 1 = accepted, 2 = rejected,3=cancelled
       defaultValue: 0,
-      allowNull: false,
-      validate: {
-        isIn: [[0, 1, 2]],
-      },
+      allowNull: false
     },
 
     drugScope: {
