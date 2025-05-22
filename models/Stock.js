@@ -41,7 +41,8 @@ const Stock = sequelize.define(
       allowNull: false,
     },
      status: {
-      type: DataTypes.STRING,
+      type: DataTypes.INTEGER, // 0 = Ok, 1 = Low, 2 = Out
+      defaultValue: 0,
       allowNull: true,
     },
      added_by: {
