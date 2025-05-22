@@ -2,8 +2,7 @@ const express = require("express");
 const router = express.Router();
 const VerifyToken = require("./VerifyToken");
 const stockController = require("../controllers/stock.controller");
-// const { upload } = require("../controllers/stock.controller");
-// Import the upload middleware directly
+
 const multer = require("multer");
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
