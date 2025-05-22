@@ -53,6 +53,10 @@ const Stock = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
+    reason: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
   },
   {
     tableName: "stocks",

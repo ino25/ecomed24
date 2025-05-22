@@ -41,7 +41,7 @@ exports.getList = async (req, res) => {
           "updatedAt",
         ],
       ],
-      order: [["id", "ASC"]],
+      order: [["id", "DESC"]],
       limit: datalimit,
       offset: offsetdata,
     });
@@ -89,10 +89,10 @@ exports.add = async (req, res) => {
       sales_price,
       unit_price,
     });
-    res.status(201).json({ message: "Stock created successfully", data: newStock });
+    res.status(201).json({status:1, message: "Stock created successfully", data: newStock });
   } catch (error) {
     console.error("Error creating stock:", error);
-    res.status(500).json({ message: "Failed to create stock." });
+    res.status(500).json({status:0, message: "Failed to create stock." });
   }
 };
 
@@ -125,6 +125,7 @@ exports.getById = async (req, res) => {
         "sales_price",
         "unit_price",
         "status",
+       "reason",
         "added_by",
         "updated_by",
         [
@@ -159,6 +160,63 @@ exports.getById = async (req, res) => {
     });
   }
 };
+
+exports.adjustStock = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { adjustment_value, reason } = req.body;
+     const updated_by = req.user?.username;
+
+    if (!id || typeof adjustment_value !== 'number') {
+      return res.status(400).json({
+        status: 0,
+        message: "Stock ID and a valid numeric adjustment value are required.",
+      });
+    }
+
+    if (!reason || reason.trim() === "") {
+      return res.status(400).json({
+        status: 0,
+        message: "Adjustment reason is required.",
+      });
+    }
+
+    // Fetch stock by ID
+    const stock = await Stock.findByPk(id);
+    if (!stock) {
+      return res.status(404).json({
+        status: 0,
+        message: "Stock not found.",
+      });
+    }
+
+    // Perform the adjustment
+    stock.stock_level += adjustment_value;
+    stock.updated_by = updated_by || "system"; 
+    stock.reason = reason;
+    await stock.save();
+    res.status(200).json({
+      status: 1,
+      message: "Stock adjusted successfully.",
+      data: {
+        id: stock.id,
+        stock_level: stock.stock_level,
+        adjustment_value,
+        reason,
+        updated_by,
+      },
+    });
+  } catch (error) {
+    console.error("Error adjusting stock:", error);
+    res.status(500).json({
+      status: 0,
+      message: "Failed to adjust stock.",
+      error: error.message,
+    });
+  }
+};
+
+
 
 
 exports.bulkAdd = async (req, res) => {

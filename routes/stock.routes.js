@@ -12,6 +12,8 @@ router.get("/", VerifyToken, stockController.getList);
 router.post("/", VerifyToken, stockController.add);
 router.get('/by-id/:id', VerifyToken, stockController.getById);
 router.post("/bulk-add", VerifyToken, upload.single("file"), stockController.bulkAdd);
+router.patch("/adjust/:id", VerifyToken, stockController.adjustStock);
+
 
 
 
