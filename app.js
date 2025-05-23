@@ -93,7 +93,7 @@ const transactionScenarioRoutes = require("./routes/transactionScenario.routes")
 const paymentMethodRoutes = require("./routes/paymentMethod.routes");
 const drugRoutes = require("./routes/drug.routes");
 const productRoutes = require("./routes/product.routes");
-// const stockRoutes = require("./routes/stockManagement.routes");
+ const StockRoute = require("./routes/stock.routes");
 // const  RequestStock = require("./routes/requestStock.routes");
 const  StockRoutes = require("./routes/stock-request.routes");
 const prescriptionRoutes=require("./routes/prescription.routes");
@@ -147,7 +147,7 @@ app.use("/drugs", drugRoutes);
 app.use("/product", productRoutes);
 // app.use("/transactionHandler", transactionHandlerRoutes);
 app.use("/payment-methods", paymentMethodRoutes);
-// app.use("/stock", stockRoutes);
+app.use("/stock", StockRoute);
 // app.use("/stocks", RequestStock);
 app.use("/stock-request", StockRoutes);
 app.use("/prescriptions", prescriptionRoutes);
