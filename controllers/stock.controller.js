@@ -1,9 +1,7 @@
 const Stock = require("../models/Stock");
 const Drug = require("../models/Drug");
 const Sequelize = require("sequelize");
-const { status } = require("./stock-request.controller");
-const multer = require("multer");
-
+const xlsx = require("xlsx");
 
 exports.getList = async (req, res) => {
   try {
@@ -12,14 +10,14 @@ exports.getList = async (req, res) => {
 
     let datalimit = parseInt(req.query.limit ?? 5);
     datalimit = isNaN(datalimit) || datalimit <= 0 ? 5 : datalimit;
-   
+
     const stocksData = await Stock.findAll({
       include: [
         {
           model: Drug,
           as: "drug",
           attributes: ["id", "commercialName"],
-          required: true, 
+          required: true,
         },
       ],
       attributes: [
@@ -33,11 +31,19 @@ exports.getList = async (req, res) => {
         "added_by",
         "updated_by",
         [
-          Sequelize.fn("DATE_FORMAT", Sequelize.col("Stock.createdAt"), "%d/%m/%Y %H:%i"),
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("Stock.createdAt"),
+            "%d/%m/%Y %H:%i"
+          ),
           "createdAt",
         ],
         [
-          Sequelize.fn("DATE_FORMAT", Sequelize.col("Stock.updatedAt"), "%d/%m/%Y %H:%i"),
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("Stock.updatedAt"),
+            "%d/%m/%Y %H:%i"
+          ),
           "updatedAt",
         ],
       ],
@@ -45,16 +51,15 @@ exports.getList = async (req, res) => {
       limit: datalimit,
       offset: offsetdata,
     });
-    if(stocksData.length == 0) {
-      res.json({status: 0, message: "No stocks found."});
-    }
-    else{
-       res.json({
-      status: 1,
-      message: "Stocks retrieved successfully.",
-      data: stocksData,
-      total:stocksData.length,
-    });
+    if (stocksData.length == 0) {
+      res.json({ status: 0, message: "No stocks found." });
+    } else {
+      res.json({
+        status: 1,
+        message: "Stocks retrieved successfully.",
+        data: stocksData,
+        total: stocksData.length,
+      });
     }
   } catch (error) {
     console.error("Error fetching stocks:", error);
@@ -66,16 +71,19 @@ exports.getList = async (req, res) => {
   }
 };
 exports.add = async (req, res) => {
-  const {
-    drugId,
-    expiration_date,
-    stock_level,
-    sales_price,
-    unit_price,
-  } = req.body;
+  const { drugId, expiration_date, stock_level, sales_price, unit_price } =
+    req.body;
 
-  if (!drugId || !expiration_date || !stock_level || !sales_price || !unit_price) {
-    return res.status(400).json({ message: "All required fields must be provided." });
+  if (
+    !drugId ||
+    !expiration_date ||
+    !stock_level ||
+    !sales_price ||
+    !unit_price
+  ) {
+    return res
+      .status(400)
+      .json({ message: "All required fields must be provided." });
   }
 
   const batch_number = Math.floor(Date.now() / 1000).toString();
@@ -89,21 +97,27 @@ exports.add = async (req, res) => {
       sales_price,
       unit_price,
     });
-    res.status(201).json({status:1, message: "Stock created successfully", data: newStock });
+    res
+      .status(201)
+      .json({
+        status: 1,
+        message: "Stock created successfully",
+        data: newStock,
+      });
   } catch (error) {
     console.error("Error creating stock:", error);
-    res.status(500).json({status:0, message: "Failed to create stock." });
+    res.status(500).json({ status: 0, message: "Failed to create stock." });
   }
 };
 
 exports.getById = async (req, res) => {
   try {
     const stockId = req.params.id;
-    
+
     if (!stockId) {
       return res.status(400).json({
         status: 0,
-        message: "Stock ID is required."
+        message: "Stock ID is required.",
       });
     }
 
@@ -114,7 +128,7 @@ exports.getById = async (req, res) => {
           model: Drug,
           as: "drug",
           attributes: ["id", "commercialName"],
-          required: true, 
+          required: true,
         },
       ],
       attributes: [
@@ -125,30 +139,38 @@ exports.getById = async (req, res) => {
         "sales_price",
         "unit_price",
         "status",
-       "reason",
+        "reason",
         "added_by",
         "updated_by",
         [
-          Sequelize.fn("DATE_FORMAT", Sequelize.col("Stock.createdAt"), "%d/%m/%Y %H:%i"),
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("Stock.createdAt"),
+            "%d/%m/%Y %H:%i"
+          ),
           "createdAt",
         ],
         [
-          Sequelize.fn("DATE_FORMAT", Sequelize.col("Stock.updatedAt"), "%d/%m/%Y %H:%i"),
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("Stock.updatedAt"),
+            "%d/%m/%Y %H:%i"
+          ),
           "updatedAt",
         ],
       ],
     });
 
-   if(stockData === null) {
+    if (stockData === null) {
       return res.status(404).json({
         status: 0,
-        message: "Stock not found."
+        message: "Stock not found.",
       });
-    }else{
+    } else {
       res.json({
         status: 1,
         message: "Stock retrieved successfully.",
-        data: stockData
+        data: stockData,
       });
     }
   } catch (error) {
@@ -165,9 +187,9 @@ exports.adjustStock = async (req, res) => {
   try {
     const { id } = req.params;
     const { adjustment_value, reason } = req.body;
-     const updated_by = req.user?.username;
+    const updated_by = req.user?.username;
 
-    if (!id || typeof adjustment_value !== 'number') {
+    if (!id || typeof adjustment_value !== "number") {
       return res.status(400).json({
         status: 0,
         message: "Stock ID and a valid numeric adjustment value are required.",
@@ -180,8 +202,6 @@ exports.adjustStock = async (req, res) => {
         message: "Adjustment reason is required.",
       });
     }
-
-    // Fetch stock by ID
     const stock = await Stock.findByPk(id);
     if (!stock) {
       return res.status(404).json({
@@ -190,10 +210,9 @@ exports.adjustStock = async (req, res) => {
       });
     }
 
-    // Perform the adjustment
     stock.stock_level += adjustment_value;
-    stock.updated_by = updated_by || "system"; 
-    stock.reason = reason;
+    stock.updated_by = updated_by || "system";
+
     await stock.save();
     res.status(200).json({
       status: 1,
@@ -216,26 +235,18 @@ exports.adjustStock = async (req, res) => {
   }
 };
 
-
-
-
 exports.bulkAdd = async (req, res) => {
   try {
-    console.log("Request received for bulk add");
-    console.log("Files in request:", req.file ? "File present" : "No file present");
-    
     if (!req.file) {
-      console.log("Headers:", req.headers);
       return res.status(400).json({ message: "No file uploaded." });
     }
 
     console.log("File details:", {
       originalname: req.file.originalname,
       mimetype: req.file.mimetype,
-      size: req.file.size
+      size: req.file.size,
     });
 
-    // Read buffer into workbook
     const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
     const sheetName = workbook.SheetNames[0];
     const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
@@ -243,10 +254,6 @@ exports.bulkAdd = async (req, res) => {
     if (!sheetData.length) {
       return res.status(400).json({ message: "Uploaded sheet is empty." });
     }
-
-    console.log(`Processing ${sheetData.length} records from Excel file`);
-
-    // Optional: Validate each row here
     const formattedData = sheetData.map((row) => ({
       drugId: row.drugId,
       expiration_date: row.expiration_date,
@@ -259,6 +266,7 @@ exports.bulkAdd = async (req, res) => {
     const createdRecords = await Stock.bulkCreate(formattedData);
 
     return res.status(201).json({
+      status: 1,
       message: `${createdRecords.length} stocks created successfully.`,
       data: createdRecords,
     });
@@ -266,6 +274,7 @@ exports.bulkAdd = async (req, res) => {
     console.error("Bulk upload error:", error);
     console.error("Error stack:", error.stack);
     return res.status(500).json({
+      status: 0,
       message: "Failed to process bulk stock upload.",
       error: error.message,
     });
