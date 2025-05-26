@@ -2,6 +2,7 @@ const Stock = require("../models/Stock");
 const Drug = require("../models/Drug");
 const Sequelize = require("sequelize");
 const xlsx = require("xlsx");
+const path = require("path");
 
 exports.getList = async (req, res) => {
   try {
@@ -97,13 +98,11 @@ exports.add = async (req, res) => {
       sales_price,
       unit_price,
     });
-    res
-      .status(201)
-      .json({
-        status: 1,
-        message: "Stock created successfully",
-        data: newStock,
-      });
+    res.status(201).json({
+      status: 1,
+      message: "Stock created successfully",
+      data: newStock,
+    });
   } catch (error) {
     console.error("Error creating stock:", error);
     res.status(500).json({ status: 0, message: "Failed to create stock." });
@@ -278,5 +277,39 @@ exports.bulkAdd = async (req, res) => {
       message: "Failed to process bulk stock upload.",
       error: error.message,
     });
+  }
+};
+
+exports.downloadSheet = async (req, res) => {
+  try {
+    const headers = [
+      "drugId",
+      "commercialName",
+      "dci",
+      "presentation",
+      "galenicForm",
+      "batch_number",
+      "expiration_date",
+      "stock_level",
+      "sales_price",
+    ];
+
+    const worksheet = xlsx.utils.aoa_to_sheet([headers]);
+    const workbook = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(workbook, worksheet, "StockTemplate");
+    const buffer = xlsx.write(workbook, { type: "buffer", bookType: "xlsx" });
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=stock_template.xlsx"
+    );
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+
+    res.send(buffer);
+  } catch (err) {
+    console.error("Excel generation error:", err);
+    res.status(500).json({ message: "Excel generation failed" });
   }
 };
