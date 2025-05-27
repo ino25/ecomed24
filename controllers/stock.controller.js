@@ -1,8 +1,11 @@
 const Stock = require("../models/Stock");
 const Drug = require("../models/Drug");
+const StockLogs = require("../models/StockLogs");
 const Sequelize = require("sequelize");
 const xlsx = require("xlsx");
 const path = require("path");
+
+
 
 exports.getList = async (req, res) => {
   try {
@@ -191,55 +194,45 @@ exports.getById = async (req, res) => {
   }
 };
 
+
 exports.adjustStock = async (req, res) => {
   try {
-    const { id } = req.params;
+    const stockId = req.params.id; 
     const { adjustment_value, reason } = req.body;
-    const updated_by = req.user?.username;
 
-    if (!id || typeof adjustment_value !== "number") {
-      return res.status(400).json({
-        status: 0,
-        message: "Stock ID and a valid numeric adjustment value are required.",
-      });
-    }
-
-    if (!reason || reason.trim() === "") {
-      return res.status(400).json({
-        status: 0,
-        message: "Adjustment reason is required.",
-      });
-    }
-    const stock = await Stock.findByPk(id);
+    const stock = await Stock.findByPk(stockId);
     if (!stock) {
-      return res.status(404).json({
-        status: 0,
-        message: "Stock not found.",
+      return res.status(404).json({ message: "Stock not found" });
+    }
+
+    const previousLevel = stock.stock_level;
+
+    if (adjustment_value < 0 && Math.abs(adjustment_value) > previousLevel) {
+      return res.status(400).json({
+        message: `Cannot decrease stock by ${Math.abs(adjustment_value)}. Only ${previousLevel} in stock.`,
       });
     }
 
     stock.stock_level += adjustment_value;
-    stock.updated_by = updated_by || "system";
-
+    //stock.updated_by = updated_by || "system";
     await stock.save();
-    res.status(200).json({
-      status: 1,
-      message: "Stock adjusted successfully.",
-      data: {
-        id: stock.id,
-        stock_level: stock.stock_level,
-        adjustment_value,
-        reason,
-        updated_by,
-      },
+
+        const adjustment_type = adjustment_value >= 0 ? 1 : 0;
+
+    await StockLogs.create({
+      stockId: stock.id,
+      previous_stock_level: previousLevel,
+      adjustment_value: adjustment_value,
+      new_stock_level: stock.stock_level,
+      reason: reason,
+      adjustment_type: adjustment_type,
+      //adjusted_by: updated_by || "system",
     });
+
+    res.status(200).json({ message: "Stock adjusted successfully", stock });
   } catch (error) {
-    console.error("Error adjusting stock:", error);
-    res.status(500).json({
-      status: 0,
-      message: "Failed to adjust stock.",
-      error: error.message,
-    });
+    console.error("Stock adjustment error:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
