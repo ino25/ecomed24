@@ -12,7 +12,7 @@ exports.getList = async (req, res) => {
     let datalimit = parseInt(req.query.limit ?? 5);
     datalimit = isNaN(datalimit) || datalimit <= 0 ? 5 : datalimit;
 
-    const stocksData = await Stock.findAll({
+    const { count, rows } = await Stock.findAndCountAll({
       include: [
         {
           model: Drug,
@@ -59,14 +59,15 @@ exports.getList = async (req, res) => {
       limit: datalimit,
       offset: offsetdata,
     });
-    if (stocksData.length == 0) {
+
+    if (rows.length === 0) {
       res.json({ status: 0, message: "No stocks found." });
     } else {
       res.json({
         status: 1,
         message: "Stocks retrieved successfully.",
-        data: stocksData,
-        total: stocksData.length,
+        data: rows,
+        total: count,
       });
     }
   } catch (error) {
@@ -78,6 +79,7 @@ exports.getList = async (req, res) => {
     });
   }
 };
+
 exports.add = async (req, res) => {
   const { productId, expiration_date, stock_level, sales_price, unit_price } =
     req.body;
