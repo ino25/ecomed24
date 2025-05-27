@@ -10,7 +10,7 @@ const Stock = sequelize.define(
       primaryKey: true,
       autoIncrement: true,
     },
-    drugId: {
+    productId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
@@ -67,5 +67,5 @@ const Stock = sequelize.define(
 );
 
 // Association
-Stock.belongsTo(Drug, { foreignKey: 'drugId', as: 'drug' });
+Stock.belongsTo(Drug, { foreignKey: 'productId', as: 'product' });
 module.exports = Stock;
