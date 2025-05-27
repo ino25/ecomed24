@@ -1,11 +1,16 @@
-const Stock = require("../models/Stock");
+// const Stock = require("../models/Stock");
 const Drug = require("../models/Drug");
-const StockLogs = require("../models/StockLogs");
 const Sequelize = require("sequelize");
 const xlsx = require("xlsx");
 const path = require("path");
 
-
+var User = require("../models/User");
+var Stock = require("../models/Stock"); 
+var StockLogs = require("../models/StockLogs");
+Stock.belongsTo(User, { as: "addedby_details", foreignKey: "added_by" });
+Stock.belongsTo(User, { as: "updatedby_details", foreignKey: "updated_by" });
+StockLogs.belongsTo(User, { as: "addedby_details", foreignKey: "added_by" });
+StockLogs.belongsTo(User, { as: "updatedby_details", foreignKey: "updated_by" });
 
 exports.getList = async (req, res) => {
   try {
@@ -109,6 +114,7 @@ exports.add = async (req, res) => {
       stock_level,
       sales_price,
       unit_price,
+      added_by: req.userId,
     });
     res.status(201).json({
       status: 1,
@@ -214,7 +220,7 @@ exports.adjustStock = async (req, res) => {
     }
 
     stock.stock_level += adjustment_value;
-    //stock.updated_by = updated_by || "system";
+    stock.updated_by = req.userId
     await stock.save();
 
         const adjustment_type = adjustment_value >= 0 ? 1 : 0;
@@ -226,7 +232,7 @@ exports.adjustStock = async (req, res) => {
       new_stock_level: stock.stock_level,
       reason: reason,
       adjustment_type: adjustment_type,
-      //adjusted_by: updated_by || "system",
+      updated_by: req.userId
     });
 
     res.status(200).json({ message: "Stock adjusted successfully", stock });
@@ -362,6 +368,7 @@ exports.bulkAdd = async (req, res) => {
         unit_price: Number(row.unit_price),
         // batch_number: `BATCH-${Date.now()}-${row.productId}`,
         batch_number: Math.floor(Date.now() / 1000).toString(),
+         added_by: req.userId,
       });
     }
 
