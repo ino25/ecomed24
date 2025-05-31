@@ -4,74 +4,101 @@ const morgan = require("morgan");
 const helmet = require("helmet");
 const cors = require("cors");
 const i18n = require("i18n");
-const bodyParser = require("body-parser");
 const path = require("path");
-const cron = require("node-cron");
-require("dotenv/config");
-const sequelize = require("./config").sequelize;
-let options = {};
-let protocol;
+const fs = require("fs");
 const http = require("http");
 const https = require("https");
-const fs = require("fs");
+const cron = require("node-cron");
+require("dotenv/config");
+const { Server } = require("socket.io");
+
+const sequelize = require("./config").sequelize;
 const { emailSchedule } = require("./controllers/cron.controller");
 
 if (process.env.NODE_ENV === "production") {
   cron.schedule("*/5 * * * * *", emailSchedule);
 }
 
+const app = express();
+
+// 🔐 SSL
+let server;
 if (process.env.SSL === "enabled") {
-  protocol = https;
-  const sslkey = process.env.SSL_KEY;
-  const sslcert = process.env.SSL_CERT;
-  options = {
-    key: fs.readFileSync(sslkey, "utf8"),
-    cert: fs.readFileSync(sslcert, "utf8"),
+  const options = {
+    key: fs.readFileSync(process.env.SSL_KEY, "utf8"),
+    cert: fs.readFileSync(process.env.SSL_CERT, "utf8"),
   };
+  server = https.createServer(options, app);
 } else {
-  protocol = http;
-  options = {};
+  server = http.createServer(app);
 }
 
-// Sync models with the database
-// sequelize
-//   .sync()
-//   .then(() => {
-//     console.log("Database synced");
-//   })
-//   .catch((error) => {
-//     console.error("Error syncing database:", error);
-//   });
-
-let app = express();
-
-// Configure i18n
-i18n.configure({
-  locales: ["en", "fr", "es"], // Add more locales as needed
-  defaultLocale: "fr",
-  directory: __dirname + "/locales", // Folder where translation files are stored
-  objectNotation: true, // Use dot notation for nested keys
-  updateFiles: false, // Do not write to files
+// 🌐 Socket.IO
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
 });
 
-// Use i18n middleware
+io.on("connection", (socket) => {
+  console.log("✅ Utilisateur connecté :", socket.id);
+
+  socket.on("join_room", (room) => {
+    socket.join(room);
+    console.log(`📦 Rejoint la salle : ${room}`);
+  });
+
+  socket.on("request_access", ({ roomId }) => {
+    console.log(`🔒 Demande d'accès : ${roomId}`);
+    io.to(roomId).emit("access_request", { roomId }); // 🔁 corriger ici
+  });
+  
+  socket.on("access_response", ({ roomId, accepted }) => {
+    console.log(`🔓 Réponse du patient : ${accepted}`);
+    io.to(roomId).emit("access_response_result", {
+      granted: accepted,
+    });
+  });
+  
+
+  socket.on("disconnect", () => {
+    console.log("❌ Utilisateur déconnecté :", socket.id);
+  });
+});
+
+// 🌍 i18n
+i18n.configure({
+  locales: ["en", "fr", "es"],
+  defaultLocale: "fr",
+  directory: path.join(__dirname, "/locales"),
+  objectNotation: true,
+  updateFiles: false,
+});
 app.use(i18n.init);
-
-// Set the default locale for the app
-// app.locals.__ = res.__;
-
-// Set up a middleware to set the user's locale based on a fixed variable
 app.use((req, res, next) => {
-  const fixedLocale = "fr"; // Set the fixed language/locale here
-  req.setLocale(fixedLocale);
-  res.locals.currentLocale = fixedLocale;
+  req.setLocale("fr");
+  res.locals.currentLocale = "fr";
   next();
 });
 
-let server = protocol.Server(options, app);
+// 🛡️ Middlewares
+app.use(cors());
+app.use(morgan("dev"));
+app.use(helmet());
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "10mb", extended: false }));
+app.use(cookieParser());
 app.use("/uploads", express.static("uploads"));
 app.use("/uploads/invoicefile", express.static("uploads/invoicefile"));
 
+// 📦 Routes
+app.get("/", (req, res) => {
+  const welcomeMessage = res.__("index");
+  res.json(welcomeMessage);
+});
+
+// 👇 Toutes les routes importées
 const authRouter = require("./routes/auth.routes");
 const helperRouter = require("./routes/helper.routes");
 const labRoutes = require("./routes/lab.routes");
@@ -79,7 +106,7 @@ const patientsRoutes = require("./routes/patient.routes");
 const billingRoutes = require("./routes/billing.routes");
 const organizationRoutes = require("./routes/organization.routes");
 const rolesRoutes = require("./routes/role.routes");
-const permisssionRoutes = require("./routes/permission.routes");
+const permissionRoutes = require("./routes/permission.routes");
 const appointmentRoutes = require("./routes/appointment.routes");
 const slotRoutes = require("./routes/slots.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
@@ -88,48 +115,20 @@ const helpRoutes = require("./routes/helpTopic.routes");
 const moduleRoutes = require("./routes/module.routes");
 const OHADAAccountsRoutes = require("./routes/OHADAAccounts.routes");
 const OHADATransactionRoutes = require("./routes/OHADATransactions.routes");
-// const transactionHandlerRoutes = require("./routes/transactionHandler.routes");
 const transactionScenarioRoutes = require("./routes/transactionScenario.routes");
 const paymentMethodRoutes = require("./routes/paymentMethod.routes");
 const drugRoutes = require("./routes/drug.routes");
 const productRoutes = require("./routes/product.routes");
 
-if (app.get("env") === "production") {
-  app.use(morgan("combined"));
-} else {
-  app.use(morgan("dev"));
-}
-app.set("subdomain offset", 1);
-app.use(helmet());
-app.use(cors());
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ limit: "10mb", extended: false }));
-app.use(cookieParser());
-
-app.use(function (req, res, next) {
-  // Request methods you wish to allow
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET, POST, OPTIONS, PUT, PATCH, DELETE"
-  );
-  res.header("Access-Control-Allow-Origin", "*");
-  next();
-});
-
-app.get("/", (req, res) => {
-  const welcomeMessage = res.__("index");
-  // res.send(welcomeMessage);
-  res.json(welcomeMessage);
-});
+// 🧭 Utilisation des routes
 app.use("/auth", authRouter);
-// app.use('/user', usersRouter);
 app.use("/helper", helperRouter);
 app.use("/patient", patientsRoutes);
 app.use("/acts", labRoutes);
 app.use("/billing", billingRoutes);
 app.use("/organization", organizationRoutes);
 app.use("/roles", rolesRoutes);
-app.use("/permissions", permisssionRoutes);
+app.use("/permissions", permissionRoutes);
 app.use("/appointment", appointmentRoutes);
 app.use("/slot", slotRoutes);
 app.use("/dashboard", dashboardRoutes);
@@ -139,15 +138,14 @@ app.use("/modules", moduleRoutes);
 app.use("/accounts", OHADAAccountsRoutes);
 app.use("/transactions", OHADATransactionRoutes);
 app.use("/scenarios", transactionScenarioRoutes);
+app.use("/payment-methods", paymentMethodRoutes);
 app.use("/drugs", drugRoutes);
 app.use("/product", productRoutes);
-// app.use("/transactionHandler", transactionHandlerRoutes);
-app.use("/payment-methods", paymentMethodRoutes);
 
-// Start server
+// 🚀 Démarrage
 const PORT = process.env.PORT || 7001;
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Serveur API + Socket.IO lancé sur http://localhost:${PORT}`);
 });
 
-module.exports = { app: app, server: server };
+module.exports = { app, server };
