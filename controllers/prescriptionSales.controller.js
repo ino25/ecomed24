@@ -2,7 +2,6 @@ const PrescriptionSaleItem = require("../models/prescriptionSaleItems");
 const Prescriptions = require("../models/Prescriptions");
 var PrescriptionSale = require("../models/prescriptionSales");
 var User = require("../models/User");
-
 PrescriptionSale.belongsTo(User, { as: "addedby_details", foreignKey: "added_by" });
 PrescriptionSale.belongsTo(User, { as: "updatedby_details", foreignKey: "updated_by" });
 
@@ -25,7 +24,6 @@ exports.AddPrescriptionSale = async (req, res) => {
       });
     }
 
-    // Verify prescription exists
     const prescription = await Prescriptions.findByPk(prescription_id);
     if (!prescription) {
       return res.json({
@@ -33,8 +31,6 @@ exports.AddPrescriptionSale = async (req, res) => {
         message: "Prescription not found"
       });
     }
-
-    // Calculate total from items to verify
     const calculatedTotal = items.reduce((sum, item) => {
       return sum + (item.price * item.quantity);
     }, 0);
@@ -54,7 +50,7 @@ exports.AddPrescriptionSale = async (req, res) => {
       phone: prescription.phone || null,
       total: total,
       payment_method: payment_method,
-      type: 0, // Based on your model, this should be a string
+      type: 0, 
       status: 1,
       added_by:req.userId,
     };
@@ -63,18 +59,16 @@ exports.AddPrescriptionSale = async (req, res) => {
 
     // Create sales items
     const salesItems = items.map(item => ({
-      prescription_sale_id: createdSale.id, // Changed from sale_id to prescription_sale_id
-      product_id: item.product_id, // Changed from name to product_id
+      prescription_sale_id: createdSale.id,
+      product_id: item.product_id, 
       price: item.price,
       quantity: item.quantity,
       subtotal: item.subtotal,
-      status: 1, // Added required status field
-     added_by:req.userId,
+      status: 1,
+      added_by:req.userId,
     }));
 
     await PrescriptionSaleItem.bulkCreate(salesItems, { transaction });
-
-    // Update prescription status to dispensed
     await Prescriptions.update(
       { 
         status: 2, // 2 = dispensed
@@ -121,7 +115,7 @@ exports.getSaleById = async (req, res) => {
       include: [
         {
           model: PrescriptionSaleItem,
-          as: 'items' // You may need to define this association in your models
+          as: 'items' 
         }
       ]
     });
