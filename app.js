@@ -119,8 +119,38 @@ const transactionScenarioRoutes = require("./routes/transactionScenario.routes")
 const paymentMethodRoutes = require("./routes/paymentMethod.routes");
 const drugRoutes = require("./routes/drug.routes");
 const productRoutes = require("./routes/product.routes");
+ const StockRoute = require("./routes/stock.routes");
+// const  RequestStock = require("./routes/requestStock.routes");
+const  StockRoutes = require("./routes/stock-request.routes");
+const prescriptionRoutes=require("./routes/prescription.routes");
 
-// 🧭 Utilisation des routes
+if (app.get("env") === "production") {
+  app.use(morgan("combined"));
+} else {
+  app.use(morgan("dev"));
+}
+app.set("subdomain offset", 1);
+app.use(helmet());
+app.use(cors());
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "10mb", extended: false }));
+app.use(cookieParser());
+
+app.use(function (req, res, next) {
+  // Request methods you wish to allow
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, OPTIONS, PUT, PATCH, DELETE"
+  );
+  res.header("Access-Control-Allow-Origin", "*");
+  next();
+});
+
+app.get("/", (req, res) => {
+  const welcomeMessage = res.__("index");
+  // res.send(welcomeMessage);
+  res.json(welcomeMessage);
+});
 app.use("/auth", authRouter);
 app.use("/helper", helperRouter);
 app.use("/patient", patientsRoutes);
@@ -141,9 +171,15 @@ app.use("/scenarios", transactionScenarioRoutes);
 app.use("/payment-methods", paymentMethodRoutes);
 app.use("/drugs", drugRoutes);
 app.use("/product", productRoutes);
+// app.use("/transactionHandler", transactionHandlerRoutes);
+app.use("/payment-methods", paymentMethodRoutes);
+app.use("/stock", StockRoute);
+// app.use("/stocks", RequestStock);
+app.use("/stock-request", StockRoutes);
+app.use("/prescriptions", prescriptionRoutes);
 
-// 🚀 Démarrage
-const PORT = process.env.PORT || 7001;
+// Start server
+const PORT = process.env.PORT || 2001;
 server.listen(PORT, () => {
   console.log(`🚀 Serveur API + Socket.IO lancé sur http://localhost:${PORT}`);
 });

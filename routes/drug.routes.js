@@ -27,4 +27,5 @@ router.put("/:id/updateInfo", updateDrugInfo);
 router.post("/request", requestDrugListing);
 router.post("/check-and-fetch-info", checkAndFetchDrugInfo);
 
+
 module.exports = router;
