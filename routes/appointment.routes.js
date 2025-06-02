@@ -11,5 +11,6 @@ router.post("/update/:appointment_id", VerifyToken, appointmentController.update
 router.put("/reschedule/:appointment_id", VerifyToken, appointmentController.reschedule);
 router.delete("/delete/:appointment_id", VerifyToken, appointmentController.delete);
 router.patch("/status/:appointment_id", VerifyToken, appointmentController.status);
+router.post("/time-slots", VerifyToken, appointmentController.timeSlotAppontment);
 router.post("/teleconference", appointmentController.createTeleconferenceLink);
 module.exports = router;
