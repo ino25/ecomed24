@@ -14,6 +14,8 @@ const { Server } = require("socket.io");
 
 const sequelize = require("./config").sequelize;
 const { emailSchedule } = require("./controllers/cron.controller");
+const depenseTypeRoutes = require('./routes/depenseType.routes');
+
 
 if (process.env.NODE_ENV === "production") {
   cron.schedule("*/5 * * * * *", emailSchedule);
@@ -179,6 +181,10 @@ app.use("/stock", StockRoute);
 app.use("/stock-request", StockRoutes);
 app.use("/prescriptions", prescriptionRoutes);
 app.use("/prescription-sales", PrescriptionSalesRoutes);
+
+
+app.use('/api/depense-types', require('./routes/depenseType.routes'));
+
 
 
 // Start server
