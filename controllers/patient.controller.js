@@ -1066,7 +1066,7 @@ exports.addAppontment = async (req, res) => {
   try {
     PatientModal = await Patient.findOne({ where: { id: req.body.uniqueID } });
     let room_id =
-      "teleconsulation_ecomed24-" +
+      "teleconsultation_ecomed24-" +
       PatientModal.phone +
       "-" +
       Math.floor(Math.random() * 444444 + 1000000);
