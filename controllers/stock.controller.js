@@ -242,6 +242,182 @@ exports.adjustStock = async (req, res) => {
   }
 };
 
+exports.getStockAdjustments = async (req, res) => {
+  try {
+    let offsetdata = parseInt(req.query.offset ?? 0);
+    offsetdata = isNaN(offsetdata) || offsetdata < 0 ? 0 : offsetdata;
+
+    let datalimit = parseInt(req.query.limit ?? 10);
+    datalimit = isNaN(datalimit) || datalimit <= 0 ? 10 : datalimit;
+
+    const stockId = req.query.stockId;
+    const adjustmentType = req.query.adjustmentType;
+    const startDate = req.query.startDate;
+    const endDate = req.query.endDate;
+
+    // Build where conditions
+    let whereConditions = {};
+    
+    if (stockId) {
+      whereConditions.stockId = stockId;
+    }
+    
+    if (adjustmentType !== undefined && adjustmentType !== '') {
+      whereConditions.adjustment_type = parseInt(adjustmentType);
+    }
+
+    if (startDate && endDate) {
+      whereConditions.createdAt = {
+        [Sequelize.Op.between]: [startDate, endDate]
+      };
+    } else if (startDate) {
+      whereConditions.createdAt = {
+        [Sequelize.Op.gte]: startDate
+      };
+    } else if (endDate) {
+      whereConditions.createdAt = {
+        [Sequelize.Op.lte]: endDate
+      };
+    }
+
+    const { count, rows } = await StockLogs.findAndCountAll({
+      where: whereConditions,
+      include: [
+        {
+          model: User,
+          as: "updatedby_details",
+          attributes: ["id", "username", "email"],
+          required: false,
+        },
+      ],
+      attributes: [
+        "id",
+        "stockId",
+        "previous_stock_level",
+        "adjustment_value",
+        "new_stock_level",
+        "reason",
+        "adjustment_type",
+        "updated_by",
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("StockLogs.createdAt"),
+            "%d/%m/%Y %H:%i"
+          ),
+          "createdAt",
+        ],
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("StockLogs.updatedAt"),
+            "%d/%m/%Y %H:%i"
+          ),
+          "updatedAt",
+        ],
+      ],
+      order: [["id", "DESC"]],
+      limit: datalimit,
+      offset: offsetdata,
+    });
+
+    if (rows.length === 0) {
+      res.json({ 
+        status: 0, 
+        message: "No stock adjustments found." 
+      });
+    } else {
+      res.json({
+        status: 1,
+        message: "Stock adjustments retrieved successfully.",
+        data: rows,
+        total: count,
+      });
+    }
+  } catch (error) {
+    console.error("Error fetching stock adjustments:", error);
+    return res.status(500).json({
+      status: 0,
+      message: "Failed to retrieve stock adjustments.",
+      error: error.message,
+    });
+  }
+};
+
+exports.getStockAdjustmentsByStockId = async (req, res) => {
+  try {
+    const stockId = req.params.stockId;
+
+    if (!stockId) {
+      return res.status(400).json({
+        status: 0,
+        message: "Stock ID is required.",
+      });
+    }
+
+    let offsetdata = parseInt(req.query.offset ?? 0);
+    offsetdata = isNaN(offsetdata) || offsetdata < 0 ? 0 : offsetdata;
+
+    let datalimit = parseInt(req.query.limit ?? 10);
+    datalimit = isNaN(datalimit) || datalimit <= 0 ? 10 : datalimit;
+
+    const { count, rows } = await StockLogs.findAndCountAll({
+      where: { stockId: stockId },
+      include: [
+        {
+          model: User,
+          as: "updatedby_details",
+          attributes: ["id", "username", "email"],
+          required: false,
+        },
+      ],
+      attributes: [
+        "id",
+        "stockId",
+        "previous_stock_level",
+        "adjustment_value",
+        "new_stock_level",
+        "reason",
+        "adjustment_type",
+        "updated_by",
+        [
+          Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.col("StockLogs.createdAt"),
+            "%d/%m/%Y %H:%i"
+          ),
+          "createdAt",
+        ],
+      ],
+      order: [["id", "DESC"]],
+      limit: datalimit,
+      offset: offsetdata,
+    });
+
+    if (rows.length === 0) {
+      res.json({ 
+        status: 0, 
+        message: `No stock adjustments found for stock ID ${stockId}.` 
+      });
+    } else {
+      res.json({
+        status: 1,
+        message: "Stock adjustments retrieved successfully.",
+        data: rows,
+        total: count,
+      });
+    }
+  } catch (error) {
+    console.error("Error fetching stock adjustments by stock ID:", error);
+    return res.status(500).json({
+      status: 0,
+      message: "Failed to retrieve stock adjustments.",
+      error: error.message,
+    });
+  }
+};
+
+
 function parseExcelDate(value) {
   if (typeof value === "string" && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
     return value;

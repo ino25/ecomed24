@@ -123,6 +123,7 @@ const productRoutes = require("./routes/product.routes");
 // const  RequestStock = require("./routes/requestStock.routes");
 const  StockRoutes = require("./routes/stock-request.routes");
 const prescriptionRoutes=require("./routes/prescription.routes");
+const PrescriptionSalesRoutes = require("./routes/prescription-sales.routes");
 
 if (app.get("env") === "production") {
   app.use(morgan("combined"));
@@ -177,6 +178,8 @@ app.use("/stock", StockRoute);
 // app.use("/stocks", RequestStock);
 app.use("/stock-request", StockRoutes);
 app.use("/prescriptions", prescriptionRoutes);
+app.use("/prescription-sales", PrescriptionSalesRoutes);
+
 
 // Start server
 const PORT = process.env.PORT || 2001;
