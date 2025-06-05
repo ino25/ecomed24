@@ -2,6 +2,7 @@ const PrescriptionSaleItem = require("../models/prescriptionSaleItems");
 const Prescriptions = require("../models/Prescriptions");
 var PrescriptionSale = require("../models/prescriptionSales");
 var User = require("../models/User");
+
 PrescriptionSale.belongsTo(User, { as: "addedby_details", foreignKey: "added_by" });
 PrescriptionSale.belongsTo(User, { as: "updatedby_details", foreignKey: "updated_by" });
 
@@ -11,26 +12,36 @@ exports.AddPrescriptionSale = async (req, res) => {
   try {
     const {
       prescription_id,
+      patient_id,
       total,
+      name,
+      phone,
       payment_method,
+      type,
       added_by,
       items // Array of items with product_id, price, quantity, subtotal
     } = req.body;
 
-    if (!prescription_id || !total || !payment_method || !items || items.length === 0) {
+    // Updated validation - prescription_id is now optional
+    if (!total || !payment_method || !items || items.length === 0) {
       return res.json({
         status: 0,
-        message: "Missing required fields: prescription_id, total, payment_method, and items are required"
+        message: "Missing required fields: total, payment_method, and items are required"
       });
     }
 
-    const prescription = await Prescriptions.findByPk(prescription_id);
-    if (!prescription) {
-      return res.json({
-        status: 0,
-        message: "Prescription not found"
-      });
+    // Only validate prescription if prescription_id is provided
+    if (prescription_id) {
+      const prescription = await Prescriptions.findByPk(prescription_id);
+      if (!prescription) {
+        return res.json({
+          status: 0,
+          message: "Prescription not found"
+        });
+      }
     }
+
+    // Calculate total from items
     const calculatedTotal = items.reduce((sum, item) => {
       return sum + (item.price * item.quantity);
     }, 0);
@@ -44,15 +55,15 @@ exports.AddPrescriptionSale = async (req, res) => {
 
     // Create main sales record
     const saleData = {
-      prescription_id: prescription_id,
-      patient_id: prescription.patient_id || null,
-      name: prescription.patient_name,
-      phone: prescription.phone || null,
+      prescription_id: prescription_id || null, 
+      patient_id: patient_id || null,
+      name: name || null,
+      phone: phone || null,
       total: total,
       payment_method: payment_method,
-      type: 0, 
+      type: type,
       status: 1,
-      added_by:req.userId,
+      added_by: req.userId,
     };
 
     const createdSale = await PrescriptionSale.create(saleData, { transaction });
@@ -63,37 +74,45 @@ exports.AddPrescriptionSale = async (req, res) => {
       product_id: item.product_id, 
       price: item.price,
       quantity: item.quantity,
-      subtotal: item.subtotal,
+      subtotal: item.subtotal || (item.price * item.quantity), // Calculate subtotal if not provided
       status: 1,
-      added_by:req.userId,
+      added_by: req.userId,
     }));
 
     await PrescriptionSaleItem.bulkCreate(salesItems, { transaction });
-    await Prescriptions.update(
-      { 
-        status: 2, // 2 = dispensed
-        updated_by: added_by || null
-      },
-      { 
-        where: { id: prescription_id },
-        transaction 
-      }
-    );
+
+    // Only update prescription status if prescription_id exists
+    if (prescription_id) {
+      await Prescriptions.update(
+        { 
+          status: 2, // 2 = dispensed
+          updated_by: req.userId
+        },
+        { 
+          where: { id: prescription_id },
+          transaction 
+        }
+      );
+    }
 
     await transaction.commit();
 
     res.json({
       status: 1,
       message: "Sale created successfully",
-      data:salesItems,
-      // data: {
-      //   sale_id: createdSale.id,
-      //   prescription_id: prescription_id,
-      //   total: total,
-      //   payment_method: payment_method,
-      //   items_count: items.length,
-      //   created_at: createdSale.createdAt
-      // }
+      data: {
+        sale_id: createdSale.id,
+        prescription_id: prescription_id || null,
+        patient_id:patient_id ||null,
+        name:name,
+        phone:phone,
+        total: total,
+        payment_method: payment_method,
+        type: saleData.type,
+        items_count: items.length,
+        created_at: createdSale.createdAt,
+        items: salesItems
+      }
     });
 
   } catch (error) {
@@ -166,12 +185,12 @@ exports.getSalesList = async (req, res) => {
       include: [
         {
           model: PrescriptionSaleItem,
-          as: 'items' // You may need to define this association in your models
+          as: 'items' 
         }
       ],
       limit: datalimit,
       offset: offsetdata,
-      order: [['createdAt', 'DESC']] // Changed from created_at since timestamps are enabled
+      order: [['createdAt', 'DESC']] 
     });
 
     res.json({

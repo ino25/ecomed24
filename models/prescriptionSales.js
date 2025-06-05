@@ -10,7 +10,7 @@ const PrescriptionSale = sequelize.define('PrescriptionSale', {
   },
   prescription_id: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true,
     references: {
       model: Prescriptions,
       key: "id",
@@ -24,15 +24,15 @@ const PrescriptionSale = sequelize.define('PrescriptionSale', {
   },
   name: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   phone: {
-    type: DataTypes.STRING, // Changed from INTEGER to STRING for phone numbers
+    type: DataTypes.STRING, 
     allowNull: true
   },
   total: {
     type: DataTypes.FLOAT,
-    allowNull: false
+    allowNull: true
   },
   payment_method: {
     type: DataTypes.STRING,
@@ -41,12 +41,12 @@ const PrescriptionSale = sequelize.define('PrescriptionSale', {
   },
   type: {
     type: DataTypes.STRING,
-    allowNull: false,
-    defaultValue: 'walk-in' // Changed from DataTypes.NOW to a proper string default
+    allowNull: true,
+    defaultValue: 0
   },
   status: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true,
     defaultValue: 1
   },
   added_by: {
@@ -60,7 +60,6 @@ const PrescriptionSale = sequelize.define('PrescriptionSale', {
 }, {
   tableName: 'prescription_sales',
   timestamps: true, // adds createdAt and updatedAt 
-   // paranoid: true,
 });
 
 module.exports = PrescriptionSale;
