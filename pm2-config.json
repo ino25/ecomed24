@@ -29,6 +29,8 @@
                 "MUSER": "AKIA3YNYOJUCTQI3WO5Z",
                 "MPASS": "BB7J5UtFSNzFyBJ5UwbloWNXadXn3uDAdkUJx38+UCUQ",
                 "MPORT": "587",
+                "DAILY_API_KEY":"a17125540ee4fb6833f6b8856dafdfa98501ec38043984da3c52fd7885a95927",
+                "URL_DAILY":"https://ecomed24.daily.co/appointment-test1",
                 "SSL": "enabled",
                 "SSL_KEY": "/etc/letsencrypt/live/devapp.ecomed24.com/privkey.pem",
                 "SSL_CERT": "/etc/letsencrypt/live/devapp.ecomed24.com/cert.pem"
@@ -55,6 +57,8 @@
                 "MUSER": "AKIA3YNYOJUCTQI3WO5Z",
                 "MPASS": "BB7J5UtFSNzFyBJ5UwbloWNXadXn3uDAdkUJx38+UCUQ",
                 "MPORT": "587",
+                "DAILY_API_KEY":"a17125540ee4fb6833f6b8856dafdfa98501ec38043984da3c52fd7885a95927",
+                "URL_DAILY":"https://ecomed24.daily.co/appointment-test1",
                 "SSL": "enabled",
                 "SSL_KEY": "/etc/letsencrypt/live/app.ecomed24.com/privkey.pem",
                 "SSL_CERT": "/etc/letsencrypt/live/app.ecomed24.com/cert.pem"
