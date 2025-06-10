@@ -359,15 +359,16 @@ exports.add = async (req, res) => {
       where: { id: req.body.uniqueID },
     });
 
-    const room_id = `teleconsultation_ecomed24-${
-      PatientModal.phone
-    }-${Math.floor(Math.random() * 444444 + 1000000)}`;
+   // const room_id = `teleconsultation_ecomed24-${
+   //   PatientModal.phone
+   // }-${Math.floor(Math.random() * 444444 + 1000000)}`;
 
     // ✅ On crée la room via l'API Daily.co
-    await createRoom(room_id);
+   // await createRoom(room_id);
 
-    const live_meeting_link = `${process.env.URL_DAILY}=${room_id}`;
-
+   // const live_meeting_link = `${process.env.URL_DAILY}=${room_id}`;
+    const room_id = `appointment-test1`;
+    const live_meeting_link = `${process.env.URL_DAILY}`
     const AppointmentModal = await Appointment.create({
       patient: req.body.uniqueID,
       code: req.body.code,
