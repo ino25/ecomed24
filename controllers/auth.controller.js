@@ -18,6 +18,7 @@ const i18n = require("i18n");
 const langAuth = i18n.__("auth");
 const langCommon = i18n.__("common");
 const { replaceShortcodes } = require("../helpers/ShortcodesHelper");
+const bcrypt = require("bcryptjs");
 //////Modal Relationship
 
 exports.Login = async (req, res) => {
@@ -109,66 +110,55 @@ exports.Login = async (req, res) => {
 
 exports.LoginWithOtp = async (req, res) => {
   try {
-    if (!req.body.email) {
-      return res.json({
-        status: 0,
-        message: langAuth.badrequest,
-      });
-    }
-    var otp = Math.floor(100000 + Math.random() * 900000);
-    console.log(otp);
-    console.log("otp");
-    // var otp = "123456";
-    // let hash = crypto.createHash("md5").update(otp).digest("hex");
-    const userModal = await User.findOne({
-      where: { email: req.body.email.trim() },
-    });
-    if (userModal === null) {
-      res.json({ status: 0, message: langAuth.login.usernotexist });
-    } else {
-      //OTP Integration Here
-      //   GeneratedOtp;
-      let phone = userModal.phone;
-      let email = userModal.email;
-      let UserID = userModal.id;
+    const { email, password } = req.body;
 
-      let otpMessage = langAuth.login.optsent;
-      otpMessage = otpMessage.replace("{phone}", phone);
-      otpMessage = otpMessage.replace("{email}", email);
-      // otpMessage = otpMessage.replace("{otp}", email);
-      GeneratedOtpModal = await GeneratedOtp.create({
-        mobile_number: phone,
-        email: email,
-        otp: otp,
-        date_created: moment().unix(),
-        is_valid: 0,
-        user_id: UserID,
-      });
-      //   SmsModal = await Sms.create({
-      //     is_sent: 0,
-      //     date: moment().unix(),
-      //     message: otpMessage,
-      //     recipient: phone,
-      //     is_corrected: 1,
-      //     corrected_number: phone,
-      //     user: userModal.id,
-      //   });
-      EmailModal = await Email.create({
-        is_sent: null,
-        subject: "Code de vérification ecoMed24",
-        date: moment().format("YYYY-MM-DD HH:mm:ss"),
-        message: `Votre code de vérification valide pour 15 minutes: ${otp}. Merci d'utiliser ecoMed24!`,
-        reciepient: email,
-        attachment_path: "",
-        user: userModal.id,
-      });
-      console.log(otpMessage);
-      // if user is found and valid create a Update OTP in db
-      await User.update({ otp_validated: 0 }, { where: { id: userModal.id } });
-      res.json({ status: 1, message: otpMessage });
+    console.log("🔐 Login with OTP request:", req.body);
+
+    if (!email || !password) {
+      return res.json({ status: 0, message: "Email et mot de passe requis" });
     }
-  } catch (error) {
-    throw error;
+
+    const user = await User.findOne({ where: { email: email.trim() } });
+
+    if (!user) {
+      return res.json({ status: 0, message: "Utilisateur non trouvé" });
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      return res.json({ status: 0, message: "Mot de passe incorrect" });
+    }
+
+    // Générer OTP
+    const otp = Math.floor(100000 + Math.random() * 900000);
+    console.log("🔐 OTP:", otp);
+
+    await GeneratedOtp.create({
+      mobile_number: user.phone,
+      email: user.email,
+      otp,
+      date_created: moment().unix(),
+      is_valid: 0,
+      user_id: user.id,
+    });
+
+    // Envoyer email
+    await Email.create({
+      is_sent: null,
+      subject: "Code de vérification ecoMed24",
+      date: moment().format("YYYY-MM-DD HH:mm:ss"),
+      message: `Votre code OTP : ${otp} (valide 15 minutes).`,
+      reciepient: user.email,
+      attachment_path: "",
+      user: user.id,
+    });
+
+    await User.update({ otp_validated: 0 }, { where: { id: user.id } });
+
+    return res.json({ status: 1, message: "OTP envoyé", user_id: user.id });
+  } catch (err) {
+    console.error("❌ Login error:", err);
+    return res.status(500).json({ status: 0, message: "Erreur serveur" });
   }
 };
 

@@ -14,8 +14,7 @@ const { Server } = require("socket.io");
 
 const sequelize = require("./config").sequelize;
 const { emailSchedule } = require("./controllers/cron.controller");
-const depenseTypeRoutes = require('./routes/depenseType.routes');
-
+const depenseTypeRoutes = require("./routes/depenseType.routes");
 
 if (process.env.NODE_ENV === "production") {
   cron.schedule("*/5 * * * * *", emailSchedule);
@@ -55,14 +54,13 @@ io.on("connection", (socket) => {
     console.log(`🔒 Demande d'accès : ${roomId}`);
     io.to(roomId).emit("access_request", { roomId }); // 🔁 corriger ici
   });
-  
+
   socket.on("access_response", ({ roomId, accepted }) => {
     console.log(`🔓 Réponse du patient : ${accepted}`);
     io.to(roomId).emit("access_response_result", {
       granted: accepted,
     });
   });
-  
 
   socket.on("disconnect", () => {
     console.log("❌ Utilisateur déconnecté :", socket.id);
@@ -121,10 +119,10 @@ const transactionScenarioRoutes = require("./routes/transactionScenario.routes")
 const paymentMethodRoutes = require("./routes/paymentMethod.routes");
 const drugRoutes = require("./routes/drug.routes");
 const productRoutes = require("./routes/product.routes");
- const StockRoute = require("./routes/stock.routes");
+const StockRoute = require("./routes/stock.routes");
 // const  RequestStock = require("./routes/requestStock.routes");
-const  StockRoutes = require("./routes/stock-request.routes");
-const prescriptionRoutes=require("./routes/prescription.routes");
+const StockRoutes = require("./routes/stock-request.routes");
+const prescriptionRoutes = require("./routes/prescription.routes");
 const PrescriptionSalesRoutes = require("./routes/prescription-sales.routes");
 
 if (app.get("env") === "production") {
@@ -182,14 +180,12 @@ app.use("/stock-request", StockRoutes);
 app.use("/prescriptions", prescriptionRoutes);
 app.use("/prescription-sales", PrescriptionSalesRoutes);
 
-
-app.use('/api/depense-types', require('./routes/depenseType.routes'));
-
-
+app.use("/api/depense-types", require("./routes/depenseType.routes"));
 
 // Start server
 const PORT = process.env.PORT || 2001;
 server.listen(PORT, () => {
+  console.log(`🚀 Server is running on http://localhost:${PORT}`);
   console.log(`🚀 Serveur API + Socket.IO lancé sur http://localhost:${PORT}`);
 });
 
