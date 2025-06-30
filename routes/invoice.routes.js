@@ -10,5 +10,9 @@ router.get('/list-invoices/by-origine/:id_organisation', invoice.getInvoicesByOr
 router.get('/partners-by-origine/:id', invoice.getPartnersByOrigine);
 router.post('/create-generated-invoice', VerifyToken, invoice.createGeneratedInvoice);
 router.post('/create-generated-invoice-item', VerifyToken, invoice.createGeneratedInvoiceItem);
+router.get('/invoice-items-details/:organisation_origine/:organisation_destinataire', invoice.getInvoiceItemsDetailsByOrigine);
+router.get('/generate-numero', invoice.generateNumero);
+router.post('/preview-pdf', invoice.previewInvoicePDF);
+
 
 module.exports = router;

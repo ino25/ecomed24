@@ -4,6 +4,9 @@ const moment = require("moment");
 // const { jsPDF } = require('jspdf'); // PDF: décommente si tu utilises jsPDF
 const Mailer = require('../helpers/Mailer'); // Assure-toi que ce helper est bien créé
 // const generateInvoicePDF = require('../helpers/pdfHelper'); // PDF: décommente si tu utilises la génération PDF
+const { sequelize } = require('../config');
+const PDFDocument = require('pdfkit');
+
 
 
 var Invoice = require("../models/Invoice");
@@ -44,13 +47,18 @@ Invoice.belongsTo(Organisation, {
 
 
 // 📌 Génération automatique de numéro unique (FAC-YYYY-XXXX)
-const generateNumero = async () => {
-  const lastInvoice = await Invoice.findOne({
-    order: [["id", "DESC"]],
-  });
-
-  const nextId = lastInvoice ? lastInvoice.id + 1 : 1;
-  return `FAC-${new Date().getFullYear()}-${String(nextId).padStart(4, "0")}`;
+exports.generateNumero = async (req, res) => {
+  try {
+    const lastInvoice = await Invoice.findOne({
+      order: [["id", "DESC"]],
+    });
+    const nextId = lastInvoice ? lastInvoice.id + 1 : 1;
+    const numero = `FAC-${new Date().getFullYear()}-${String(nextId).padStart(4, "0")}`;
+    res.json({ success: true, numero });
+  } catch (error) {
+    console.error("Erreur lors de la génération du numéro de facture :", error);
+    res.status(500).json({ success: false, message: "Erreur serveur." });
+  }
 };
 
 // ✅ Créer une facture
@@ -175,22 +183,21 @@ exports.getPartnersByOrigine = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const partners = await Organisation.findAll({
-      include: [{
-        model: Invoice,
-        as: 'factures_reçues',
-        where: {
-          id_organisation_origine: id
-        },
-        attributes: [] // On ne veut pas les champs de la facture, juste filtrer
-      }],
-      attributes: ['id', 'nom'],
-      group: ['Organisation.id', 'Organisation.nom']
+    // On récupère les bénéficiaires distincts (id organisation) pour lesquels il existe au moins un item de facture créé par l'organisation d'origine
+    const partners = await InvoiceItem.findAll({
+      where: { organisation_origine: id },
+      attributes: [
+        [Sequelize.col('organisation_destinataire'), 'id'],
+        [Sequelize.literal('(SELECT nom FROM Organisation WHERE Organisation.id = InvoiceItem.organisation_destinataire)'), 'nom'],
+        [Sequelize.col('type'), 'type']
+      ],
+      group: ['organisation_destinataire', 'type'],
+      raw: true
     });
 
     res.json({ success: true, data: partners });
   } catch (error) {
-    console.error('Erreur récupération partenaires :', error);
+    console.error('Erreur récupération bénéficiaires :', error);
     res.status(500).json({ success: false, message: 'Erreur serveur.' });
   }
 };
@@ -330,5 +337,78 @@ exports.createGeneratedInvoiceItem = async (req, res) => {
   } catch (error) {
     console.error("Erreur lors de la création du generated_invoice_item :", error);
     res.status(500).json({ success: false, message: "Erreur serveur lors de la création du generated_invoice_item." });
+  }
+};
+
+// Récupérer les items de facture enrichis pour une organisation d'origine donnée
+exports.getInvoiceItemsDetailsByOrigine = async (req, res) => {
+  const { organisation_origine, organisation_destinataire } = req.params;
+  try {
+    const results = await sequelize.query(`
+      SELECT 
+        invoice_items.id,
+        invoice_items.createdAt as date,
+        invoice_items.organisation_origine, 
+        invoice_items.organisation_destinataire, 
+        org_destinataire.nom, 
+        CONCAT(patient.name, ' ', patient.last_name) AS patient, 
+        REPLACE(TRIM(REPLACE(REPLACE(payment_category.prestation, '  ', ' '), '  ', ' ')), '  ', ' ') AS prestation, 
+        invoice_items.doit_payer_partenaire, 
+        invoice_items.payer_patient, 
+        invoice_items.chargeMutuelle, 
+        invoice_items.statut, 
+        invoice_items.type
+      FROM invoice_items
+      JOIN patient ON patient.id = invoice_items.beneficiaire
+      JOIN payment_category ON payment_category.id = invoice_items.service_code
+      JOIN organisation AS org_destinataire ON invoice_items.organisation_destinataire = org_destinataire.id
+      WHERE invoice_items.organisation_origine = :organisation_origine
+        AND invoice_items.organisation_destinataire = :organisation_destinataire
+    `, {
+      replacements: { organisation_origine, organisation_destinataire },
+      type: sequelize.QueryTypes.SELECT
+    });
+    res.json({ success: true, data: results });
+  } catch (error) {
+    console.error('Erreur lors de la récupération des items de facture détaillés :', error);
+    res.status(500).json({ success: false, message: 'Erreur serveur.' });
+  }
+};
+
+exports.previewInvoicePDF = async (req, res) => {
+  try {
+    const invoiceData = req.body;
+
+    // Création du PDF en mémoire
+    const doc = new PDFDocument({ size: 'A4', margin: 40 });
+    let buffers = [];
+    doc.on('data', buffers.push.bind(buffers));
+    doc.on('end', () => {
+      const pdfData = Buffer.concat(buffers);
+      res.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': 'inline; filename="preview.pdf"',
+      });
+      res.send(pdfData);
+    });
+
+    // --- Exemple de contenu minimal ---
+    doc.fontSize(20).text('Prévisualisation Facture', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(12).text(`Facture N°: ${invoiceData.numero || ''}`);
+    doc.text(`Date: ${invoiceData.dateFacture || ''}`);
+    doc.text(`Émise par: ${invoiceData.par || ''}`);
+    doc.moveDown();
+    doc.text('Détail des services:');
+    (invoiceData.items || []).forEach((item, idx) => {
+      doc.text(`${idx + 1}. ${item.prestation || item.description || ''} - ${item.doit_payer_partenaire || item.unitPrice || ''} FCFA`);
+    });
+    doc.moveDown();
+    doc.text(`Total: ${invoiceData.totalAmount || ''} FCFA`, { align: 'right' });
+
+    doc.end();
+  } catch (error) {
+    console.error('Erreur génération preview PDF:', error);
+    res.status(500).json({ success: false, message: 'Erreur génération PDF' });
   }
 };

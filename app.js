@@ -43,7 +43,6 @@ const io = new Server(server, {
 });
 
 io.on("connection", (socket) => {
-  console.log("✅ Utilisateur connecté :", socket.id);
 
   socket.on("join_room", (room) => {
     socket.join(room);
@@ -187,7 +186,7 @@ app.use("/api/depense-types", require("./routes/depenseType.routes"));
 // Start server
 const PORT = process.env.PORT || 2001;
 server.listen(PORT, () => {
-  console.log(`🚀 Server is running on http://localhost:${PORT}`);
+ // console.log(`🚀 Server is running on http://localhost:${PORT}`);
   console.log(`🚀 Serveur API + Socket.IO lancé sur http://localhost:${PORT}`);
 });
 
