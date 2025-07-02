@@ -6916,7 +6916,8 @@ exports.createServiceRequestWithInstances = async (req, res) => {
     category_name_assurance,
     etatlight,
     charge_mutuelle,
-    organisation_destinataire
+    organisation_destinataire,
+    partnerTraitantID
   } = req.body;
 
   console.log("Les paiements reçus:", req.body);
@@ -6957,7 +6958,8 @@ exports.createServiceRequestWithInstances = async (req, res) => {
       etatlight,
       charge_mutuelle,
       category_name_pro,
-      organisation_destinataire
+      organisation_destinataire,
+      partnerTraitantID
     });
 
     if (!newServiceRequest) {
@@ -7035,7 +7037,7 @@ exports.createServiceRequestWithInstances = async (req, res) => {
       deposit_type: deposit_type || "Cash",
       bulletinAnalyse: "----",
       organisation_light_origin: partenaireID,
-      organisation_destinataire: partenaireID,
+      organisation_destinataire: partnerTraitantID,
       service: service || 1,
       user: req.userId,
       patient_name: `${patient.last_name} ${patient.name}`,
@@ -7063,7 +7065,7 @@ exports.createServiceRequestWithInstances = async (req, res) => {
       console.log("🔍 Type détecté recuperer :", typeAssurance);
       paymentData.category_name_pro = categoryName;
       paymentData.etat = 1;
-      paymentData.organisation_destinataire = partenaireID;
+      paymentData.organisation_destinataire = partnerTraitantID;
     }
 
     if (etatlight) {
